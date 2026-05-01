@@ -1,46 +1,49 @@
-# Project Brief: LLM-Assisted Site Mapping for Web Automation
+# SiteMapper
 
-## Goal
-Build a system that lets Claude (in Chrome or similar agent) navigate conventional, non-AI-optimized web apps quickly — by pre-analyzing them once with human-in-the-loop discovery, then reusing the resulting map across sessions. Eliminates redundant DOM exploration and screenshot-heavy navigation.
+Persistent, structured site maps for LLM browser agents. Map a web app once with human-in-the-loop discovery, then reuse the map across sessions — no redundant DOM exploration or screenshot-heavy navigation.
 
-## Core Concept
-A **collaborative discovery phase** where LLM + human walk through a site together, producing a versioned, reloadable map of pages, elements, flows, and gotchas. Conceptually a modern Page Object Model, but built through guided conversation rather than hand-coded by an engineer.
+## How It Works
 
-## Key Design Decisions
+1. A discovery agent walks through a site with you, asking targeted questions
+2. You annotate and correct in real time
+3. The output is a set of YAML files describing pages, elements, flows, and gotchas
+4. Future agent sessions load the map as context instead of re-exploring from scratch
 
-**Map format**: YAML per page/app, capturing:
-- Page purpose and URL
-- Key elements with semantic locators (text, aria-label, role, `data-testid`)
-- Named flows (sequences of steps for common tasks)
-- Gotchas and non-obvious behavior (e.g. "Save stays active when form invalid", "Delete is soft-delete only")
+See [Concept.md](Concept.md) for the full design rationale and [PRD.md](PRD.md) for the product requirements.
 
-**Locator strategy**: Prefer semantic anchors over CSS paths. Since user has admin access to target sites, sprinkling `data-testid` attributes is the gold standard for stability.
+## Project Structure
 
-**Verification step**: Before trusting a saved map in a new session, do a quick "does element X still exist on page Y" sanity check to catch drift.
+```
+schema/          # YAML schema definitions
+  page.yaml      # Schema for individual page maps
+  site.yaml      # Schema for site-level metadata
+  workflow.yaml  # Schema for multi-page task flows
+sites/           # One directory per mapped site
+  iot-portal/    # Example: IoT admin portal
+```
 
-**Philosophy alignment**: Fits existing Information Minimalism approach — capture intent, rationale, and traps; skip mechanics the LLM can re-derive.
+## Quick Start
 
-## Repo & Storage
-Lives in **its own dedicated repo** (separate from `aiDocs`). One repo for site maps as a standalone project — likely one YAML file per target app, plus shared schema and tooling.
+1. Create a directory under `sites/` for your target app
+2. Run the discovery agent against the site
+3. Review and commit the generated YAML maps
+4. Load the maps as context in future browser automation sessions
 
-## Workflow
-1. Discovery subagent walks site with user, asks targeted questions
-2. User annotates and corrects in real time
-3. Output: `site_map.yaml` per app, committed to the site-maps repo
-4. Reload as a skill or paste at session start
-5. Updates handled as PRs — same hygiene as other docs
+## Map Format
 
-## Sweet Spot vs. Limits
-- **Best fit**: Stable internal admin tools where user controls the codebase
-- **Poor fit**: Public consumer sites that A/B test their DOM frequently
-- Maintenance is real — selectors drift, but admin-controlled sites stay stable
+Maps use YAML with semantic locators (text, aria-label, role, `data-testid`) rather than brittle CSS selectors. Each page map captures:
 
-## Open Tooling Questions
-- GitHub connector in claude.ai chat is attach-files only (not agentic). For autonomous read/write of the map repo, Claude Code + GitHub MCP is the right path — already part of existing Claude Code workflow.
-- Discovery subagent could be built as a Claude Code subagent (similar to existing project manager subagent pattern).
+- Page purpose and URL pattern
+- Key interactive elements
+- Named flows for common tasks
+- Gotchas and non-obvious behavior
 
-## Suggested Next Steps
-1. Define minimal viable YAML schema (1-2 example pages)
-2. Pick one real admin site as pilot
-3. Build discovery subagent prompt (questions to ask user during walkthrough)
-4. Decide loader format: skill, paste-in context, or fetched from repo
+## Best Fit
+
+- Internal admin tools and dashboards you control
+- Stable applications where the DOM doesn't change frequently
+- Sites where you can add `data-testid` attributes for rock-solid selectors
+
+## License
+
+Private project.

@@ -1,0 +1,65 @@
+page:
+  name: Adminbereich - Gateway Monitoring
+  url_pattern: /adminbereich/gateway-monitoring
+  purpose: Monitor IoT gateway device connection status across all partners
+
+  elements:
+    # Status overview cards
+    - name: verbunden-card
+      type: container
+      locator:
+        strategy: text
+        value: Verbunden
+      description: Green card showing count of connected gateways
+
+    - name: offline-card
+      type: container
+      locator:
+        strategy: text
+        value: Offline
+      description: Red card showing count of offline gateways
+
+    - name: unkonfiguriert-card
+      type: container
+      locator:
+        strategy: text
+        value: Unkonfiguriert
+      description: Grey card showing count of unconfigured gateways
+
+    # Filters
+    - name: status-filter
+      type: select
+      locator:
+        strategy: text
+        value: Status
+      description: Dropdown to filter by gateway status (Unkonfiguriert, Verbunden, Offline, etc.)
+
+    - name: text-filter
+      type: input
+      locator:
+        strategy: text
+        value: Filter
+      description: Free text filter for the gateway table
+
+    # Actions
+    - name: csv-export-button
+      type: button
+      locator:
+        strategy: text
+        value: CSV Export
+      description: Red button to export gateway data as CSV
+
+    # Table
+    - name: gateway-table
+      type: table
+      locator:
+        strategy: css
+        value: "table"
+      description: Table with Status, Zeitpunkt, Status Headwind, Vertragsnummer, Vertragspartner, Interner Name, Interne Notiz, Seriennummer columns
+
+  gotchas:
+    - Page takes a few seconds to load (shows spinner)
+    - Status dots in the table are color-coded (green=connected, grey=unconfigured, red=offline)
+    - The three status cards at the top are clickable to filter the table
+    - Large dataset — 339 unconfigured gateways in the demo account
+    - Table columns are sortable

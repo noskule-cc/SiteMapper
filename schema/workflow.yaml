@@ -1,0 +1,34 @@
+# Schema: Workflow Definition
+# Each workflow defines a named, repeatable sequence of actions on mapped sites.
+# Workflows can span a single site or multiple sites (cross-site workflows).
+
+workflow:
+  name: ""                    # Workflow name (used as command: /run <name>)
+  description: ""             # What this workflow accomplishes
+  site: ""                    # Single site (for simple workflows)
+  sites: []                   # Multiple sites (for cross-site workflows)
+
+  parameters:
+    - name: ""                # Parameter name
+      type: ""                # select | text
+      description: ""         # What this parameter controls
+      required: true
+      options: []             # For type: select — predefined choices (rendered as dropdown)
+      default: ""             # Optional default value
+
+  steps:
+    - action: ""              # navigate | click | input | read | verify | wait
+      site: ""                # Which site this step runs on (required for cross-site workflows)
+      page: ""                # Page name (references a page YAML file)
+      element: ""             # Element name from the page map
+      value: ""               # Value to input, or parameter reference like "$tag_name"
+      capture: ""             # Store step output in a named variable (e.g., "offline_devices")
+      description: ""         # Human-readable step description
+
+  verify:
+    - ""                      # Expected outcome to check after workflow completes
+
+# Variable references:
+#   $param_name     — references a workflow parameter
+#   $captured_var   — references a value captured by a previous step
+#   Captured variables are available to all subsequent steps, even across sites.

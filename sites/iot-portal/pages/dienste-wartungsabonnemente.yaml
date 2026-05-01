@@ -1,0 +1,38 @@
+page:
+  name: Dienste - Wartungs-Abonnemente
+  url_pattern: /dienste/abonnemente
+  purpose: View and manage maintenance subscription plans
+
+  elements:
+    - name: tab-premium
+      type: button
+      locator:
+        strategy: text
+        value: Premium
+      description: Premium subscriptions tab
+
+    - name: tab-classic
+      type: button
+      locator:
+        strategy: text
+        value: Classic
+      description: Classic subscriptions tab
+
+    - name: tab-offerten
+      type: button
+      locator:
+        strategy: text
+        value: Offerten
+      description: Quotes/offers tab
+
+    - name: tab-beantragen
+      type: button
+      locator:
+        strategy: text
+        value: Beantragen
+      description: Request/apply for subscription tab
+
+  gotchas:
+    - URL is /dienste/abonnemente, not /dienste/wartungs-abonnemente
+    - Empty state shows icon with "Sie haben aktuell keine Abonnemente"
+    - Not accessible when in a partner context — redirects to dashboard

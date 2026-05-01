@@ -1,0 +1,31 @@
+page:
+  name: Dienste - Übergabeprotokoll
+  url_pattern: /dienste/uebergabeprotokoll
+  purpose: Manage handover protocols for device installations
+
+  elements:
+    - name: search-field
+      type: input
+      locator:
+        strategy: text
+        value: Suchen
+      description: Search handover protocols
+
+    - name: neues-uebergabeprotokoll-button
+      type: button
+      locator:
+        strategy: text
+        value: "Neues Übergabeprotokoll"
+      description: Red button to create a new handover protocol
+
+    - name: protokoll-cards
+      type: container
+      locator:
+        strategy: css
+        value: ".protokoll-card"
+      description: Cards showing Protokoll Nr, Kunde, Seriennummer, Artikelnummer, Hersteller, Gerätetyp, dates, Sichtabnahme, Inbetriebnahme
+
+  gotchas:
+    - Similar card layout to Montageabklärung
+    - Sichtabnahme and Inbetriebnahme show green dots with dates when completed
+    - Each card has an "Ansehen" button
