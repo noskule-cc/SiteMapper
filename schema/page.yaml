@@ -1,0 +1,21 @@
+# Schema: Page Map
+# Each page in a site gets one YAML file describing its purpose, elements, and gotchas.
+
+page:
+  name: ""                    # Human-readable page name
+  url_pattern: ""             # URL pattern (e.g., "/issues", "/issues/:id")
+  purpose: ""                 # What this page is for
+  screenshot: ""              # Relative path to reference screenshot
+
+  elements:
+    - name: ""                # Semantic name for the element
+      type: ""                # button | input | link | select | checkbox | table | text | container
+      locator:
+        strategy: ""          # text | aria-label | role | data-testid | css
+        value: ""             # The locator value
+      description: ""         # What this element does
+      states: []              # Optional: possible states (e.g., [enabled, disabled, hidden])
+      children: []            # Optional: nested sub-elements (e.g., submenu items under a nav link)
+
+  gotchas:
+    - ""                      # Non-obvious behavior (e.g., "Save stays active when form invalid")

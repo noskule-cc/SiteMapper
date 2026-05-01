@@ -1,0 +1,31 @@
+page:
+  name: Dienste - Service
+  url_pattern: /dienste/service
+  purpose: View maintenance and service orders
+
+  elements:
+    - name: tab-geplant
+      type: button
+      locator:
+        strategy: text
+        value: Geplant
+      description: Planned/scheduled service orders tab
+
+    - name: tab-abgeschlossen
+      type: button
+      locator:
+        strategy: text
+        value: Abgeschlossen
+      description: Completed service orders tab
+
+    - name: tab-praeventiv
+      type: button
+      locator:
+        strategy: text
+        value: "Präventiv"
+      description: Preventive maintenance orders tab
+
+  gotchas:
+    - Page title in header shows "DIENSTE" not "SERVICE"
+    - Section header is "Wartungs- und Serviceaufträge"
+    - Can take a few seconds to load (shows red spinner)

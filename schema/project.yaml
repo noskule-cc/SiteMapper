@@ -1,0 +1,8 @@
+# Schema: Project Configuration
+# A project groups cross-site workflows that operate across multiple mapped sites.
+
+project:
+  name: ""                    # Human-readable project name
+  description: ""             # What this project accomplishes
+  sites: []                   # List of site names this project uses (must exist in sites/)
+  workflows: []               # List of workflow YAML filenames in this project

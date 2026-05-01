@@ -1,0 +1,44 @@
+page:
+  name: Kontakt - Kontaktformular
+  url_pattern: /kontakt/kontaktformular
+  purpose: General contact form to reach support
+
+  elements:
+    - name: betreff-select
+      type: select
+      locator:
+        strategy: text
+        value: Betreff
+      description: Subject dropdown
+
+    - name: mitteilung-textarea
+      type: input
+      locator:
+        strategy: text
+        value: Mitteilung
+      description: Message text area
+
+    - name: kontaktaufnahme-telefon
+      type: checkbox
+      locator:
+        strategy: text
+        value: Telefon
+      description: Radio button for preferred contact via phone
+
+    - name: kontaktaufnahme-email
+      type: checkbox
+      locator:
+        strategy: text
+        value: E-Mail
+      description: Radio button for preferred contact via email
+
+    - name: senden-button
+      type: button
+      locator:
+        strategy: text
+        value: Senden
+      description: Red submit button
+
+  gotchas:
+    - "Gewünschte Kontaktaufnahme" section has radio buttons (Telefon / E-Mail), not checkboxes
+    - Betreff is a dropdown, not free text

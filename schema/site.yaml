@@ -1,0 +1,11 @@
+# Schema: Site Configuration
+# Top-level config for a mapped site.
+
+site:
+  name: ""                    # Human-readable site name
+  base_url: ""                # Base URL (e.g., "https://issues.example.com")
+  description: ""             # What this site/app is
+  auth_notes: ""              # How to authenticate (e.g., "SSO via Okta", "admin/admin on staging")
+  mapped_at: ""               # ISO date of last full mapping
+  pages: []                   # List of page YAML filenames
+  workflows: []               # List of workflow YAML filenames
