@@ -13,6 +13,7 @@
 | Listing available workflows             | `docs/skills/list-workflows.md`         |
 | Checking a map for drift                | `docs/skills/verify-map.md`             |
 | Writing a new workflow YAML             | `schema/workflow.yaml`                  |
+| Creating a cross-site project           | `schema/project.yaml`                   |
 | Understanding the project               | `PRD.md`                                |
 | Writing or updating documentation       | `docs/INFORMATION_MINIMALISM.md`        |
 
@@ -29,6 +30,6 @@
 
 - **Site maps** are YAML files in `sites/<site-name>/pages/` describing page elements and gotchas.
 - **Workflows** are YAML files in `sites/<site-name>/workflows/` defining step sequences.
-- **Cross-site workflows** can span multiple sites using capture variables for data passing.
-- **Schemas** in `schema/` define the YAML format for pages, sites, and workflows.
+- **Cross-site workflows** live in `projects/<project>/workflows/` and span multiple sites using capture variables.
+- **Schemas** in `schema/` define the YAML format for pages, sites, workflows, and projects.
 - **Claude Code orchestrates** via file system access + Chrome MCP browser tools.

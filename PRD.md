@@ -31,24 +31,26 @@ A collaborative site-mapping system where Claude and a human walk through a web 
 ## Storage Structure
 
 ```
-sites/
+sites/                           # One directory per mapped site
   issue-tracker/
-    site.yaml                  # base URL, auth notes, site-level config
-    screenshots/               # reference screenshots per page
-      dashboard.png
-      issues-list.png
+    site.yaml                    # base URL, auth notes, site-level config
     pages/
       dashboard.yaml
       issues-list.yaml
-      issue-detail.yaml
-    workflows/
+    workflows/                   # Site-specific workflows (single site)
       check-login-issues.yaml
-      move-to-folder.yaml
+
   iot-portal/
     site.yaml
-    screenshots/
     pages/
     workflows/
+      switch-partner.yaml
+
+projects/                        # Cross-site workflows grouped by project
+  device-monitoring/
+    project.yaml                 # which sites, description
+    workflows/
+      check-offline-report.yaml  # reads iot-portal, writes issue-tracker
 ```
 
 ## Map Format (per page YAML)
@@ -118,9 +120,14 @@ Defined in each site's `workflows/` folder. Loaded when the user activates a sit
 
 ## Cross-Site Workflows
 
-Workflows can span multiple mapped sites. For example: read device status from the IoT portal, then create a ticket in an issue tracker with the results.
+Workflows can span multiple mapped sites. These live in `projects/<project>/workflows/` rather than inside a single site.
 
-### How It Works
+### Two Levels of Workflows
+
+- **Site workflows** (`sites/<site>/workflows/`) — single-site operations (e.g., switch partner, tag an issue)
+- **Project workflows** (`projects/<project>/workflows/`) — cross-site operations grouped by project (e.g., "device monitoring" reads IoT portal and writes to issue tracker)
+
+### How Cross-Site Works
 
 - The `sites` field lists all sites involved in the workflow.
 - Each step has a `site` field indicating which site it runs on.

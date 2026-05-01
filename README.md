@@ -14,20 +14,34 @@ See [Concept.md](Concept.md) for the full design rationale and [PRD.md](PRD.md) 
 ## Project Structure
 
 ```
-schema/          # YAML schema definitions
-  page.yaml      # Schema for individual page maps
-  site.yaml      # Schema for site-level metadata
-  workflow.yaml  # Schema for multi-page task flows
-sites/           # One directory per mapped site
-  iot-portal/    # Example: IoT admin portal
+schema/                              # YAML schema definitions
+  page.yaml                          #   Page map format
+  site.yaml                          #   Site-level metadata
+  workflow.yaml                      #   Workflow format (single + cross-site)
+  project.yaml                       #   Cross-site project format
+
+sites/                               # One directory per mapped site
+  iot-portal/
+    site.yaml                        #   Base URL, auth, page list
+    pages/
+      dashboard.yaml                 #   Navigation elements + sidebar
+      maschinenpark.yaml             #   Device list with drill-down
+      geraet-detail.yaml             #   Device detail with 5 tabs
+      admin-benutzerverwaltung.yaml  #   User management
+      ...                            #   (23 pages total)
+    workflows/
+      switch-partner-to-maschinenpark.yaml  # Site-specific workflow
+
+projects/                            # Cross-site workflows grouped by project
+  device-monitoring/                 #   Example project
+    project.yaml                     #   Sites: [iot-portal, issue-tracker]
+    workflows/
+      check-offline-report.yaml      #   Read IoT portal → write issue tracker
 ```
 
 ## Quick Start
 
-1. Create a directory under `sites/` for your target app
-2. Run the discovery agent against the site
-3. Review and commit the generated YAML maps
-4. Load the maps as context in future browser automation sessions
+See [USAGE.md](USAGE.md) for detailed instructions on mapping sites, writing workflows, and running them.
 
 ## Map Format
 

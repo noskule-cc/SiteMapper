@@ -4,7 +4,7 @@ Execute a named workflow from a mapped site. Reads the workflow YAML, prompts fo
 
 ## Steps
 
-1. **Find the workflow** — search `sites/*/workflows/<workflow>.yaml` for the workflow definition. If not found, list available workflows and ask the user to choose.
+1. **Find the workflow** — search both `sites/*/workflows/<workflow>.yaml` and `projects/*/workflows/<workflow>.yaml` for the workflow definition. If not found, list available workflows and ask the user to choose.
 
 2. **Load the workflow YAML** and identify:
    - Which site(s) it belongs to (check both `site` and `sites` fields)

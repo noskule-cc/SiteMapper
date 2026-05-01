@@ -4,6 +4,10 @@
 
 - [AGENTS.md](AGENTS.md) — start here (situational references, available skills)
 
+## Getting Started
+
+- [USAGE.md](../USAGE.md) — how to map sites, write workflows, run them
+
 ## Product
 
 - [PRD.md](../PRD.md) — product requirements
@@ -21,6 +25,7 @@
 - [page.yaml](../schema/page.yaml) — page map format
 - [site.yaml](../schema/site.yaml) — site configuration format
 - [workflow.yaml](../schema/workflow.yaml) — workflow definition format
+- [project.yaml](../schema/project.yaml) — cross-site project format
 
 ## Guidelines
 
