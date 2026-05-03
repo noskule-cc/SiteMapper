@@ -1,0 +1,67 @@
+page:
+  name: "New Issue"
+  url_pattern: "/<owner>/<repo>/issues/new"
+  purpose: "Create a new issue with title, description, and labels"
+
+  elements:
+    - name: "title-input"
+      type: input
+      locator:
+        strategy: css
+        value: "input[placeholder='Title']"
+      description: "Issue title field"
+
+    - name: "description-input"
+      type: input
+      locator:
+        strategy: css
+        value: "textarea[placeholder='Type your description here…']"
+      description: "Issue body markdown field"
+
+    - name: "labels-gear"
+      type: button
+      locator:
+        strategy: text
+        value: "Edit Labels"
+      description: "Opens the labels dropdown"
+
+    - name: "labels-filter"
+      type: input
+      locator:
+        strategy: css
+        value: "input[placeholder='Filter labels']"
+      description: "Search/filter labels in the dropdown"
+
+    - name: "label-option"
+      type: checkbox
+      locator:
+        strategy: text
+        value: "<label-name>"
+      description: "Individual label checkbox — use label name as text (e.g. bug, enhancement, documentation)"
+
+    - name: "create-more-checkbox"
+      type: checkbox
+      locator:
+        strategy: text
+        value: "Create more"
+      description: "Stay on form after creating, for batch issue creation"
+
+    - name: "create-button"
+      type: button
+      locator:
+        strategy: text
+        value: "Create"
+      description: "Submit the new issue (Ctrl+Enter shortcut)"
+
+    - name: "cancel-button"
+      type: button
+      locator:
+        strategy: text
+        value: "Cancel"
+      description: "Cancel and return to issues list"
+
+  gotchas:
+    - "Must click the gear icon next to Labels heading to open dropdown, not the heading itself"
+    - "Labels dropdown closes when clicking outside it"
+    - "Create more checkbox keeps you on the form after submission — useful for creating multiple issues"
+    - "Available labels: bug, documentation, duplicate, enhancement, good first issue, help wanted, invalid, question, wontfix"

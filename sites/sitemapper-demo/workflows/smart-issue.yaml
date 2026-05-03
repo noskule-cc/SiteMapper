@@ -1,0 +1,88 @@
+workflow:
+  name: "smart-issue"
+  description: "Ask what the issue is about, search for similar existing issues, present matches or create a new one"
+  site: "sitemapper-demo"
+
+  parameters:
+    - name: "topic"
+      type: text
+      description: "What is the issue about? (used to search and as title if creating)"
+      required: true
+
+    - name: "label"
+      type: select
+      description: "Label to apply if a new issue is created"
+      required: false
+      options:
+        - bug
+        - documentation
+        - duplicate
+        - enhancement
+        - good first issue
+        - help wanted
+        - invalid
+        - question
+        - wontfix
+      default: "bug"
+
+  steps:
+    - action: navigate
+      page: "issues-list"
+      description: "Go to the issues list"
+
+    - action: input
+      page: "issues-list"
+      element: "search-input"
+      value: "$topic"
+      description: "Search for existing issues matching the topic"
+
+    - action: read
+      page: "issues-list"
+      element: "issues-list"
+      capture: "search_results"
+      description: "Read the search results to find similar issues"
+
+    - action: verify
+      description: "Present search results to the user. If similar issues exist, show them and ask whether to still create a new one. If no results, proceed to create."
+
+    - action: navigate
+      page: "new-issue"
+      description: "Navigate to the new issue form"
+
+    - action: input
+      page: "new-issue"
+      element: "title-input"
+      value: "$topic"
+      description: "Enter the issue title"
+
+    - action: input
+      page: "new-issue"
+      element: "description-input"
+      value: "Issue created via SiteMapper smart-issue workflow."
+      description: "Enter a default description"
+
+    - action: click
+      page: "new-issue"
+      element: "labels-gear"
+      description: "Open the labels dropdown"
+
+    - action: input
+      page: "new-issue"
+      element: "labels-filter"
+      value: "$label"
+      description: "Filter to the selected label"
+
+    - action: click
+      page: "new-issue"
+      element: "label-option"
+      value: "$label"
+      description: "Select the label checkbox"
+
+    - action: click
+      page: "new-issue"
+      element: "create-button"
+      description: "Submit the new issue"
+
+  verify:
+    - "Issue appears in the issues list with the correct title and label"
+    - "If similar issues were found, user confirmed they still wanted to create a new one"

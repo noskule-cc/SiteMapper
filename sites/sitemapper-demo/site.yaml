@@ -1,0 +1,11 @@
+site:
+  name: "SiteMapper Demo"
+  base_url: "https://github.com/noskule-cc/SiteMapper.demo"
+  description: "Demo GitHub repo for SiteMapper — map issues page and create issues via workflow"
+  auth_notes: "Requires GitHub sign-in to create issues"
+  mapped_at: "2026-05-03"
+  pages:
+    - issues-list.yaml
+    - new-issue.yaml
+  workflows:
+    - smart-issue.yaml
