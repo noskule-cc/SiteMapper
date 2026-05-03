@@ -39,9 +39,9 @@ projects/                            # Cross-site workflows grouped by project
       check-offline-report.yaml      #   Read IoT portal → write issue tracker
 ```
 
-## Quick Start
+## Getting Started
 
-See [USAGE.md](USAGE.md) for detailed instructions on mapping sites, writing workflows, and running them.
+See [USAGE.md](USAGE.md) for setup, mapping sites, writing workflows, and running them.
 
 ## Map Format
 

@@ -1,10 +1,15 @@
 # Usage Guide
 
-## Prerequisites
+## Setup
 
-- Claude Code (CLI, desktop app, or web app)
-- Chrome with the Claude-in-Chrome MCP extension installed
-- Target site open in Chrome
+SiteMapper requires two things running side by side:
+
+- **Claude Code** (CLI, desktop, or web) — reads/writes site maps from this repo, runs skills and workflows
+- **Chrome + Claude-in-Chrome MCP extension** — gives Claude Code browser control (DOM reading, clicking, form input, navigation)
+
+You type commands in Claude Code. Claude controls the browser through the MCP extension. The site maps live on your file system, not in the browser.
+
+Open your target site in Chrome, then use Claude Code to start mapping.
 
 ## Mapping a Site
 
