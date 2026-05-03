@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git remote:*)",
+      "Bash(git pull:*)",
+      "Bash(grep -E \"\\\\.\\(py|js|sh|ts\\)$\")",
+      "Read(//d/DEV/aiDocs/**)",
+      "Read(//d/DEV/**)",
+      "Bash(find /d/DEV/aiDocs -name *CLAUDE* -o -name *CODEX*)",
+      "Bash(find /d/DEV/aiDocs/docs -name *.md -type f)",
+      "Bash(gh issue:*)",
+      "Bash(rm -rf .claude/settings.local.json)",
+      "Bash(rmdir .claude)",
+      "Bash(rmdir docs:*)",
+      "Bash(echo \"docs removed: $?\")",
+      "Bash(gh pr:*)",
+      "Bash(git clone:*)",
+      "Bash(cd:*)",
+      "Bash(rm -rf D:/DEV/SiteMapper.test)",
+      "Bash(mkdir -p D:/DEV/SiteMapper.test)",
+      "Bash(rm -rf docs/subagents)",
+      "Bash(rm -f docs/claude/agents/project-manager.md)",
+      "Bash(gh repo:*)",
+      "Bash(gh api:*)",
+      "Bash(rm docs/README.md)",
+      "Bash(cp -r docs/claude/skills .claude/skills)",
+      "Bash(cp -r docs/claude/agents .claude/agents)",
+      "Bash(mkdir -p .claude)",
+      "Bash(cp -r docs/claude/* .claude/)",
+      "Bash(cp docs/CLAUDE.md.template CLAUDE.md)"
+    ]
+  }
+}
