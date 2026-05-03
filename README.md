@@ -52,6 +52,11 @@ Maps use YAML with semantic locators (text, aria-label, role, `data-testid`) rat
 - Named flows for common tasks
 - Gotchas and non-obvious behavior
 
+## Test Site
+
+[SiteMapperTest](https://github.com/noskule-cc/SiteMapperTest) — a simple issue tracker app for testing SiteMapper workflows.
+Live at: https://noskule-cc.github.io/SiteMapperTest/
+
 ## Best Fit
 
 - Internal admin tools and dashboards you control
