@@ -14,7 +14,7 @@ Open your target site in Chrome, then use Claude Code to start mapping.
 ## Mapping a Site
 
 1. Open the target site in Chrome.
-2. In Claude Code, run `/map-site <site-name>` (e.g., `/map-site issue-tracker`).
+2. In Claude Code, run `/map-site <site-name>` (e.g., `/map-site sitemapper-demo`).
 3. The discovery agent reads the page, suggests elements, and asks you to confirm or correct.
 4. Walk through each page — the agent writes YAML maps as you go.
 5. When done, the agent updates `sites/<site>/site.yaml` with the full page list.
@@ -39,30 +39,30 @@ Place in `sites/<site>/workflows/`. A workflow defines a sequence of steps again
 
 ```yaml
 workflow:
-  name: switch-partner
-  description: Switch to a different partner account
-  site: iot-portal
+  name: smart-issue
+  description: Create a new issue with a smart title
+  site: sitemapper-demo
 
   parameters:
-    - name: partner_name
+    - name: issue_title
       type: text
-      description: Partner to switch to
+      description: Title for the new issue
       required: true
 
   steps:
     - action: click
-      page: dashboard
-      element: hamburger-menu
-      description: Open sidebar
+      page: issues-list
+      element: new-issue-button
+      description: Open new issue form
 
     - action: input
-      page: partner-wechseln
-      element: search-field
-      value: "$partner_name"
-      description: Search for partner
+      page: new-issue
+      element: title-field
+      value: "$issue_title"
+      description: Enter issue title
 
   verify:
-    - "Red banner shows partner name"
+    - "Issue created successfully"
 ```
 
 ### Project Workflows (cross-site)
@@ -80,41 +80,39 @@ projects/<project-name>/
 
 ```yaml
 project:
-  name: Device Monitoring
-  description: Monitor IoT devices and report issues to the tracker
-  sites: [iot-portal, issue-tracker]
+  name: Issue Tracking
+  description: Manage issues using the demo issue tracker
+  sites: [sitemapper-demo]
   workflows:
-    - check-offline-report.yaml
+    - smart-issue.yaml
 ```
 
-**Cross-site workflow with capture variables:**
+**Workflow with capture variables:**
 
 ```yaml
 workflow:
-  name: check-offline-report
-  description: Find offline devices and create an issue
-  sites: [iot-portal, issue-tracker]
+  name: smart-issue
+  description: Read existing issues and create a related follow-up
+  site: sitemapper-demo
 
   steps:
     - action: read
-      site: iot-portal
-      page: admin-gateway-monitoring
-      element: gateway-table
-      capture: offline_devices
-      description: Read offline device list
+      page: issues-list
+      element: issues-table
+      capture: open_issues
+      description: Read current open issues
 
     - action: input
-      site: issue-tracker
       page: new-issue
       element: description-field
-      value: "Offline devices: $offline_devices"
-      description: Create issue with captured data
+      value: "Follow-up for: $open_issues"
+      description: Create follow-up issue with captured data
 
   verify:
-    - "Issue created with device list"
+    - "Issue created with reference to existing issues"
 ```
 
-The `capture` field stores a step's output in a named variable. Later steps reference it with `$variable_name`, even across sites.
+The `capture` field stores a step's output in a named variable. Later steps reference it with `$variable_name`.
 
 ## Running Workflows
 
@@ -128,7 +126,7 @@ The runner searches both `sites/*/workflows/` and `projects/*/workflows/`. It co
 
 ```
 /list-workflows              # all workflows
-/list-workflows iot-portal   # site-specific only
+/list-workflows sitemapper-demo   # site-specific only
 ```
 
 ## Checking for Drift

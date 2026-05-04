@@ -32,25 +32,13 @@ A collaborative site-mapping system where Claude and a human walk through a web 
 
 ```
 sites/                           # One directory per mapped site
-  issue-tracker/
+  sitemapper-demo/
     site.yaml                    # base URL, auth notes, site-level config
     pages/
-      dashboard.yaml
       issues-list.yaml
+      new-issue.yaml
     workflows/                   # Site-specific workflows (single site)
-      check-login-issues.yaml
-
-  iot-portal/
-    site.yaml
-    pages/
-    workflows/
-      switch-partner.yaml
-
-projects/                        # Cross-site workflows grouped by project
-  device-monitoring/
-    project.yaml                 # which sites, description
-    workflows/
-      check-offline-report.yaml  # reads iot-portal, writes issue-tracker
+      smart-issue.yaml
 ```
 
 ## Map Format (per page YAML)
@@ -104,18 +92,17 @@ Defined in each site's `workflows/` folder. Loaded when the user activates a sit
 - Avoid brittle CSS selectors and XPath.
 - Since the user has admin access to target sites, adding `data-testid` attributes is the gold standard for stability.
 
-## Pilot Targets
+## Pilot Target
 
-- **Issue tracker** — ticket management, filtering, tagging, replying.
-- **IoT portal** — device and user management.
-- Both are admin-controlled internal tools with stable DOM and the ability to add `data-testid` attributes.
+- **SiteMapper.demo** — a simple issue tracker for demonstrating SiteMapper workflows.
+- Admin-controlled with stable DOM and `data-testid` attributes.
 
 ## MVP Scope
 
 1. Define YAML schema for pages and workflows (separate task).
 2. Build discovery skill (`/map-site`) as a Claude Code skill/subagent.
 3. Build workflow runner (`/run`) with dropdown parameter selection.
-4. Map one pilot site (issue-tracker) end-to-end.
+4. Map one pilot site (sitemapper-demo) end-to-end.
 5. Capture reference screenshots during discovery.
 
 ## Cross-Site Workflows
@@ -125,7 +112,7 @@ Workflows can span multiple mapped sites. These live in `projects/<project>/work
 ### Two Levels of Workflows
 
 - **Site workflows** (`sites/<site>/workflows/`) — single-site operations (e.g., switch partner, tag an issue)
-- **Project workflows** (`projects/<project>/workflows/`) — cross-site operations grouped by project (e.g., "device monitoring" reads IoT portal and writes to issue tracker)
+- **Project workflows** (`projects/<project>/workflows/`) — cross-site operations grouped by project
 
 ### How Cross-Site Works
 
@@ -139,13 +126,13 @@ Workflows can span multiple mapped sites. These live in `projects/<project>/work
 Steps can capture data using the `capture` field:
 ```yaml
 - action: read
-  site: iot-portal
-  page: admin-gateway-monitoring
-  element: gateway-table
-  capture: offline_devices
+  site: sitemapper-demo
+  page: issues-list
+  element: issues-table
+  capture: open_issues
 
 - action: input
-  site: issue-tracker
+  site: sitemapper-demo
   page: new-issue
   element: description-field
   value: "Offline devices: $offline_devices"

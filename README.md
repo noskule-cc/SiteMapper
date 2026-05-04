@@ -21,22 +21,13 @@ schema/                              # YAML schema definitions
   project.yaml                       #   Cross-site project format
 
 sites/                               # One directory per mapped site
-  iot-portal/
+  sitemapper-demo/
     site.yaml                        #   Base URL, auth, page list
     pages/
-      dashboard.yaml                 #   Navigation elements + sidebar
-      maschinenpark.yaml             #   Device list with drill-down
-      geraet-detail.yaml             #   Device detail with 5 tabs
-      admin-benutzerverwaltung.yaml  #   User management
-      ...                            #   (23 pages total)
+      issues-list.yaml               #   Issue list page
+      new-issue.yaml                 #   New issue form
     workflows/
-      switch-partner-to-maschinenpark.yaml  # Site-specific workflow
-
-projects/                            # Cross-site workflows grouped by project
-  device-monitoring/                 #   Example project
-    project.yaml                     #   Sites: [iot-portal, issue-tracker]
-    workflows/
-      check-offline-report.yaml      #   Read IoT portal → write issue tracker
+      smart-issue.yaml               #   Create issue workflow
 ```
 
 ## Getting Started
@@ -52,10 +43,9 @@ Maps use YAML with semantic locators (text, aria-label, role, `data-testid`) rat
 - Named flows for common tasks
 - Gotchas and non-obvious behavior
 
-## Test Site
+## Demo Site
 
-[SiteMapperTest](https://github.com/noskule-cc/SiteMapperTest) — a simple issue tracker app for testing SiteMapper workflows.
-Live at: https://noskule-cc.github.io/SiteMapperTest/
+[SiteMapper.demo](https://github.com/noskule-cc/SiteMapper.demo) — a simple issue tracker app for demonstrating SiteMapper workflows.
 
 ## Best Fit
 
