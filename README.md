@@ -45,7 +45,7 @@ Maps use YAML with semantic locators (text, aria-label, role, `data-testid`) rat
 
 ## Demo Site
 
-[SiteMapper.demo](https://github.com/noskule-cc/SiteMapper.demo) — a simple issue tracker app for demonstrating SiteMapper workflows.
+[SiteMapper.demo](https://github.com/noskule-cc/SiteMapper.demo) — a GitHub repo for testing SiteMapper end-to-end. Map at least the readme and issues page, then create a "smart issue" workflow where it asks the user for an issue, checks for similar existing issues, presents matches, and lets the user decide whether to create it or not.
 
 ## Best Fit
 
