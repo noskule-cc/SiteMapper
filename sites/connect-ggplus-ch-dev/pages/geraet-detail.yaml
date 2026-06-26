@@ -206,6 +206,104 @@ page:
       description: "(Störungsmeldungen tab, capability-dependent) Refresh the fault-report list with the current filters"
       states: [capability-dependent]
 
+    - name: stoerungen-search
+      type: input
+      locator:
+        strategy: text
+        value: Störungsmeldungen suchen
+      description: "(Störungsmeldungen tab, capability-dependent) Search the fault list"
+      states: [capability-dependent]
+
+    - name: stoerungen-row
+      type: container
+      locator:
+        strategy: role
+        value: row
+      description: "(Störungsmeldungen tab, capability-dependent) A fault entry: timestamp, severity icon (grey = info/quittiert, orange = warning), event name + ID (e.g. 'Abpumprate klein (ID 59)'), optional Eventwert, and for actionable faults a red 'Störung melden' button"
+      states: [capability-dependent]
+
+    - name: stoerungen-row-report-button
+      type: button
+      locator:
+        strategy: text
+        value: Störung melden
+      description: "(Störungsmeldungen tab, capability-dependent) Per-fault report button - opens the Störung melden flow with this fault's errorCode pre-filled (the errorCode matrix-param on stoerung-melden)"
+      states: [capability-dependent]
+
+    # --- Hygiene tab (capability-dependent; seen on the GEHRIG GTW dishwasher) ---
+    - name: hygiene-date-from
+      type: input
+      locator:
+        strategy: text
+        value: Von
+      description: "(Hygiene tab, capability-dependent) Start date filter"
+      states: [capability-dependent]
+
+    - name: hygiene-date-to
+      type: input
+      locator:
+        strategy: text
+        value: Bis
+      description: "(Hygiene tab, capability-dependent) End date filter"
+      states: [capability-dependent]
+
+    - name: hygiene-only-checkbox
+      type: checkbox
+      locator:
+        strategy: text
+        value: Nur Hygiene Waschgänge anzeigen
+      description: "(Hygiene tab, capability-dependent) Show only hygiene wash cycles (checked by default)"
+      states: [capability-dependent]
+
+    - name: hygiene-refresh-button
+      type: button
+      locator:
+        strategy: text
+        value: Aktualisieren
+      description: "(Hygiene tab, capability-dependent) Refresh the hygiene-cycle list; empty state shows 'Keine Daten vorhanden'"
+      states: [capability-dependent]
+
+    - name: hygiene-download-button
+      type: button
+      locator:
+        strategy: text
+        value: Herunterladen
+      description: "(Hygiene tab, capability-dependent) Download hygiene-cycle data (disabled when no data)"
+      states: [capability-dependent]
+
+    # --- Spülprogramme tab (capability-dependent; seen on the GEHRIG GTW dishwasher) ---
+    - name: standardprogramme-list
+      type: container
+      locator:
+        strategy: text
+        value: Standardprogramme
+      description: "(Spülprogramme tab, capability-dependent) List of built-in wash programmes, each with a number (e.g. 'Programm lang #30', 'Hygiene #32')"
+      states: [capability-dependent]
+
+    - name: benutzerprogramme-list
+      type: container
+      locator:
+        strategy: text
+        value: Benutzerprogramme
+      description: "(Spülprogramme tab, capability-dependent) List of user-defined programmes (e.g. 'TEST #135')"
+      states: [capability-dependent]
+
+    - name: programm-detail-panel
+      type: container
+      locator:
+        strategy: role
+        value: region
+      description: "(Spülprogramme tab, capability-dependent) Parameter panel for the selected programme - name+code/value/default rows like Maschinenparameter (Abpumpdauer, Spültemperatur, etc.)"
+      states: [capability-dependent]
+
+    - name: save-as-preset-button
+      type: button
+      locator:
+        strategy: text
+        value: Als Voreinstellung speichern
+      description: "(Spülprogramme / Maschinenparameter tabs, capability-dependent) Save the current parameter set as the device's preset/default. NB: some devices label the save action 'Alles Speichern' instead."
+      states: [capability-dependent]
+
     - name: notifications-panel
       type: container
       locator:
@@ -250,5 +348,7 @@ page:
     - The breadcrumb device-name dropdown lets you jump to sibling devices without going back to the machine list.
     - "CAPABILITY VARIANT: the tab set depends on the device's capabilities, not just on whether it is connected. Only Details + Konnektivität are universal. Observed tab matrix - Mastrena (coffee): Details, Konnektivität. Hobart GXC-14C (dishwasher): + Maschinenparameter, Waschgänge, Störungsmeldungen. GEHRIG GTW 3300-H (dishwasher): + Maschinenparameter, Hygiene, Spülprogramme, Störungsmeldungen. Note two dishwashers differ (Waschgänge vs Hygiene+Spülprogramme). Elements flagged states:[capability-dependent] are ABSENT on devices that don't support them - never assume a mapped tab is present."
     - "Connected devices also show a live connection-status and a Fernwartung (remote maintenance) row with a 'Starten' link under 'Verbindungen', and may show an 'Update verfügbar' badge next to Technische Daten; non-connected devices show none of these."
+    - "Each row in the Störungsmeldungen tab has its own 'Störung melden' button that opens the fault-report flow with that fault's errorCode pre-filled - this is the source of the errorCode matrix-param on the stoerung-melden page."
+    - "Konnektivität shows the QR service label for already-registered devices; an UNregistered device additionally shows a Code/Registrieren field to connect it."
     - The device UUID in the URL is opaque - do NOT use it as the device identity. Reach a specific device by navigating from the machine list using a stable key (serial number or name), or pass deviceId as a captured/parameter value.
     - "Von/Bis date pickers appear on both Waschgänge and Störungsmeldungen tabs but are independent; both default to roughly a 20-day range."

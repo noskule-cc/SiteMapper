@@ -291,6 +291,88 @@ page:
         value: Aktualisieren
       description: Refresh fault report list
 
+    - name: stoerungen-row-report-button
+      type: button
+      locator:
+        strategy: text
+        value: "Störung melden"
+      description: "(capability-dependent) Per-fault report button on an actionable fault row - opens the Störung melden flow with that fault's errorCode pre-filled"
+      states: [capability-dependent]
+
+    # Hygiene tab elements (capability-dependent; seen on the GEHRIG GTW dishwasher)
+    - name: hygiene-von
+      type: input
+      locator:
+        strategy: text
+        value: Von
+      description: "(Hygiene tab, capability-dependent) Start date filter"
+      states: [capability-dependent]
+
+    - name: hygiene-bis
+      type: input
+      locator:
+        strategy: text
+        value: Bis
+      description: "(Hygiene tab, capability-dependent) End date filter"
+      states: [capability-dependent]
+
+    - name: hygiene-only-checkbox
+      type: checkbox
+      locator:
+        strategy: text
+        value: "Nur Hygiene Waschgänge anzeigen"
+      description: "(Hygiene tab, capability-dependent) Show only hygiene wash cycles (checked by default)"
+      states: [capability-dependent]
+
+    - name: hygiene-aktualisieren
+      type: button
+      locator:
+        strategy: text
+        value: Aktualisieren
+      description: "(Hygiene tab, capability-dependent) Refresh hygiene-cycle list; empty state shows 'Keine Daten vorhanden'"
+      states: [capability-dependent]
+
+    - name: hygiene-herunterladen
+      type: button
+      locator:
+        strategy: text
+        value: Herunterladen
+      description: "(Hygiene tab, capability-dependent) Download hygiene-cycle data (disabled when no data)"
+      states: [capability-dependent]
+
+    # Spülprogramme tab elements (capability-dependent; seen on the GEHRIG GTW dishwasher)
+    - name: standardprogramme-list
+      type: container
+      locator:
+        strategy: text
+        value: Standardprogramme
+      description: "(Spülprogramme tab, capability-dependent) Built-in wash programmes, each numbered (e.g. 'Programm lang #30', 'Hygiene #32')"
+      states: [capability-dependent]
+
+    - name: benutzerprogramme-list
+      type: container
+      locator:
+        strategy: text
+        value: Benutzerprogramme
+      description: "(Spülprogramme tab, capability-dependent) User-defined programmes (e.g. 'TEST #135')"
+      states: [capability-dependent]
+
+    - name: programm-detail-panel
+      type: container
+      locator:
+        strategy: role
+        value: region
+      description: "(Spülprogramme tab, capability-dependent) Parameter panel for the selected programme - name+code/value/default rows like Maschinenparameter"
+      states: [capability-dependent]
+
+    - name: als-voreinstellung-speichern-button
+      type: button
+      locator:
+        strategy: text
+        value: "Als Voreinstellung speichern"
+      description: "(Spülprogramme / Maschinenparameter tabs, capability-dependent) Save the current parameter set as the device preset/default. Some devices label the save action 'Alles Speichern' instead (see alles-speichern-button)."
+      states: [capability-dependent]
+
     # Persistent elements
     - name: stoerung-melden-button
       type: button
@@ -302,6 +384,7 @@ page:
   gotchas:
     - "CAPABILITY VARIANT: the tab set depends on the device's capabilities. Only Details + Konnektivität are universal. Observed - Mastrena (coffee): Details, Konnektivität. Hobart GXC-14C (dishwasher): + Maschinenparameter, Waschgänge, Störungsmeldungen. GEHRIG GTW 3300-H (dishwasher): + Maschinenparameter, Hygiene, Spülprogramme, Störungsmeldungen. Two dishwashers differ (Waschgänge vs Hygiene+Spülprogramme). Tabs flagged states:[capability-dependent] are ABSENT on devices that don't support them - never assume a mapped tab is present."
     - '"Störung melden" red button is persistent at the bottom across all tabs'
+    - "Each row in the Störungsmeldungen tab also has its own 'Störung melden' button that opens the fault-report flow with that fault's errorCode pre-filled - this is the source of the errorCode matrix-param on the stoerung-melden page."
     - URL uses a UUID for the device ID, not a numeric ID
     - Maschinenparameter values are editable inline via pencil icons, each shows last change timestamp and valid range
     - Parameters with red timestamps indicate recent changes or alerts
