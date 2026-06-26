@@ -35,9 +35,10 @@ All options + the sections each produces (Favoriten is always first):
 | Fahrzeugtyp | Favoriten / per-vehicle-type |
 | Test Partner Gruppe (PARTNER) | Favoriten / GRUPPE #1/#2 + "Nicht zu einer Gruppe zugewiesen" |
 
-- C-each: every option selectable, dropdown value reflects it **[done]**
+- C-each: every STANDARD option selectable, dropdown value reflects it **[done — verified live]**
 - C7 Favoriten present under every grouping (incl. Keine) **[done/confirmed]**
 - C-regroup: Bestehender is IOT-Geräte-only → vanishes under another grouping, returns under IOT-Geräte **[done]**
+- C-partner: PARTNER-GRUPPIERUNGEN are user-CREATED data, not hardcoded — a specific one ("Test Partner Gruppe") was observed disappearing mid-session. Cover via a separate data-driven test that creates a scheme in setup (Maschinenpark Einstellungen → Gerätegruppierungen) and tears it down **[todo]**
 - C8 device set **constant** across groupings (sum of counts stable) **[inferred — not yet asserted]**
 - C9 selection **persists** across reload/navigation **[confirmed — the sticky-state finding; handled by setup]**
 - C10 grouping **+ filter combine** **[confirmed]**

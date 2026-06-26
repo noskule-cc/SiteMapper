@@ -1,6 +1,6 @@
 workflow:
   name: test-maschinenpark-geraeteliste
-  description: UI test for the machine-list (Geräteliste) page of a location. Covers structural presence (L1), every Gerätegruppierungen option (C), navigation into the device preview (L2), filter re-binding (L4), and device + location filter behaviour (L5).
+  description: UI test for the machine-list (Geräteliste) page of a location. Covers structural presence (L1), every STANDARD Gerätegruppierungen option (C), navigation into the device preview (L2), filter re-binding (L4), and device + location filter behaviour (L5).
   site: connect-ggplus-ch-dev
   mode: deterministic
 
@@ -164,17 +164,13 @@ workflow:
       expect: { value: "Fahrzeugtyp" }
       description: C - "Fahrzeugtyp" applied
 
-    - action: input
-      page: maschinenpark-geraeteliste
-      element: device-grouping-dropdown
-      value: "Test Partner Gruppe"
-      description: C - select a PARTNER-GRUPPIERUNG (-> GRUPPE #1/#2 + Nicht zugewiesen)
-    - action: wait
-    - action: assert
-      page: maschinenpark-geraeteliste
-      element: device-grouping-dropdown
-      expect: { value: "Test Partner Gruppe" }
-      description: C - custom partner grouping applied
+    # NOTE: PARTNER-GRUPPIERUNGEN (e.g. "Test Partner Gruppe") are intentionally
+    # NOT asserted here - they are user/company-CREATED data, not a stable contract,
+    # and can be added/removed at any time (observed disappearing mid-session). A
+    # deterministic test must not reference such records by name. Partner groupings
+    # are covered separately by a data-driven test that creates its own scheme in
+    # setup (via Maschinenpark Einstellungen) and tears it down. The seven STANDARD
+    # groupings above are the stable contract.
 
     - action: input
       page: maschinenpark-geraeteliste
@@ -282,7 +278,7 @@ workflow:
 
   verify:
     - L1 - page loads with the location header, device filter, IOT-Geräte grouping, and all three device sections
-    - C - every Gerätegruppierungen option (Keine, IOT-Geräte, Status, Hersteller, Modell, Fahrzeugnummer, Fahrzeugtyp, Test Partner Gruppe) is selectable and applies; Favoriten persists across all; the IOT-only Bestehender section disappears under another grouping and returns under IOT-Geräte
+    - C - every STANDARD Gerätegruppierungen option (Keine, IOT-Geräte, Status, Hersteller, Modell, Fahrzeugnummer, Fahrzeugtyp) is selectable and applies; Favoriten persists across all; the IOT-only Bestehender section disappears under another grouping and returns under IOT-Geräte. (Partner-Gruppierungen are user data - covered by a separate create/teardown test.)
     - L5 - the device filter keeps matching devices and removes non-matching ones; clearing it restores them
     - L4 - an emptied section shows the "keine Maschinen gefunden" notice (counts re-bind to the filter)
     - L5 - the Standort filter narrows the location sidebar
