@@ -1,6 +1,6 @@
 workflow:
   name: test-maschinenpark-geraeteliste
-  description: UI smoke test for the machine-list (Geräteliste) page of a location - verifies the page loads, its controls and the three device sections are present, and that clicking a device opens the preview drawer.
+  description: UI test for the machine-list (Geräteliste) page of a location. Covers structural presence (L1), navigation into the device preview (L2), filter re-binding (L4), and device + location filter behaviour (L5).
   site: connect-ggplus-ch-dev
   mode: deterministic
 
@@ -8,70 +8,154 @@ workflow:
     partner_id: "10000"
     location_id: "10000"
     location_name: "Gehrig Group AG test"
+    device_filter_term: "Mastrena"
+    matching_device: "Diverse Kaffee Mastrena"
+    non_matching_device: "Diverse Wasseraufbereitung"
+    location_filter_term: "Renens"
+    location_match: "1020 Renens"
+    location_nonmatch: "8152 Glattbrugg"
 
   steps:
+    # --- L1: structural presence ---
     - action: navigate
       page: maschinenpark-geraeteliste
       value: "/geraete/maschinenpark/$partner_id/$location_id"
       description: Open the machine-list page for the fixture location
 
     - action: wait
-      description: The device sections load asynchronously after navigation - wait for the list to render before asserting on the sections
+      description: Device sections load asynchronously after navigation - wait for the list to render
 
     - action: assert
       page: maschinenpark-geraeteliste
       element: location-header
       expect: { contains: "$location_name" }
-      description: Header shows the selected location
+      description: L1 - header shows the selected location
 
     - action: assert
       page: maschinenpark-geraeteliste
       element: device-filter
       expect: visible
-      description: "Geräte filtern search input is present"
+      description: L1 - Geräte filtern input present
 
     - action: assert
       page: maschinenpark-geraeteliste
       element: device-grouping-dropdown
       expect: { value: "IOT-Geräte" }
-      description: Gerätegruppierungen dropdown defaults to IOT-Geräte
+      description: L1 - Gerätegruppierungen defaults to IOT-Geräte
 
     - action: assert
       page: maschinenpark-geraeteliste
       element: favoriten-section
       expect: visible
-      description: Favoriten section present
+      description: L1 - Favoriten section present
 
     - action: assert
       page: maschinenpark-geraeteliste
       element: neu-section
       expect: visible
-      description: "Neu (noch nicht im IOT-Hub) section present"
+      description: L1 - Neu section present
 
     - action: assert
       page: maschinenpark-geraeteliste
       element: bestehender-section
       expect: visible
-      description: Bestehender Maschinenpark section present
+      description: L1 - Bestehender Maschinenpark section present
 
-    - action: read
+    # --- L5 + L4: device filter narrows the list and sections re-bind ---
+    - action: input
       page: maschinenpark-geraeteliste
-      element: bestehender-section
-      capture: bestehender_count
-      description: Read the device-count badge for the existing-park section
+      element: device-filter
+      value: "$device_filter_term"
+      description: L5 - filter the device list
+
+    - action: wait
+      description: Filtering is live - wait for the sections to re-render
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-row
+      value: "$matching_device"
+      expect: visible
+      description: L5 - a matching device is still shown
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-row
+      value: "$non_matching_device"
+      expect: absent
+      description: L5 - a non-matching device is removed
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: no-match-message
+      expect: visible
+      description: L4 - a section emptied by the filter shows the no-match notice (count re-bound to 0)
 
     - action: click
       page: maschinenpark-geraeteliste
+      element: device-filter-clear
+      description: Reset the device filter via its X button
+
+    - action: wait
+      description: Wait for the full list to restore
+
+    - action: assert
+      page: maschinenpark-geraeteliste
       element: device-row
-      description: Open the first device's preview drawer
+      value: "$non_matching_device"
+      expect: visible
+      description: L5 - clearing the filter restores the previously-hidden device
+
+    # --- L5: location sidebar filter ---
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: location-filter
+      value: "$location_filter_term"
+      description: L5 - filter the location sidebar
+
+    - action: wait
+      description: Wait for the sidebar to re-render
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: location-list-sidebar
+      value: "$location_match"
+      expect: visible
+      description: L5 - the matching location remains in the sidebar
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: location-list-sidebar
+      value: "$location_nonmatch"
+      expect: absent
+      description: L5 - non-matching locations are removed from the sidebar
+
+    # (The location sidebar filter does not affect the right-hand device pane, so
+    #  it need not be reset before L2; a fresh navigation resets all filters.)
+
+    # --- L2: navigation - clicking a device opens the preview drawer ---
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: device-row
+      value: "$matching_device"
+      description: L2 - open the matching device's preview drawer
+
+    - action: wait
+      description: Wait for the drawer to open
 
     - action: assert
       page: geraet-vorschau
       element: open-full-view-button
       expect: visible
-      description: Preview drawer opened (Vollansicht öffnen present)
+      description: L2 - the preview drawer opened (Vollansicht öffnen present)
+
+    - action: assert
+      expect: { url_matches: "/geraete/maschinenpark/.*/geraet/.*" }
+      description: L2 - the URL gained a /geraet/{id} segment (deep-linkable drawer)
 
   verify:
-    - Machine-list page loads for location 10000 with header "Gehrig Group AG test"
-    - Filter, grouping dropdown, and all three device sections are present
-    - Clicking a device row opens the preview drawer
+    - L1 - page loads with the location header, device filter, IOT-Geräte grouping, and all three device sections
+    - L5 - the device filter keeps matching devices and removes non-matching ones; clearing it restores them
+    - L4 - an emptied section shows the "keine Maschinen gefunden" notice (counts re-bind to the filter)
+    - L5 - the Standort filter narrows the location sidebar
+    - L2 - clicking a device opens the preview drawer and appends /geraet/{id} to the URL

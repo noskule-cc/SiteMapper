@@ -40,12 +40,33 @@ page:
         value: close
       description: Close the device pane (X icon) and return to the location list only
 
+    - name: location-filter
+      type: input
+      locator:
+        strategy: text
+        value: Standort filtern
+      description: Filter the location sidebar by name/address (live; e.g. "Renens" narrows to the matching location)
+
     - name: device-filter
       type: input
       locator:
         strategy: text
         value: Geräte filtern
-      description: Filter the device list by name or serial number
+      description: Filter the device list by name or serial number (live; narrows all three sections and updates their count badges)
+
+    - name: device-filter-clear
+      type: button
+      locator:
+        strategy: aria-label
+        value: clear
+      description: X button that appears inside the device filter when it has text; clears the filter
+
+    - name: no-match-message
+      type: text
+      locator:
+        strategy: text
+        value: "Für den angegeben Filter wurden keine Maschinen gefunden."
+      description: Empty-state shown inside a section when the active device filter matches nothing in it
 
     - name: device-grouping-dropdown
       type: select
