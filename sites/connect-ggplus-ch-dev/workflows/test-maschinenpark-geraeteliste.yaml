@@ -1,6 +1,6 @@
 workflow:
   name: test-maschinenpark-geraeteliste
-  description: UI test for the machine-list (Geräteliste) page of a location. Covers structural presence (L1), navigation into the device preview (L2), filter re-binding (L4), and device + location filter behaviour (L5).
+  description: UI test for the machine-list (Geräteliste) page of a location. Covers structural presence (L1), every Gerätegruppierungen option (C), navigation into the device preview (L2), filter re-binding (L4), and device + location filter behaviour (L5).
   site: connect-ggplus-ch-dev
   mode: deterministic
 
@@ -72,6 +72,121 @@ workflow:
       element: bestehender-section
       expect: visible
       description: L1 - Bestehender Maschinenpark section present
+
+    # --- C: every Gerätegruppierungen option is selectable and regroups the list.
+    #     Invariant checks: the selection applies (dropdown value) and Favoriten is
+    #     present under every grouping (C7). Bestehender Maschinenpark is IOT-Geräte
+    #     only, so it must vanish under another grouping and return under IOT-Geräte. ---
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "Keine"
+      description: C - select grouping "Keine"
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "Keine" }
+      description: C - "Keine" applied
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: favoriten-section
+      expect: visible
+      description: C7 - Favoriten present under "Keine"
+
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "Status"
+      description: C - select grouping "Status" (-> ONLINE / OFFLINE sections)
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "Status" }
+      description: C - "Status" applied
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: favoriten-section
+      expect: visible
+      description: C7 - Favoriten present under "Status"
+
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "Hersteller"
+      description: C - select grouping "Hersteller" (-> manufacturer sections)
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "Hersteller" }
+      description: C - "Hersteller" applied
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: bestehender-section
+      expect: absent
+      description: C - the IOT-only Bestehender section is gone under a non-IOT grouping (proves real regrouping)
+
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "Modell"
+      description: C - select grouping "Modell"
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "Modell" }
+      description: C - "Modell" applied
+
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "Fahrzeugnummer"
+      description: C - select grouping "Fahrzeugnummer" (-> FAHRZEUG-NUMMER sections)
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "Fahrzeugnummer" }
+      description: C - "Fahrzeugnummer" applied
+
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "Fahrzeugtyp"
+      description: C - select grouping "Fahrzeugtyp"
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "Fahrzeugtyp" }
+      description: C - "Fahrzeugtyp" applied
+
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "Test Partner Gruppe"
+      description: C - select a PARTNER-GRUPPIERUNG (-> GRUPPE #1/#2 + Nicht zugewiesen)
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "Test Partner Gruppe" }
+      description: C - custom partner grouping applied
+
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "IOT-Geräte"
+      description: C - restore IOT-Geräte for the remaining steps
+    - action: wait
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: bestehender-section
+      expect: visible
+      description: C - Bestehender section returns under IOT-Geräte (regrouping is reversible)
 
     # --- L5 + L4: device filter narrows the list and sections re-bind ---
     - action: input
@@ -167,6 +282,7 @@ workflow:
 
   verify:
     - L1 - page loads with the location header, device filter, IOT-Geräte grouping, and all three device sections
+    - C - every Gerätegruppierungen option (Keine, IOT-Geräte, Status, Hersteller, Modell, Fahrzeugnummer, Fahrzeugtyp, Test Partner Gruppe) is selectable and applies; Favoriten persists across all; the IOT-only Bestehender section disappears under another grouping and returns under IOT-Geräte
     - L5 - the device filter keeps matching devices and removes non-matching ones; clearing it restores them
     - L4 - an emptied section shows the "keine Maschinen gefunden" notice (counts re-bind to the filter)
     - L5 - the Standort filter narrows the location sidebar

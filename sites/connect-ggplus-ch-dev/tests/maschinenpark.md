@@ -21,15 +21,25 @@ Coverage status: **[done]** in `workflows/test-maschinenpark-geraeteliste.yaml`,
 - B3 clear (X) restores **[done]**; B4 per-section no-match message **[done]**
 - B5 partial / case-insensitive match **[inferred]**
 
-## C. Gerätegruppierungen (regrouping scheme) — STICKY
-Options: **Keine**; STANDARD: **IOT-Geräte, Status, Hersteller, Modell,
-Fahrzeugnummer, Fahrzeugtyp**; PARTNER: custom sets (e.g. *Test Partner Gruppe*).
-- C1 IOT-Geräte → Favoriten / Neu / Bestehender **[confirmed]**
-- C2 Status / Hersteller / Modell / Fahrzeugnummer / Fahrzeugtyp → matching group headers **[inferred]**
-- C6 Partner-Gruppierung → GRUPPE #1/#2 + "Nicht zu einer Gruppe zugewiesen" **[confirmed]**
-- C7 Favoriten always present as a group **[confirmed]**
-- C8 device set is **constant** across groupings (sum of counts stable) **[inferred]**
-- C9 selection **persists** across reload/navigation **[confirmed — this is the sticky-state finding]**
+## C. Gerätegruppierungen (regrouping scheme) — STICKY — **[done: every option]**
+All options + the sections each produces (Favoriten is always first):
+
+| Option | Sections produced |
+|---|---|
+| Keine | Favoriten + flat ungrouped list |
+| IOT-Geräte | Favoriten / Neu / Bestehender |
+| Status | Favoriten / Online / Offline |
+| Hersteller | Favoriten / per-manufacturer (Diverse Kaffee, BEKA, Eloma …) |
+| Modell | Favoriten / per-model |
+| Fahrzeugnummer | Favoriten / FAHRZEUG-NUMMER {n} |
+| Fahrzeugtyp | Favoriten / per-vehicle-type |
+| Test Partner Gruppe (PARTNER) | Favoriten / GRUPPE #1/#2 + "Nicht zu einer Gruppe zugewiesen" |
+
+- C-each: every option selectable, dropdown value reflects it **[done]**
+- C7 Favoriten present under every grouping (incl. Keine) **[done/confirmed]**
+- C-regroup: Bestehender is IOT-Geräte-only → vanishes under another grouping, returns under IOT-Geräte **[done]**
+- C8 device set **constant** across groupings (sum of counts stable) **[inferred — not yet asserted]**
+- C9 selection **persists** across reload/navigation **[confirmed — the sticky-state finding; handled by setup]**
 - C10 grouping **+ filter combine** **[confirmed]**
 
 ## D. Sorting within the list
@@ -45,11 +55,36 @@ Fahrzeugnummer, Fahrzeugtyp**; PARTNER: custom sets (e.g. *Test Partner Gruppe*)
 - F2 **Settings gear** → Maschinenpark einstellungen (see G)
 - F3 **Close (X)** → collapses pane to location-list-only **[confirmed]**
 
-## G. Maschinenpark einstellungen (needs careful exploration)
-- G1 **Benutzer** — manage users/access **[mutating]**
-- G2 **Gerätegruppen** — create/edit/delete the custom groups powering C6's Partner-Gruppierungen
-- G3 **Config Spalten** — toggle which list columns show
-- G4 **Geräte Informationskacheln** — order & selection of device info tiles
+## G. Maschinenpark Einstellungen (gear icon) — **[explored live]**
+Modal "Maschinenpark Einstellungen" with two tabs.
+
+### G.1 Benutzer Einstellungen tab
+- **Informations Spalten** (= "Config Spalten") — drag-orderable checkbox list of
+  device-list columns: Installationsdatum, Artikelnummer, Hersteller, Typ, Modell,
+  Interner Name, Letzte Verbindung, Fahrzeugtyp, Fahrzeugnummer (all off by default).
+  - Tests: check a column → it appears in the Geräteliste; uncheck → disappears;
+    drag to reorder → list column order changes; persists across reload. **[mutating]**
+- **Geräte Information Kacheln** (= "Geräte Informationskacheln") — drag-orderable
+  checkbox list of tiles shown in the preview drawer: Störungsmeldungen *(nur Geräte
+  mit IoT Connectivity)*, Geräte-Benachrichtigungen, Service (all on).
+  - Tests: uncheck a tile → it disappears from the device preview drawer; reorder →
+    tile order in the drawer changes; the IoT-only tile only renders for connected
+    devices. **[mutating]**
+
+### G.2 Gerätegruppierungen tab
+- Configure custom grouping schemes ("Sortierungsgruppierung") that then appear under
+  PARTNER-GRUPPIERUNGEN in the Gerätegruppierungen dropdown (see C).
+- "Sortierungsgruppierung hinzufügen" → new scheme with **Gruppierung Typ** +
+  **Gruppensortierung Name**; within it "Gerätegruppierung hinzufügen" → add groups;
+  a device can belong to multiple groups. Trash icon deletes a row.
+  - Tests: create a scheme → it appears in the dropdown's PARTNER section; add a group +
+    assign a device → that GRUPPE shows in the list when the scheme is selected; delete
+    removes it. **[mutating — needs teardown]**
+
+> NB: the settings modal opens over the device pane and intercepts clicks to the
+> grouping dropdown/header while open — close it (Schliessen / X) before interacting
+> with the list. An incomplete "Sortierungsgruppierung" row can be removed via its
+> trash icon.
 
 ## H. Navigation / deep-linking
 - H1 breadcrumb; H2 list → drawer → Vollansicht → detail **[partly done]**;
