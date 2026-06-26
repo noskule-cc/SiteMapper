@@ -1,0 +1,67 @@
+page:
+  name: Maschinenpark (Standort-Liste)
+  url_pattern: /geraete/maschinenpark
+  purpose: First level of the machine park - lists customer locations (Standorte). Clicking a location drills into its machine list.
+  screenshot: ""
+
+  elements:
+    - name: location-filter
+      type: input
+      locator:
+        strategy: text
+        value: Standort filtern
+      description: Filter the location list by name
+
+    - name: sort-dropdown
+      type: select
+      locator:
+        strategy: text
+        value: Sortierung
+      description: Sort order for the location list (default Name)
+
+    - name: location-list
+      type: container
+      locator:
+        strategy: role
+        value: list
+      description: List of location cards, each showing a numeric location ID, name, and address
+
+    - name: location-row
+      type: link
+      locator:
+        strategy: text
+        value: Gehrig Group
+      description: A single location card; click the row (chevron > on the right) to drill into that location's machine list
+      children:
+        - name: location-id
+          type: text
+          locator:
+            strategy: text
+            value: "10090"
+          description: Numeric location/Standort ID (e.g. 10090, 3002153, 1619051)
+        - name: location-name
+          type: text
+          locator:
+            strategy: text
+            value: Gehrig Group AG test
+          description: Location name
+        - name: location-address
+          type: text
+          locator:
+            strategy: text
+            value: Bäulerwisenstrasse 1, 8152 Glattbrugg
+          description: Location postal address
+
+    - name: breadcrumb
+      type: container
+      locator:
+        strategy: aria-label
+        value: breadcrumb
+      description: Home > ... > current location; used to navigate back up the location hierarchy
+
+  gotchas:
+    - This is the FIRST of two levels - it shows locations (Standorte), not machines. Click a location row (chevron >) to reach the machine list.
+    - The machine-list view lives at /geraete/maschinenpark/{partnerId}/{locationId} and should be mapped as a separate page.
+    - To reach this page from the sidebar - open the menu, expand "Geräte", click "Maschinenpark".
+    - Location IDs are not sequential (e.g. 10090, 3002153, 1619051) - they are partner/location identifiers, not row numbers.
+    - Dev environment data is test data (e.g. "Gehrig Group AG test").

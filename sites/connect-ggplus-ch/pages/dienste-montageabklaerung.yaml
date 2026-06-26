@@ -1,0 +1,32 @@
+page:
+  name: Dienste - Montageabklärung
+  url_pattern: /dienste/montageabklaerung
+  purpose: Manage installation clarification forms for new device setups
+
+  elements:
+    - name: search-field
+      type: input
+      locator:
+        strategy: text
+        value: Suchen
+      description: Search installation clarifications
+
+    - name: neue-montageabklaerung-button
+      type: button
+      locator:
+        strategy: text
+        value: "Neue Montageabklärung"
+      description: Red button to create a new installation clarification
+
+    - name: entry-cards
+      type: container
+      locator:
+        strategy: css
+        value: ".entry-card"
+      description: Cards showing Makl Nr, Kundennummer, dates, Erfasser, Kontaktperson, Status, Reinigungsmittellieferant
+
+  gotchas:
+    - Completed entries show actions Kopieren, PDF herunterladen, Ansehen, Löschen
+    - Open entries show actions Abschliessen, Bearbeiten, Ansehen, Löschen
+    - Status can be "abgeschlossen" (completed) or "offen" (open)
+    - Cards are scrollable within the page

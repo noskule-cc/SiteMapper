@@ -1,0 +1,80 @@
+page:
+  name: Adminbereich - Benutzerverwaltung
+  url_pattern: /adminbereich/benutzerverwaltung
+  purpose: Manage users, partners, and new registration requests
+
+  elements:
+    # Action buttons
+    - name: benutzer-hinzufuegen-button
+      type: button
+      locator:
+        strategy: text
+        value: "Benutzer hinzufügen"
+      description: Red button to add a new user
+
+    - name: partner-hinzufuegen-button
+      type: button
+      locator:
+        strategy: text
+        value: "Partner hinzufügen"
+      description: Red button to add a new partner
+
+    # Neue Registrierungen section
+    - name: neue-registrierungen-table
+      type: table
+      locator:
+        strategy: text
+        value: Neue Registrierungen
+      description: Table of pending registration requests with Datum, Vertragspartner, Name, Registrationsquelle, Möchte Zugriff auf columns
+
+    - name: registrierung-edit-button
+      type: button
+      locator:
+        strategy: css
+        value: ".edit-icon"
+      description: Pencil icon to edit/approve a registration request
+
+    # Vertragspartner section
+    - name: vertragspartner-search
+      type: input
+      locator:
+        strategy: text
+        value: Suche
+      description: Search field for partner list
+
+    - name: vertragspartner-table
+      type: table
+      locator:
+        strategy: text
+        value: Vertragspartner
+      description: Table with Vertragsnummer, Vertragspartner, Aktiv columns plus edit/delete actions
+
+    - name: vertragspartner-aktiv-checkbox
+      type: checkbox
+      locator:
+        strategy: css
+        value: "input[type='checkbox']"
+      description: Checkbox to toggle partner active/inactive status
+
+    # Benutzer section
+    - name: benutzer-search
+      type: input
+      locator:
+        strategy: text
+        value: Suche
+      description: Search field for user list (second Suche field on the page)
+
+    - name: benutzer-table
+      type: table
+      locator:
+        strategy: text
+        value: Benutzer
+      description: Table with Benutzer, Vertragsnummer, Vertragspartner, Rolle, Gesperrt columns plus edit/delete actions
+
+  gotchas:
+    - Page has THREE separate sections stacked vertically (Neue Registrierungen, Vertragspartner, Benutzer)
+    - There are TWO "Suche" search fields on the same page — one for partners, one for users
+    - Both Vertragspartner and Benutzer tables have pagination (4487+ partners, many users)
+    - Each row has edit (pencil) and delete (trash) icons on the right
+    - Vertragspartner rows have an "Aktiv" checkbox
+    - Benutzer rows have a "Gesperrt" (locked) checkbox

@@ -1,0 +1,38 @@
+page:
+  name: Adminbereich - Benachrichtigungsverwaltung
+  url_pattern: /adminbereich/benachrichtigungsverwaltung
+  purpose: Manage notification groups and their settings for the system
+
+  elements:
+    - name: gruppe-erstellen-button
+      type: button
+      locator:
+        strategy: text
+        value: "Gruppe erstellen"
+      description: Red button to create a new notification group
+
+    - name: benachrichtigungsgruppen-list
+      type: container
+      locator:
+        strategy: text
+        value: Benachrichtigungsgruppen
+      description: List of notification groups as grey rows with active toggle and expand chevron
+
+    - name: group-active-toggle
+      type: checkbox
+      locator:
+        strategy: text
+        value: Aktiv
+      description: Toggle to enable/disable a notification group
+
+    - name: alles-speichern-button
+      type: button
+      locator:
+        strategy: text
+        value: Alles Speichern
+      description: Red button to save all changes to notification groups
+
+  gotchas:
+    - Each notification group shows as a grey bar with name, active toggle, and expand chevron
+    - Expanding a group likely shows configuration details for that group
+    - '"Alles Speichern" saves changes across all groups at once'

@@ -1,0 +1,112 @@
+page:
+  name: Maschinenpark - Geräteliste (Standort-Detail)
+  url_pattern: /geraete/maschinenpark/{partnerId}/{locationId}
+  purpose: Second level of the machine park - shows all machines/devices for a selected location, grouped into Favoriten, Neu (not yet in IoT Hub), and Bestehender Maschinenpark. Click a device row to open its detail page.
+  screenshot: ""
+
+  elements:
+    - name: location-list-sidebar
+      type: container
+      locator:
+        strategy: text
+        value: Standort filtern
+      description: Left column keeps the location list (filter + sort + location cards) so you can switch locations without going back
+
+    - name: location-header
+      type: container
+      locator:
+        strategy: text
+        value: Gehrig Group AG test
+      description: Right-pane header showing selected location ID, name, and address
+
+    - name: add-device-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: "+"
+      description: Add a new device to this location (+ icon, top-right of the device pane)
+
+    - name: location-settings-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: settings
+      description: Location settings (gear icon, top-right of the device pane)
+
+    - name: close-pane-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: close
+      description: Close the device pane (X icon) and return to the location list only
+
+    - name: device-filter
+      type: input
+      locator:
+        strategy: text
+        value: Geräte filtern
+      description: Filter the device list by name or serial number
+
+    - name: device-grouping-dropdown
+      type: select
+      locator:
+        strategy: text
+        value: Gerätegruppierungen
+      description: Group/filter devices by type (default "IOT-Geräte")
+
+    - name: favoriten-section
+      type: container
+      locator:
+        strategy: text
+        value: FAVORITEN
+      description: Devices starred as favorites; section header shows device count (e.g. "2 Geräte")
+
+    - name: neu-section
+      type: container
+      locator:
+        strategy: text
+        value: NEU (NOCH NICHT IM IOT-HUB)
+      description: Newly added devices not yet connected to the IoT Hub; header shows count (e.g. "6 Geräte")
+
+    - name: bestehender-section
+      type: container
+      locator:
+        strategy: text
+        value: BESTEHENDER MASCHINENPARK
+      description: Existing/connected devices; header shows count (e.g. "121 Geräte"). Long list - scroll to browse.
+
+    - name: device-row
+      type: link
+      locator:
+        strategy: role
+        value: row
+      description: A single device row with Status icon, favorite star, Gerät (name), and Seriennummer. Click the chevron (>) to open the device detail page.
+      children:
+        - name: favorite-star
+          type: button
+          locator:
+            strategy: aria-label
+            value: favorite
+          description: Toggle the device as a favorite (moves it into the Favoriten section)
+        - name: status-icon
+          type: text
+          locator:
+            strategy: css
+            value: .status-icon
+          description: Connection/health status icon (e.g. globe = offline / not yet connected)
+
+    - name: column-headers
+      type: container
+      locator:
+        strategy: text
+        value: Seriennummer
+      description: Sortable column headers - Status, Gerät, Seriennummer (click to sort each section)
+
+  gotchas:
+    - This is the SECOND level - reached by clicking a location row on /geraete/maschinenpark. URL carries partnerId/locationId (e.g. /10000/10000).
+    - Note the displayed location ID (10090) differs from the URL IDs (10000/10000) - the URL uses internal partner/location IDs, not the badge number shown on the card.
+    - Devices are split into three sections - Favoriten, Neu (noch nicht im IOT-Hub), and Bestehender Maschinenpark - each with its own count badge and sortable columns.
+    - The Bestehender Maschinenpark section can be very long (121 devices in test data) - use "Geräte filtern" or scroll.
+    - Each device row's chevron (>) opens the device detail page (map separately as geraet-detail).
+    - The left location-list sidebar persists; clicking another location swaps the right pane without a full navigation.
+    - The X (close) icon collapses the device pane back to the location-list-only view.

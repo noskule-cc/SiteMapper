@@ -1,0 +1,140 @@
+page:
+  name: Gerät - Detail (Vollansicht)
+  url_pattern: /geraete/geraet/{deviceId}
+  purpose: Full device detail page for a single machine. Shows identity, internal name/note, fault reporting, technical data, notifications, maintenance/service history, and document/media attachments.
+  screenshot: ""
+
+  elements:
+    - name: breadcrumb-device-dropdown
+      type: select
+      locator:
+        strategy: text
+        value: Mastrena
+      description: Breadcrumb ending in the device name with a dropdown (v) to switch between devices at the same location
+
+    - name: location-reference
+      type: text
+      locator:
+        strategy: text
+        value: Gehrig Group AG test
+      description: Location ID and name this device belongs to (e.g. 10000 Gehrig Group AG test)
+
+    - name: device-title
+      type: text
+      locator:
+        strategy: role
+        value: heading
+      description: Device model name as the page heading (e.g. "Mastrena")
+
+    - name: internal-name
+      type: text
+      locator:
+        strategy: text
+        value: Interner Name
+      description: Editable internal name; pencil icon opens an inline editor. Shows "Kein interner Name vorhanden." when unset.
+
+    - name: internal-note
+      type: text
+      locator:
+        strategy: text
+        value: Interne Notiz
+      description: Editable internal note. Shows "Keine interne Notiz vorhanden." when unset.
+
+    - name: report-fault-button
+      type: button
+      locator:
+        strategy: text
+        value: Störung melden
+      description: Red button - starts the fault/Störung report flow for this device
+
+    - name: device-image
+      type: container
+      locator:
+        strategy: role
+        value: img
+      description: Device illustration (top-right) with a kebab (⋮) menu for device actions
+
+    - name: device-actions-menu
+      type: button
+      locator:
+        strategy: aria-label
+        value: more
+      description: Kebab (⋮) menu next to the device image - additional device actions
+
+    - name: technische-daten-section
+      type: container
+      locator:
+        strategy: text
+        value: Technische Daten
+      description: Collapsible section (chevron) with the device's technical specifications
+
+    - name: details-tab
+      type: link
+      locator:
+        strategy: text
+        value: Details
+      description: Tab showing Benachrichtigungen, Wartung und Service, Dokumente, and Medien (default active tab)
+
+    - name: konnektivitaet-tab
+      type: link
+      locator:
+        strategy: text
+        value: Konnektivität
+      description: Tab showing the device's connectivity info. For non-IoT-connected devices it shows a downloadable QR-code service label instead of live telemetry.
+
+    - name: qr-code-card
+      type: container
+      locator:
+        strategy: text
+        value: QR Code
+      description: (Konnektivität tab) Gehrig service label with Kunden-Nr., Maschinen-Typ, Maschinen-Nr., Inbetriebnahme, Kundendienst (0800 22 77 77) and Reinigungsmittel (0800 44 77 77) hotlines, plus the QR image
+
+    - name: qr-download-button
+      type: button
+      locator:
+        strategy: text
+        value: Herunterladen
+      description: (Konnektivität tab) Downloads the QR-code service label for the device
+
+    - name: notifications-panel
+      type: container
+      locator:
+        strategy: text
+        value: Benachrichtigungen
+      description: Device notifications; shows "zurzeit gibt es keine Benachrichtigungen" when empty
+
+    - name: maintenance-panel
+      type: container
+      locator:
+        strategy: text
+        value: Wartung und Service
+      description: Maintenance/service summary - Nächste Wartung, Letzte Wartung, GEPLANT, ABGESCHLOSSEN, ABGESCHLOSSEN VOR INSTALLATIONSDATUM
+
+    - name: all-services-link
+      type: link
+      locator:
+        strategy: text
+        value: alle Services anzeigen
+      description: Link to the full list of maintenance/service orders for this device
+
+    - name: add-document-button
+      type: button
+      locator:
+        strategy: text
+        value: Dokument hinzufügen
+      description: Add a document attachment to the device (dashed "+" tile under Dokumente)
+
+    - name: add-media-button
+      type: button
+      locator:
+        strategy: text
+        value: Medien hinzufügen
+      description: Add a media/image attachment to the device (dashed "+" tile under Medien)
+
+  gotchas:
+    - This page is reached via "Vollansicht öffnen" from the preview drawer, OR by deep-linking. The URL is /geraete/geraet/{deviceId} - the partner/location segments are DROPPED (unlike the preview URL /geraete/maschinenpark/{partnerId}/{locationId}/geraet/{deviceId}).
+    - The header title in the top bar changes to "GERÄT" on this page.
+    - The "Störung melden" button starts the fault-report flow - a good candidate for a mapped workflow.
+    - Maintenance/service data overlaps with the preview drawer (same Wartung und Service block) but the full page adds Technische Daten, Konnektivität tab, Dokumente, and Medien.
+    - Internal name and internal note are inline-editable via the pencil icon.
+    - The breadcrumb device-name dropdown lets you jump to sibling devices without going back to the machine list.

@@ -1,0 +1,17 @@
+site:
+  name: GG+connect IoT Portal (Dev)
+  base_url: https://dev-connect.ggplus.ch
+  description: Dev environment of the GG+connect IoT portal for managing commercial kitchen equipment (dishwashers), locations, users, and service requests
+  auth_notes: SSO login; user Benjamin Behringer has admin access. Session already authenticated in browser.
+  mapped_at: "2026-06-26"
+  settings:
+    policy:
+      environment: dev
+      safe_to_submit_forms: true   # dev/test environment - forms may be filled and submitted
+  pages:
+    - maschinenpark.yaml
+    - maschinenpark-geraeteliste.yaml
+    - geraet-vorschau.yaml
+    - geraet-detail.yaml
+    - stoerung-melden.yaml
+  workflows: []

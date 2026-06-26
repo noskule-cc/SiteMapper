@@ -1,0 +1,14 @@
+# Global SiteMapper configuration.
+# Baseline settings inherited by every site and page. More-specific scopes
+# (sites/<site>/site.yaml, then sites/<site>/pages/<page>.yaml) override these
+# per key. See schema/settings.yaml for the full definition.
+
+settings:
+  contact:
+    name: Benjamin Behringer
+    salutation: Herr
+    email: benjamin.behringer@gehriggroup.ch
+    phone: "+41764497275"
+  policy:
+    environment: production     # default-safe; dev/staging sites opt in below their own site.yaml
+    safe_to_submit_forms: false # never submit forms without asking unless a scope opts in

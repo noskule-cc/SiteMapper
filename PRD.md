@@ -140,6 +140,55 @@ Steps can capture data using the `capture` field:
 
 The workflow runner holds captured variables in memory and substitutes them into step values. For select-type parameters, options are presented as dropdowns; for captured data, the LLM formats it appropriately for the target field.
 
+## Settings & Configuration
+
+Reusable configuration — contact/identity data, agent behavior flags, and form prefills — is stored in a layered `settings:` block. See `schema/settings.yaml` for the full definition.
+
+### Scopes (most specific wins)
+
+The same `settings:` block can appear at three levels, deep-merged per key:
+
+```
+global  (config.yaml at repo root)
+  └─ site   (sites/<site>/site.yaml)
+       └─ page  (sites/<site>/pages/<page>.yaml)
+```
+
+A page that overrides `settings.contact.email` still inherits `contact.name` and `contact.phone` from the site or global scope.
+
+### Sections
+
+- **`contact`** — form-fill / identity values (`name`, `salutation`, `email`, `phone`). Usually defined globally; any field may be overridden per-site or per-page.
+- **`policy`** — agent behavior flags:
+  - `environment`: `dev | staging | production`
+  - `safe_to_submit_forms`: when `true`, the agent may fill and submit forms on that scope without asking (e.g. dev/test sites); when `false`/absent it asks first. This is the machine-readable authorization that keeps production submissions gated.
+- **`form_defaults`** — per-page field prefills, keyed by the element `name` from the page map (e.g. `geraetestatus-select: "Ausser Betrieb"`). Typically page-level.
+
+### Example
+
+```yaml
+# config.yaml (global)
+settings:
+  contact:
+    name: Benjamin Behringer
+    salutation: Herr
+    email: benjamin.behringer@gehriggroup.ch
+    phone: "+41764497275"
+  policy:
+    safe_to_submit_forms: false   # default-safe; dev sites opt in
+
+# sites/connect-ggplus-ch-dev/site.yaml
+settings:
+  policy:
+    environment: dev
+    safe_to_submit_forms: true
+
+# sites/connect-ggplus-ch-dev/pages/stoerung-melden.yaml
+settings:
+  form_defaults:
+    geraetestatus-select: "Ausser Betrieb"
+```
+
 ## Architecture
 
 Claude Code is the orchestration layer. It has both:

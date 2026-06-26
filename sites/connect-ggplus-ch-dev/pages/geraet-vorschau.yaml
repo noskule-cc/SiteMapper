@@ -1,0 +1,84 @@
+page:
+  name: Gerät - Vorschau (Preview-Drawer)
+  url_pattern: /geraete/maschinenpark/{partnerId}/{locationId}/geraet/{deviceId}
+  purpose: Right-side preview drawer that slides in when a device row is clicked. Shows a summary of the device (info, notifications, maintenance/service) over the still-visible machine list, without a full page navigation. "Vollansicht öffnen" opens the full device detail page.
+  screenshot: ""
+
+  elements:
+    - name: device-title
+      type: text
+      locator:
+        strategy: text
+        value: Diverse Kaffee Mastrena
+      description: Device name at the top of the drawer; below it "Interner Name" (internal name, may be "--")
+
+    - name: favorite-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: favorite
+      description: Star icon (top-right of drawer) to toggle the device as a favorite
+
+    - name: expand-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: expand
+      description: Expand/fullscreen icon (top-right) - enlarges the drawer
+
+    - name: close-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: close
+      description: X icon (top-right) - closes the drawer and returns to the machine list (drops /geraet/{id} from the URL)
+
+    - name: device-info-section
+      type: container
+      locator:
+        strategy: text
+        value: GERÄTEINFORMATIONEN
+      description: Grid of device attributes - Hersteller, Modell, Typ, Seriennummer, Artikelnummer, Konnektivität, Installationsdatum, Chemie-Abo
+
+    - name: notifications-section
+      type: container
+      locator:
+        strategy: text
+        value: BENACHRICHTIGUNGEN
+      description: Device notifications; shows "zurzeit gibt es keine Benachrichtigungen" when empty
+
+    - name: maintenance-section
+      type: container
+      locator:
+        strategy: text
+        value: WARTUNG UND SERVICE
+      description: Maintenance summary - Nächste Wartung (next) and Letzte Wartung (last)
+
+    - name: planned-section
+      type: container
+      locator:
+        strategy: text
+        value: GEPLANT
+      description: Planned maintenance/service orders; shows "keine geplanten Wartungs- und Serviceaufträge" when empty
+
+    - name: completed-section
+      type: container
+      locator:
+        strategy: text
+        value: ABGESCHLOSSEN
+      description: Completed maintenance/service orders, each with an order number and date (e.g. ML123832 - 21.09.2012)
+
+    - name: open-full-view-button
+      type: button
+      locator:
+        strategy: text
+        value: Vollansicht öffnen
+      description: Red button at the bottom of the drawer - navigates to the full device detail page (geraet-detail)
+
+  gotchas:
+    - Clicking a device row does NOT navigate to a new page - it opens a right-side preview drawer over the still-visible machine list and location sidebar.
+    - The URL DOES change (appends /geraet/{deviceId}), so the drawer is deep-linkable, but the underlying machine-list page stays mounted behind it.
+    - deviceId is a UUID (e.g. 7f8a8004-615f-1025-a864-0c14e05f0000), not the serial number shown in the list.
+    - Use "Vollansicht öffnen" to reach the full device detail page; the X icon closes the drawer back to the machine list.
+    - The expand (⤢) icon widens the drawer but stays an overlay - it is not the same as the full detail page.
+    - Field values may be empty/placeholder in dev test data (e.g. Installationsdatum "--", Konnektivität "Nein").

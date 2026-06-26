@@ -1,0 +1,178 @@
+page:
+  name: Störung melden (Fault Report Flow)
+  url_pattern: /kontakt/stoerung-melden;locationId={locationId};deviceId={deviceId};errorCode={errorCode}
+  purpose: Report a fault for a machine. Entry page offers two branches - book a service appointment, or fill out the fault-report form (a 3-step wizard). Device/location context is carried in matrix-style URL params.
+  screenshot: ""
+
+  settings:
+    form_defaults:
+      stoerung-select: "etwas anderes..."
+      stoerung-freetext: "Testmeldung via SiteMapper - bitte ignorieren (Dev-Test)"
+      geraetestatus-select: "Ausser Betrieb"
+      auftragsbestaetigung-select: "E-Mail"
+
+  elements:
+    # --- Entry / choice page ---
+    - name: termin-buchen-button
+      type: button
+      locator:
+        strategy: text
+        value: Termin vereinbaren
+      description: "Branch 1 (Termin Buchen) - book an appointment directly with a service technician"
+
+    - name: formular-kontakt-button
+      type: button
+      locator:
+        strategy: text
+        value: Kontakt
+      description: "Branch 2 (Formular Störung melden) - opens the 3-step fault-report form/wizard to contact Gehrig Group Support"
+
+    # --- Wizard step 1: Maschine wählen ---
+    - name: wizard-stepper
+      type: container
+      locator:
+        strategy: text
+        value: Maschine wählen
+      description: 3-step progress indicator - 1 Maschine wählen, 2 Störung und Kontaktdaten, 3 Bestätigung
+
+    - name: standort-maschine-select
+      type: select
+      locator:
+        strategy: text
+        value: Standort Maschine
+      description: "(Step 1, required) Location of the machine. Pre-filled when entered from a device (e.g. Gehrig Group AG test - Bäulerwisenstrasse 1 8152 Glattbrugg)"
+
+    - name: maschine-select
+      type: select
+      locator:
+        strategy: text
+        value: Maschine
+      description: "(Step 1, required) The machine. Pre-filled when entered from a device (e.g. Diverse Kaffee - Diverse Kaffee Mastrena (40-046325))"
+
+    - name: weiter-button
+      type: button
+      locator:
+        strategy: text
+        value: Weiter
+      description: "(Step 1) Advance to step 2"
+
+    - name: abbrechen-button
+      type: button
+      locator:
+        strategy: text
+        value: Abbrechen
+      description: "(Step 1) Cancel the fault report"
+
+    # --- Wizard step 2: Störung und Kontaktdaten ---
+    - name: maschine-accordion
+      type: container
+      locator:
+        strategy: text
+        value: Maschine
+      description: "(Step 2) Collapsible summary of the selected machine (collapsed by default)"
+
+    - name: stoerung-select
+      type: select
+      locator:
+        strategy: text
+        value: Störung
+      description: "(Step 2, required) Fault type. Options are device-dependent; for this coffee machine the only option is 'etwas anderes...' (selecting it reveals a free-text field)"
+
+    - name: stoerung-freetext
+      type: input
+      locator:
+        strategy: text
+        value: Störung
+      description: "(Step 2, required) Free-text fault description. Appears below the Störung dropdown ONLY when 'etwas anderes...' is selected. Must be filled or Senden stays disabled."
+
+    - name: geraetestatus-select
+      type: select
+      locator:
+        strategy: text
+        value: Gerätestatus
+      description: "(Step 2, required) Device status. Options: Unbekannt, In Betrieb, Ausser Betrieb"
+      states: [Unbekannt, "In Betrieb", "Ausser Betrieb"]
+
+    - name: geschlecht-select
+      type: select
+      locator:
+        strategy: text
+        value: Geschlecht
+      description: "(Step 2, required) On-site contact salutation. Pre-filled (e.g. Herr)"
+
+    - name: nachname-input
+      type: input
+      locator:
+        strategy: text
+        value: Nachname
+      description: "(Step 2, required) On-site contact surname. Pre-filled from profile"
+
+    - name: vorname-input
+      type: input
+      locator:
+        strategy: text
+        value: Vorname
+      description: "(Step 2, required) On-site contact first name. Pre-filled from profile"
+
+    - name: auftragsbestaetigung-select
+      type: select
+      locator:
+        strategy: text
+        value: Auftragsbestätigung
+      description: "(Step 2, required) How to confirm the order. Pre-filled E-Mail. Options: keine Benachrichtigungen, SMS, E-Mail"
+      states: ["keine Benachrichtigungen", "SMS", "E-Mail"]
+
+    - name: telefon-input
+      type: input
+      locator:
+        strategy: text
+        value: Telefon
+      description: "(Step 2, required) On-site contact phone. Pre-filled from profile"
+
+    - name: email-input
+      type: input
+      locator:
+        strategy: text
+        value: E-Mail
+      description: "(Step 2, required) Contact e-mail. Pre-filled from profile (benjamin.behringer@gehriggroup.ch on dev)"
+
+    - name: mitteilung-input
+      type: input
+      locator:
+        strategy: text
+        value: Mitteilung
+      description: "(Step 2, optional) Free-text additional message under the 'Informationen' heading"
+
+    - name: senden-button
+      type: button
+      locator:
+        strategy: text
+        value: Senden
+      description: "(Step 2) Submit the fault report. DISABLED until required fields (Störung free-text, Gerätestatus, contact fields) are set."
+
+    # --- Wizard step 3: Bestätigung ---
+    - name: confirmation-message
+      type: text
+      locator:
+        strategy: text
+        value: Die Störung wurde erfolgreich gemeldet!
+      description: "(Step 3) Success confirmation, followed by a summary of Maschine, Störung, and Kontakt vor Ort"
+
+    - name: schliessen-button
+      type: button
+      locator:
+        strategy: text
+        value: Schliessen
+      description: "(Step 3) Close the confirmation and exit the flow"
+
+  gotchas:
+    - "Reached via the 'Störung melden' button on the device detail page, or the 'Störung melden' dashboard tile."
+    - "URL uses matrix-style params (semicolon-separated): locationId, deviceId, errorCode. Entering from a device pre-fills locationId/deviceId; errorCode is empty unless launched from a specific alarm."
+    - "The entry page has TWO branches: 'Termin vereinbaren' (book a technician appointment) and 'Kontakt' (the fault-report form). Only the form branch was fully mapped."
+    - "The form is a 3-step wizard (Maschine wählen -> Störung und Kontaktdaten -> Bestätigung) rendered at the SAME URL - steps are in-page state, not separate routes."
+    - "When launched from a device, step 1 (Standort + Maschine) is pre-filled, so you can click Weiter straight through."
+    - "Contact fields in step 2 are pre-filled from the logged-in user's profile."
+    - "Störung options depend on the machine type - a coffee machine only offered 'etwas anderes...'; other device types may list specific faults. Selecting 'etwas anderes...' reveals a required free-text description field."
+    - "The free-text Störung field can be unreliable to fill via click+type; setting it via form_input (by element ref) works reliably."
+    - "On submit, the flow advances to step 3 (Bestätigung) showing 'Die Störung wurde erfolgreich gemeldet!' plus a summary, with a 'Schliessen' button."
+    - "Submitting on the DEV site (dev-connect.ggplus.ch) is fine for testing - use benjamin.behringer@gehriggroup.ch as contact. On PRODUCTION (connect.ggplus.ch) do NOT submit: it files a real support ticket to Gehrig Group."
