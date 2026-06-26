@@ -1,0 +1,116 @@
+page:
+  name: Maschinenpark Einstellungen (Modal)
+  url_pattern: /geraete/maschinenpark/{partnerId}/{locationId}
+  purpose: Settings modal opened by the gear on the machine-list page. Two tabs - Benutzer Einstellungen (which list columns + preview-drawer tiles show, with order) and Gerätegruppierungen (create custom grouping schemes that appear in the Gerätegruppierungen dropdown). Changes persist on Schliessen.
+  screenshot: ""
+
+  elements:
+    - name: settings-modal
+      type: container
+      locator:
+        strategy: text
+        value: Maschinenpark Einstellungen
+      description: The modal dialog opened by the gear (location-settings-button) on maschinenpark-geraeteliste
+
+    - name: tab-benutzer-einstellungen
+      type: link
+      locator:
+        strategy: text
+        value: Benutzer Einstellungen
+      description: Tab - Informations Spalten + Geräte Information Kacheln (default tab)
+
+    - name: tab-geraetegruppierungen
+      type: link
+      locator:
+        strategy: text
+        value: Gerätegruppierungen
+      description: Tab - configure custom grouping schemes (Sortierungsgruppierungen)
+
+    # --- Benutzer Einstellungen tab ---
+    - name: informations-spalten-list
+      type: container
+      locator:
+        strategy: text
+        value: Informations Spalten
+      description: "Drag-orderable checkbox list of device-list columns: Installationsdatum, Artikelnummer, Hersteller, Typ, Modell, Interner Name, Letzte Verbindung, Fahrzeugtyp, Fahrzeugnummer (all off by default). Checking one adds that column to the Geräteliste; drag handle reorders."
+
+    - name: informations-spalten-checkbox
+      type: checkbox
+      locator:
+        strategy: text
+        value: Hersteller
+      description: A single Informations-Spalten column toggle (scope by the column name via the step value, e.g. "Hersteller", "Modell")
+
+    - name: geraete-info-kacheln-list
+      type: container
+      locator:
+        strategy: text
+        value: Geräte Information Kacheln
+      description: "Drag-orderable checkbox list of tiles shown in the preview drawer: Störungsmeldungen (nur Geräte mit IoT Connectivity), Geräte-Benachrichtigungen, Service (all on). Unchecking removes the tile from the device preview; drag reorders."
+
+    - name: geraete-info-kacheln-checkbox
+      type: checkbox
+      locator:
+        strategy: text
+        value: Service
+      description: A single Geräte-Information-Kacheln tile toggle (scope by tile name via the step value)
+
+    # --- Gerätegruppierungen tab ---
+    - name: add-sortierungsgruppierung-button
+      type: button
+      locator:
+        strategy: text
+        value: Sortierungsgruppierung hinzufügen
+      description: Add a new custom grouping scheme row (Gruppierung Typ + Gruppensortierung Name)
+
+    - name: gruppierung-typ-select
+      type: select
+      locator:
+        strategy: text
+        value: Gruppierung Typ
+      description: "Scheme scope. Options: Partner-Gruppierung (company-level, appears under PARTNER-GRUPPIERUNGEN in the dropdown) or Benutzer-Gruppierung (user-level, appears under BENUTZER-GRUPPIERUNGEN)"
+      states: ["Partner-Gruppierung", "Benutzer-Gruppierung"]
+
+    - name: gruppensortierung-name-input
+      type: input
+      locator:
+        strategy: text
+        value: Gruppensortierung Name
+      description: The scheme's display name - this is the label that appears as an option in the Gerätegruppierungen dropdown
+
+    - name: add-geraetegruppierung-button
+      type: button
+      locator:
+        strategy: text
+        value: Gerätegruppierung hinzufügen
+      description: Within a scheme, add a named device group; devices can belong to multiple groups
+
+    - name: delete-row-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: delete
+      description: Trash icon that deletes a grouping-scheme row (scope by the row's name via the step value)
+
+    # --- Footer ---
+    - name: schliessen-button
+      type: button
+      locator:
+        strategy: text
+        value: Schliessen
+      description: Close the modal and PERSIST all changes (column toggles, created/deleted schemes)
+
+    - name: close-x-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: close
+      description: X icon (top-right) - closes the modal
+
+  gotchas:
+    - The modal is opened by the gear (location-settings-button) on the maschinenpark-geraeteliste page; it overlays the device pane and INTERCEPTS clicks to the grouping dropdown/header while open - close it before interacting with the list.
+    - Changes persist on Schliessen (there is no separate Save button).
+    - "Informations Spalten toggles map 1:1 to device-list columns: checking 'Hersteller' adds a Hersteller column; unchecking removes it. Default = all off (columns Status, Gerät, Seriennummer only)."
+    - "Creating a Sortierungsgruppierung (Gruppierung Typ + Gruppensortierung Name) makes it appear in the Gerätegruppierungen dropdown - Benutzer-Gruppierung under BENUTZER-GRUPPIERUNGEN, Partner-Gruppierung under PARTNER-GRUPPIERUNGEN. These are mutable user/company data."
+    - Deleting a scheme via its trash icon removes it from the dropdown after Schliessen.
+    - "Pressing Escape while the modal/pane is focused can COLLAPSE the device pane back to the location-list view (and a stray gear click in that state navigates to the dashboard) - prefer clicking Schliessen/X to close."

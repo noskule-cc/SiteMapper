@@ -56,15 +56,19 @@ All options + the sections each produces (Favoriten is always first):
 - F2 **Settings gear** → Maschinenpark einstellungen (see G)
 - F3 **Close (X)** → collapses pane to location-list-only **[confirmed]**
 
-## G. Maschinenpark Einstellungen (gear icon) — **[explored live]**
-Modal "Maschinenpark Einstellungen" with two tabs.
+## G. Maschinenpark Einstellungen (gear icon) — **[explored live; 2 tests built]**
+Modal "Maschinenpark Einstellungen" with two tabs. Mapped in
+`pages/maschinenpark-einstellungen.yaml`. Tests:
+`workflows/test-maschinenpark-spalten.yaml` (column toggle) and
+`workflows/test-maschinenpark-gruppierung-config.yaml` (create/teardown grouping).
 
 ### G.1 Benutzer Einstellungen tab
 - **Informations Spalten** (= "Config Spalten") — drag-orderable checkbox list of
   device-list columns: Installationsdatum, Artikelnummer, Hersteller, Typ, Modell,
   Interner Name, Letzte Verbindung, Fahrzeugtyp, Fahrzeugnummer (all off by default).
-  - Tests: check a column → it appears in the Geräteliste; uncheck → disappears;
-    drag to reorder → list column order changes; persists across reload. **[mutating]**
+  - Tests: check a column → it appears in the Geräteliste; uncheck → disappears
+    **[done — test-maschinenpark-spalten]**; drag to reorder → list column order
+    changes; persists across reload **[todo]**. **[mutating]**
 - **Geräte Information Kacheln** (= "Geräte Informationskacheln") — drag-orderable
   checkbox list of tiles shown in the preview drawer: Störungsmeldungen *(nur Geräte
   mit IoT Connectivity)*, Geräte-Benachrichtigungen, Service (all on).
@@ -78,9 +82,12 @@ Modal "Maschinenpark Einstellungen" with two tabs.
 - "Sortierungsgruppierung hinzufügen" → new scheme with **Gruppierung Typ** +
   **Gruppensortierung Name**; within it "Gerätegruppierung hinzufügen" → add groups;
   a device can belong to multiple groups. Trash icon deletes a row.
-  - Tests: create a scheme → it appears in the dropdown's PARTNER section; add a group +
-    assign a device → that GRUPPE shows in the list when the scheme is selected; delete
-    removes it. **[mutating — needs teardown]**
+  - Gruppierung Typ options: **Partner-Gruppierung** (-> PARTNER-GRUPPIERUNGEN) or
+    **Benutzer-Gruppierung** (-> BENUTZER-GRUPPIERUNGEN). Persists on Schliessen.
+  - Tests: create a scheme → it appears in the dropdown
+    **[done — test-maschinenpark-gruppierung-config, creates+deletes a Benutzer-Gruppierung]**;
+    add a group + assign a device → that GRUPPE shows when the scheme is selected **[todo]**.
+    **[mutating — has teardown]**
 
 > NB: the settings modal opens over the device pane and intercepts clicks to the
 > grouping dropdown/header while open — close it (Schliessen / X) before interacting

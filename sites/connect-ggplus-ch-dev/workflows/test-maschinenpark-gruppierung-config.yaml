@@ -1,0 +1,89 @@
+workflow:
+  name: test-maschinenpark-gruppierung-config
+  description: UI test for custom Gerätegruppierungen - creating a Benutzer-Gruppierung scheme in Maschinenpark Einstellungen makes it appear as an option in the Gerätegruppierungen dropdown. Mutating (deletes the created scheme in teardown).
+  site: connect-ggplus-ch-dev
+  mode: deterministic
+
+  fixtures:
+    partner_id: "10000"
+    location_id: "10000"
+    grouping_type: "Benutzer-Gruppierung"   # user-scoped (smallest blast radius)
+    grouping_name: "SiteMapper Test Gruppe"
+
+  setup:
+    - action: navigate
+      page: maschinenpark-geraeteliste
+      value: "/geraete/maschinenpark/$partner_id/$location_id"
+      description: Open the machine-list page
+    - action: wait
+      description: Wait for the device list to render
+
+  steps:
+    # Create a custom grouping scheme via settings
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: location-settings-button
+      description: Open Maschinenpark Einstellungen (gear)
+    - action: click
+      page: maschinenpark-einstellungen
+      element: tab-geraetegruppierungen
+      description: Switch to the Gerätegruppierungen tab
+    - action: click
+      page: maschinenpark-einstellungen
+      element: add-sortierungsgruppierung-button
+      description: Add a new grouping-scheme row
+    - action: input
+      page: maschinenpark-einstellungen
+      element: gruppierung-typ-select
+      value: "$grouping_type"
+      description: Set Gruppierung Typ to Benutzer-Gruppierung
+    - action: input
+      page: maschinenpark-einstellungen
+      element: gruppensortierung-name-input
+      value: "$grouping_name"
+      description: Name the scheme
+    - action: click
+      page: maschinenpark-einstellungen
+      element: schliessen-button
+      description: Close the modal (persists the new scheme)
+    - action: wait
+      description: Wait for the grouping dropdown to pick up the new option
+
+    # The new scheme appears as a grouping option
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      description: Open the Gerätegruppierungen dropdown
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "$grouping_name"
+      expect: visible
+      description: The created scheme is listed (under BENUTZER-GRUPPIERUNGEN)
+    - action: key
+      page: maschinenpark-geraeteliste
+      value: "Escape"
+      description: Close the dropdown without changing the active grouping
+
+  teardown:
+    # Delete the created scheme
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: location-settings-button
+      description: Reopen settings
+    - action: click
+      page: maschinenpark-einstellungen
+      element: tab-geraetegruppierungen
+      description: Switch to the Gerätegruppierungen tab
+    - action: click
+      page: maschinenpark-einstellungen
+      element: delete-row-button
+      value: "$grouping_name"
+      description: Delete the test scheme row (trash icon)
+    - action: click
+      page: maschinenpark-einstellungen
+      element: schliessen-button
+      description: Close the modal (persists the deletion)
+
+  verify:
+    - Creating a Benutzer-Gruppierung scheme named "SiteMapper Test Gruppe" makes it appear as an option in the Gerätegruppierungen dropdown; deleting it removes it

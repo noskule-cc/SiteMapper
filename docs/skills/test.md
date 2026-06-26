@@ -60,6 +60,12 @@ of just performing a task, it evaluates `assert` steps and reports PASS/FAIL.
    clear control (the X button, e.g. `device-filter-clear`) rather than typing an
    empty string - browser form-input cannot reliably submit a truly empty value.
 
+6b. **Run `teardown` last.** After the `steps` (whether they passed or failed),
+   execute the `teardown` steps to restore anything the test mutated (uncheck a
+   toggle, delete a created record). Run these best-effort even on failure so a
+   mutating test leaves the environment clean; note any teardown step that could
+   not complete in the result.
+
 7. **Build the result** (`schema/result.yaml`):
    - `status`: `error` if a non-assert step could not complete (element missing,
      navigation/timeout); else `failed` if any assertion failed; else `passed`.

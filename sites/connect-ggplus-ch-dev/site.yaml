@@ -14,5 +14,8 @@ site:
     - geraet-vorschau.yaml
     - geraet-detail.yaml
     - stoerung-melden.yaml
+    - maschinenpark-einstellungen.yaml
   workflows:
     - test-maschinenpark-geraeteliste.yaml
+    - test-maschinenpark-spalten.yaml
+    - test-maschinenpark-gruppierung-config.yaml

@@ -50,7 +50,9 @@ workflow:
     - action: ""
 
   steps:
-    - action: ""              # navigate | click | input | read | assert | verify | wait
+    - action: ""              # navigate | click | input | read | assert | verify | wait | key
+                              #   key: press a keyboard key (value = the key, e.g. "Escape",
+                              #   "Enter") - e.g. to dismiss a dropdown without changing state
       site: ""                # Which site this step runs on (required for cross-site workflows)
       page: ""                # Page name (references a page YAML file)
       element: ""             # Element name from the page map
@@ -59,6 +61,13 @@ workflow:
       capture: ""             # Store step output in a named variable (e.g., "offline_devices")
       expect: null            # For action: assert — the expected condition (see below)
       description: ""         # Human-readable step description
+
+  teardown:                   # Steps run AFTER `steps` to restore any state the test
+                              # mutated (uncheck a column, delete a created record). Run
+                              # on a best-effort basis even if an assertion failed, so a
+                              # mutating test leaves the environment as it found it. Same
+                              # step shape as `steps`; not assertions.
+    - action: ""
 
   verify:
     - ""                      # Prose expected outcome, checked after the workflow completes.

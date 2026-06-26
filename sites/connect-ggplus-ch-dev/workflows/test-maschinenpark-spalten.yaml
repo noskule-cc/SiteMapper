@@ -1,0 +1,76 @@
+workflow:
+  name: test-maschinenpark-spalten
+  description: UI test for the Informations Spalten setting - toggling a column in Maschinenpark Einstellungen adds/removes that column in the device list. Mutating (restores the toggle in teardown).
+  site: connect-ggplus-ch-dev
+  mode: deterministic
+
+  fixtures:
+    partner_id: "10000"
+    location_id: "10000"
+    test_column: "Hersteller"   # an Informations-Spalten column off by default
+
+  setup:
+    - action: navigate
+      page: maschinenpark-geraeteliste
+      value: "/geraete/maschinenpark/$partner_id/$location_id"
+      description: Open the machine-list page
+    - action: wait
+      description: Wait for the device list to render
+
+  steps:
+    # Baseline: the test column is not shown
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: column-headers
+      value: "$test_column"
+      expect: absent
+      description: Baseline - the Hersteller column is not in the list
+
+    # Enable the column via settings
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: location-settings-button
+      description: Open Maschinenpark Einstellungen (gear)
+    - action: assert
+      page: maschinenpark-einstellungen
+      element: tab-benutzer-einstellungen
+      expect: visible
+      description: Settings modal open on Benutzer Einstellungen
+    - action: click
+      page: maschinenpark-einstellungen
+      element: informations-spalten-checkbox
+      value: "$test_column"
+      description: Check the Hersteller column in Informations Spalten
+    - action: click
+      page: maschinenpark-einstellungen
+      element: schliessen-button
+      description: Close the modal (persists the change)
+    - action: wait
+      description: Wait for the list to re-render with the new column
+
+    # The column now appears in the list
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: column-headers
+      value: "$test_column"
+      expect: visible
+      description: The Hersteller column header now shows in the device list
+
+  teardown:
+    # Restore: uncheck the column again
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: location-settings-button
+      description: Reopen settings
+    - action: click
+      page: maschinenpark-einstellungen
+      element: informations-spalten-checkbox
+      value: "$test_column"
+      description: Uncheck the Hersteller column
+    - action: click
+      page: maschinenpark-einstellungen
+      element: schliessen-button
+      description: Close the modal (persists the restore)
+
+  verify:
+    - Toggling the "Hersteller" Informations-Spalten checkbox adds a Hersteller column to the device list; unchecking removes it
