@@ -68,41 +68,62 @@ page:
         value: Technische Daten
       description: Expandable section for technical specifications
 
-    # Tabs
+    # Tabs - only Details + Konnektivität are universal; the rest are
+    # capability-dependent and present only on devices that support them
+    # (see the tab matrix in gotchas).
     - name: tab-details
       type: button
       locator:
         strategy: text
         value: Details
-      description: Details tab - notifications, maintenance, stats
-
-    - name: tab-maschinenparameter
-      type: button
-      locator:
-        strategy: text
-        value: Maschinenparameter
-      description: Machine parameters tab - editable device settings
+      description: Details tab - notifications, maintenance, stats. Present on all devices.
 
     - name: tab-konnektivitaet
       type: button
       locator:
         strategy: text
         value: "Konnektivität"
-      description: Connectivity tab - QR code, device registration
+      description: Connectivity tab - QR code, device registration. Present on all devices.
+
+    - name: tab-maschinenparameter
+      type: button
+      locator:
+        strategy: text
+        value: Maschinenparameter
+      description: "(capability-dependent) Machine parameters tab - editable device settings. Seen on dishwashers, not on the coffee machine."
+      states: [capability-dependent]
 
     - name: tab-waschgaenge
       type: button
       locator:
         strategy: text
         value: "Waschgänge"
-      description: Wash cycles tab - event log with date filter
+      description: "(capability-dependent) Wash cycles tab - event log with date filter. Seen on the Hobart dishwasher; the GEHRIG GTW dishwasher exposes Hygiene + Spülprogramme instead."
+      states: [capability-dependent]
+
+    - name: tab-hygiene
+      type: button
+      locator:
+        strategy: text
+        value: Hygiene
+      description: "(capability-dependent) Hygiene tab. Seen on the GEHRIG GTW dishwasher, not on the Hobart or the coffee machine."
+      states: [capability-dependent]
+
+    - name: tab-spuelprogramme
+      type: button
+      locator:
+        strategy: text
+        value: "Spülprogramme"
+      description: "(capability-dependent) Wash/rinse programmes tab. Seen on the GEHRIG GTW dishwasher, not on the Hobart or the coffee machine."
+      states: [capability-dependent]
 
     - name: tab-stoerungsmeldungen
       type: button
       locator:
         strategy: text
         value: Störungsmeldungen
-      description: Fault reports tab - error log with severity filter
+      description: "(capability-dependent) Fault reports tab - error log with severity filter. Seen on dishwashers, not on the coffee machine."
+      states: [capability-dependent]
 
     # Details tab elements
     - name: benachrichtigungen-card
@@ -279,6 +300,7 @@ page:
       description: Red button at bottom to report a new malfunction, visible on all tabs
 
   gotchas:
+    - "CAPABILITY VARIANT: the tab set depends on the device's capabilities. Only Details + Konnektivität are universal. Observed - Mastrena (coffee): Details, Konnektivität. Hobart GXC-14C (dishwasher): + Maschinenparameter, Waschgänge, Störungsmeldungen. GEHRIG GTW 3300-H (dishwasher): + Maschinenparameter, Hygiene, Spülprogramme, Störungsmeldungen. Two dishwashers differ (Waschgänge vs Hygiene+Spülprogramme). Tabs flagged states:[capability-dependent] are ABSENT on devices that don't support them - never assume a mapped tab is present."
     - '"Störung melden" red button is persistent at the bottom across all tabs'
     - URL uses a UUID for the device ID, not a numeric ID
     - Maschinenparameter values are editable inline via pencil icons, each shows last change timestamp and valid range

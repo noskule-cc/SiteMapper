@@ -32,7 +32,7 @@ page:
         strategy: text
         value: Status
       description: "(IoT/connected devices only) Live connection status with timestamp under a 'Verbindungen' header, e.g. 'Maschine ein, alles Ok (26.06.2026 15:00)' or 'Offline (21.04.2026 15:45)'. Absent for non-connected devices."
-      states: [iot-only]
+      states: [capability-dependent]
 
     - name: internal-name
       type: text
@@ -76,45 +76,62 @@ page:
         value: Technische Daten
       description: Collapsible section (chevron) with the device's technical specifications
 
-    # --- Tab bar. Non-IoT devices show only Details + Konnektivität;
-    #     connected/IoT devices add Maschinenparameter, Waschgänge, Störungsmeldungen. ---
+    # --- Tab bar. Only Details + Konnektivität are universal; every other tab is
+    #     capability-dependent and present only on devices that support it.
+    #     See the tab matrix in gotchas for observed per-device-type variation. ---
     - name: details-tab
       type: link
       locator:
         strategy: text
         value: Details
-      description: Tab showing Benachrichtigungen, Wartung und Service, Dokumente, and Medien (default active tab). Always present.
+      description: Tab showing Benachrichtigungen, Wartung und Service, Dokumente, and Medien (default active tab). Present on all devices.
 
     - name: konnektivitaet-tab
       type: link
       locator:
         strategy: text
         value: Konnektivität
-      description: Tab showing the device's connectivity info. For non-IoT devices it shows a downloadable QR-code service label; connected devices also expose a Code/Registrieren registration field. Always present.
+      description: Tab showing the device's connectivity info. For non-connected devices it shows a downloadable QR-code service label; connected devices also expose a Code/Registrieren registration field. Present on all devices.
 
     - name: maschinenparameter-tab
       type: link
       locator:
         strategy: text
         value: Maschinenparameter
-      description: "(IoT-only) Machine parameters tab - inline-editable device settings with last-change timestamps and valid ranges."
-      states: [iot-only]
+      description: "(capability-dependent) Machine parameters tab - inline-editable device settings with last-change timestamps and valid ranges. Seen on dishwashers, not on the coffee machine."
+      states: [capability-dependent]
 
     - name: waschgaenge-tab
       type: link
       locator:
         strategy: text
         value: Waschgänge
-      description: "(IoT-only) Wash-cycle event log with a Von/Bis date filter."
-      states: [iot-only]
+      description: "(capability-dependent) Wash-cycle event log with a Von/Bis date filter. Seen on the Hobart dishwasher; the GEHRIG GTW dishwasher exposes Hygiene + Spülprogramme instead."
+      states: [capability-dependent]
+
+    - name: hygiene-tab
+      type: link
+      locator:
+        strategy: text
+        value: Hygiene
+      description: "(capability-dependent) Hygiene tab. Seen on the GEHRIG GTW dishwasher, not on the Hobart or the coffee machine."
+      states: [capability-dependent]
+
+    - name: spuelprogramme-tab
+      type: link
+      locator:
+        strategy: text
+        value: Spülprogramme
+      description: "(capability-dependent) Wash/rinse programmes tab. Seen on the GEHRIG GTW dishwasher, not on the Hobart or the coffee machine."
+      states: [capability-dependent]
 
     - name: stoerungsmeldungen-tab
       type: link
       locator:
         strategy: text
         value: Störungsmeldungen
-      description: "(IoT-only) Fault/error log with date filter, search, and severity (Schweregrad) filter."
-      states: [iot-only]
+      description: "(capability-dependent) Fault/error log with date filter, search, and severity (Schweregrad) filter. Seen on dishwashers, not on the coffee machine."
+      states: [capability-dependent]
 
     - name: qr-code-card
       type: container
@@ -136,16 +153,16 @@ page:
       locator:
         strategy: text
         value: Parametersuche
-      description: "(Maschinenparameter tab, IoT-only) Search field to find a specific parameter"
-      states: [iot-only]
+      description: "(Maschinenparameter tab, capability-dependent) Search field to find a specific parameter"
+      states: [capability-dependent]
 
     - name: save-all-parameters-button
       type: button
       locator:
         strategy: text
         value: Alles Speichern
-      description: "(Maschinenparameter tab, IoT-only) Save all modified parameters"
-      states: [iot-only]
+      description: "(Maschinenparameter tab, capability-dependent) Save all modified parameters"
+      states: [capability-dependent]
 
     # --- Waschgänge tab (IoT-only) ---
     - name: waschgaenge-date-from
@@ -153,24 +170,24 @@ page:
       locator:
         strategy: text
         value: Von
-      description: "(Waschgänge tab, IoT-only) Start date filter for wash cycles"
-      states: [iot-only]
+      description: "(Waschgänge tab, capability-dependent) Start date filter for wash cycles"
+      states: [capability-dependent]
 
     - name: waschgaenge-date-to
       type: input
       locator:
         strategy: text
         value: Bis
-      description: "(Waschgänge tab, IoT-only) End date filter for wash cycles"
-      states: [iot-only]
+      description: "(Waschgänge tab, capability-dependent) End date filter for wash cycles"
+      states: [capability-dependent]
 
     - name: waschgaenge-refresh-button
       type: button
       locator:
         strategy: text
         value: Aktualisieren
-      description: "(Waschgänge tab, IoT-only) Refresh the wash-cycle list with the current date filter"
-      states: [iot-only]
+      description: "(Waschgänge tab, capability-dependent) Refresh the wash-cycle list with the current date filter"
+      states: [capability-dependent]
 
     # --- Störungsmeldungen tab (IoT-only) ---
     - name: stoerungen-severity-dropdown
@@ -178,16 +195,16 @@ page:
       locator:
         strategy: text
         value: Schweregrad
-      description: "(Störungsmeldungen tab, IoT-only) Severity-level filter for the fault log"
-      states: [iot-only]
+      description: "(Störungsmeldungen tab, capability-dependent) Severity-level filter for the fault log"
+      states: [capability-dependent]
 
     - name: stoerungen-refresh-button
       type: button
       locator:
         strategy: text
         value: Aktualisieren
-      description: "(Störungsmeldungen tab, IoT-only) Refresh the fault-report list with the current filters"
-      states: [iot-only]
+      description: "(Störungsmeldungen tab, capability-dependent) Refresh the fault-report list with the current filters"
+      states: [capability-dependent]
 
     - name: notifications-panel
       type: container
@@ -231,6 +248,7 @@ page:
     - Maintenance/service data overlaps with the preview drawer (same Wartung und Service block) but the full page adds Technische Daten, Konnektivität tab, Dokumente, and Medien.
     - Internal name and internal note are inline-editable via the pencil icon.
     - The breadcrumb device-name dropdown lets you jump to sibling devices without going back to the machine list.
-    - "STRUCTURAL VARIANT: the tab set depends on the device. Non-IoT devices (e.g. the Mastrena coffee machine) show only Details + Konnektivität. Connected/IoT devices (e.g. a Hobart dishwasher) additionally show Maschinenparameter, Waschgänge, and Störungsmeldungen, plus a live connection-status under 'Verbindungen'. Elements flagged states:[iot-only] only render for connected devices."
+    - "CAPABILITY VARIANT: the tab set depends on the device's capabilities, not just on whether it is connected. Only Details + Konnektivität are universal. Observed tab matrix - Mastrena (coffee): Details, Konnektivität. Hobart GXC-14C (dishwasher): + Maschinenparameter, Waschgänge, Störungsmeldungen. GEHRIG GTW 3300-H (dishwasher): + Maschinenparameter, Hygiene, Spülprogramme, Störungsmeldungen. Note two dishwashers differ (Waschgänge vs Hygiene+Spülprogramme). Elements flagged states:[capability-dependent] are ABSENT on devices that don't support them - never assume a mapped tab is present."
+    - "Connected devices also show a live connection-status and a Fernwartung (remote maintenance) row with a 'Starten' link under 'Verbindungen', and may show an 'Update verfügbar' badge next to Technische Daten; non-connected devices show none of these."
     - The device UUID in the URL is opaque - do NOT use it as the device identity. Reach a specific device by navigating from the machine list using a stable key (serial number or name), or pass deviceId as a captured/parameter value.
     - "Von/Bis date pickers appear on both Waschgänge and Störungsmeldungen tabs but are independent; both default to roughly a 20-day range."

@@ -11,10 +11,13 @@
 #   as map identity.
 #
 # Structural variants:
-#   When the same url_pattern renders different elements depending on record
-#   type/state (e.g. connected vs non-connected devices), keep ONE page file and
-#   flag the conditional elements with `states` (e.g. states: [iot-only]). Add a
-#   gotcha describing the condition under which they appear.
+#   When the same url_pattern renders different elements depending on the record's
+#   type/capabilities (e.g. a coffee machine vs different dishwasher models that
+#   each expose a different set of tabs), keep ONE page file and flag the
+#   conditional elements with states: [capability-dependent]. Add a gotcha (and,
+#   where helpful, a matrix) describing which records show which elements. Do not
+#   assume an element is present just because it is mapped - capability-dependent
+#   elements are absent on devices that don't support them.
 
 page:
   name: ""                    # Human-readable page name
@@ -31,7 +34,8 @@ page:
       description: ""         # What this element does
       states: []              # Optional: possible states (e.g. [enabled, disabled, hidden])
                               #   or variant flags marking when the element appears
-                              #   (e.g. [iot-only] for connected-device-only elements)
+                              #   (e.g. [capability-dependent] for elements that only
+                              #   render on records/devices that support that feature)
       children: []            # Optional: nested sub-elements (e.g., submenu items under a nav link)
 
   gotchas:
