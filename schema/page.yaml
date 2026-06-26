@@ -1,9 +1,24 @@
 # Schema: Page Map
 # Each page in a site gets one YAML file describing its purpose, elements, and gotchas.
+#
+# Dynamic URLs & instances:
+#   Map the page TEMPLATE, not a specific record. When a URL embeds a record id,
+#   write it as a {placeholder} in url_pattern (e.g. /geraete/geraet/{deviceId}).
+#   One file covers every instance of that page type - never one file per record.
+#   Reach a specific instance at runtime by navigating from a list using a stable
+#   semantic key (serial number, name), or by passing the id as a workflow
+#   parameter / captured variable. Treat opaque ids (UUIDs) as runtime data, not
+#   as map identity.
+#
+# Structural variants:
+#   When the same url_pattern renders different elements depending on record
+#   type/state (e.g. connected vs non-connected devices), keep ONE page file and
+#   flag the conditional elements with `states` (e.g. states: [iot-only]). Add a
+#   gotcha describing the condition under which they appear.
 
 page:
   name: ""                    # Human-readable page name
-  url_pattern: ""             # URL pattern (e.g., "/issues", "/issues/:id")
+  url_pattern: ""             # URL pattern; use {placeholders} for dynamic ids (e.g. "/issues/{id}")
   purpose: ""                 # What this page is for
   screenshot: ""              # Relative path to reference screenshot
 
@@ -14,7 +29,9 @@ page:
         strategy: ""          # text | aria-label | role | data-testid | css
         value: ""             # The locator value
       description: ""         # What this element does
-      states: []              # Optional: possible states (e.g., [enabled, disabled, hidden])
+      states: []              # Optional: possible states (e.g. [enabled, disabled, hidden])
+                              #   or variant flags marking when the element appears
+                              #   (e.g. [iot-only] for connected-device-only elements)
       children: []            # Optional: nested sub-elements (e.g., submenu items under a nav link)
 
   gotchas:
