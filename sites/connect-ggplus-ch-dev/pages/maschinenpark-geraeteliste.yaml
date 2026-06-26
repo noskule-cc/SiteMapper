@@ -73,7 +73,15 @@ page:
       locator:
         strategy: text
         value: Gerätegruppierungen
-      description: Group/filter devices by type (default "IOT-Geräte")
+      description: >
+        Regrouping-scheme selector (default "IOT-Geräte"). Changes which section
+        headers the device list is grouped under. Options - Keine; STANDARD-
+        GRUPPIERUNGEN: IOT-Geräte (Favoriten/Neu/Bestehender), Status, Hersteller,
+        Modell, Fahrzeugnummer, Fahrzeugtyp; PARTNER-GRUPPIERUNGEN: custom group
+        sets defined in settings (e.g. "Test Partner Gruppe" -> GRUPPE #1, #2 ...
+        plus "Nicht zu einer Gruppe zugewiesen"). The selection is STICKY (persists
+        per user across reload/navigation).
+      states: [Keine, "IOT-Geräte", Status, Hersteller, Modell, Fahrzeugnummer, Fahrzeugtyp]
 
     - name: favoriten-section
       type: container
@@ -131,3 +139,6 @@ page:
     - Each device row's chevron (>) opens the device detail page (map separately as geraet-detail).
     - The left location-list sidebar persists; clicking another location swaps the right pane without a full navigation.
     - The X (close) icon collapses the device pane back to the location-list-only view.
+    - "STICKY GROUPING: the Gerätegruppierungen selection persists per user across reload/navigation. The Favoriten/Neu/Bestehender section names ONLY exist under the IOT-Geräte grouping; under another grouping (e.g. a Partner-Gruppierung) the sections are GRUPPE #1/#2/... So any test or workflow that targets those sections must first reset the grouping to IOT-Geräte - do not assume the default."
+    - "The favorites set is mutable shared test data (which devices are starred changes between sessions). Don't assume a specific device is in Favoriten; assert device identity via the device filter instead of by section."
+    - "The device filter and location filter do NOT persist across navigation (only the grouping does); the filter clear X appears only while the field has text."

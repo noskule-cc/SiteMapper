@@ -20,6 +20,13 @@ of just performing a task, it evaluates `assert` steps and reports PASS/FAIL.
    parameters not satisfied by defaults). Build a substitution map for
    `$fixture`, `$param`, and `$captured_var` references.
 
+4b. **Run `setup` first.** Execute the `setup` steps to put the page into a
+   known state (navigate, reset sticky grouping/sort, clear filters) before any
+   assertion. Setup steps are not assertions — if one cannot complete, stop and
+   return `result.status = error` (the test could not start). This is essential:
+   grouping and sort persist per user across sessions, so without setup a run
+   inherits whatever state a previous session left.
+
 5. **Execute steps in order.** For each step, load the referenced
    `sites/<site>/pages/<page>.yaml`, find the element's locator, and:
    - `navigate` → `mcp__claude-in-chrome__navigate` (prefix relative `value`

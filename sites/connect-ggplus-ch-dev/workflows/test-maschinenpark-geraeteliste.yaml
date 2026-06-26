@@ -15,8 +15,9 @@ workflow:
     location_match: "1020 Renens"
     location_nonmatch: "8152 Glattbrugg"
 
-  steps:
-    # --- L1: structural presence ---
+  setup:
+    # Establish a known state - grouping (and sort) persist per user across
+    # sessions, so a run must reset them or it inherits leftover state.
     - action: navigate
       page: maschinenpark-geraeteliste
       value: "/geraete/maschinenpark/$partner_id/$location_id"
@@ -25,6 +26,17 @@ workflow:
     - action: wait
       description: Device sections load asynchronously after navigation - wait for the list to render
 
+    - action: input
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      value: "IOT-Geräte"
+      description: Reset the (sticky) grouping to IOT-Geräte so the Favoriten/Neu/Bestehender sections exist
+
+    - action: wait
+      description: Wait for the list to re-group
+
+  steps:
+    # --- L1: structural presence ---
     - action: assert
       page: maschinenpark-geraeteliste
       element: location-header

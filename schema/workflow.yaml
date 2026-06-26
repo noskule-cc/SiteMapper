@@ -38,6 +38,17 @@ workflow:
                               #     location_id: "10000"
                               #     location_name: "Gehrig Group AG test"
 
+  setup:                      # Precondition steps run BEFORE `steps` to put the page
+                              # into a known state - navigate, reset sticky UI state
+                              # (e.g. select a grouping), clear filters. These are NOT
+                              # assertions. A setup failure => result.status = error
+                              # (the test could not start), distinct from a failed
+                              # assertion. Same step shape as `steps`. Required for
+                              # hermetic tests, because some UI state (grouping, sort)
+                              # persists per user across sessions and would otherwise
+                              # leak into the run.
+    - action: ""
+
   steps:
     - action: ""              # navigate | click | input | read | assert | verify | wait
       site: ""                # Which site this step runs on (required for cross-site workflows)
@@ -66,6 +77,12 @@ workflow:
 #     { count: 3 }                  # number of matching elements equals N
 #     { url_matches: "/path/.*" }   # current page URL matches the pattern
 #   Each assert contributes one entry to result.assertions (id, expect, actual, pass).
+#
+# action: input
+#   For a text field, types `value`. For a select/combobox element (e.g. a
+#   grouping or sort dropdown), selects the option whose text equals `value`
+#   (the runner opens the dropdown and picks it). Used in `setup` to force a
+#   known grouping, e.g. element: device-grouping-dropdown, value: "IOT-Geräte".
 #
 # Variable references:
 #   $param_name     — references a workflow parameter
