@@ -1,0 +1,41 @@
+# Schema: Workflow Result
+# The neutral, sink-agnostic object a workflow run emits. SiteMapper RETURNS this
+# to the caller; it never pushes it anywhere. The host (an LLM agent or a Python
+# program) routes it to a destination (Azure DevOps, Jira, a file, a DB) via its
+# own adapter. See docs/INTERFACE.md.
+
+result:
+  workflow: ""                # Name of the workflow that ran
+  site: ""                    # Site (or first site) the run targeted
+  status: ""                  # passed | failed | error
+                              #   passed - ran to completion, all assertions passed
+                              #   failed - ran to completion, >= 1 assertion failed
+                              #   error  - could not complete (element not found,
+                              #            navigation/timeout, etc.)
+  started_at: ""              # ISO-8601 timestamp (set by the runner/host)
+  finished_at: ""             # ISO-8601 timestamp
+
+  parameters: {}              # Parameter values used for this run
+  fixtures: {}                # Fixture values used for this run
+
+  captures: {}                # Values read from the UI by `read` steps,
+                              # keyed by the step's capture name, e.g.:
+                              #   captures:
+                              #     bestehender_count: "121"
+
+  assertions:                 # One entry per `assert` step
+    - id: ""                  # Stable id (defaults to "<page>.<element>.<expect>")
+      page: ""                # Page the assertion targeted
+      element: ""             # Element the assertion targeted
+      expect: null            # The expected condition (mirrors the step's expect)
+      actual: null            # What was observed
+      pass: false             # true if actual satisfied expect
+      message: ""             # Optional detail (esp. on failure)
+
+  evidence: []                # Optional artifact paths (e.g. screenshots) captured
+                              # during the run, relative to the repo
+
+  error: ""                   # Populated when status == error: what went wrong
+
+# Summary convenience (a runner may also include):
+#   counts: { total: N, passed: N, failed: N }

@@ -1,6 +1,12 @@
 # Schema: Workflow Definition
 # Each workflow defines a named, repeatable sequence of actions on mapped sites.
 # Workflows can span a single site or multiple sites (cross-site workflows).
+#
+# A workflow is a callable unit: it takes inputs (parameters/fixtures), runs steps
+# against the mapped site(s), and emits a neutral `result` object (see
+# schema/result.yaml). The host that calls the workflow (an LLM agent or a Python
+# program) is responsible for routing that result somewhere - SiteMapper itself is
+# sink-agnostic and never pushes results to an external system.
 
 workflow:
   name: ""                    # Workflow name (used as command: /run <name>)
@@ -8,7 +14,16 @@ workflow:
   site: ""                    # Single site (for simple workflows)
   sites: []                   # Multiple sites (for cross-site workflows)
 
-  parameters:
+  mode: ""                    # deterministic | agentic
+                              #   deterministic - every step is mechanical (navigate/
+                              #     click/input/read/assert/wait) and checkable, so the
+                              #     workflow can run headless with no LLM in the loop.
+                              #     Best for UI tests and CI.
+                              #   agentic - one or more steps need judgement (e.g. a
+                              #     `verify` step that decides/branches, or formatting
+                              #     free text), so an LLM must execute it.
+
+  parameters:                 # Caller-supplied inputs (prompted at run time).
     - name: ""                # Parameter name
       type: ""                # select | text
       description: ""         # What this parameter controls
@@ -16,19 +31,44 @@ workflow:
       options: []             # For type: select — predefined choices (rendered as dropdown)
       default: ""             # Optional default value
 
+  fixtures: {}                # Pinned, deterministic test data (NOT prompted). Use for
+                              # tests that must target known entities. Referenced as
+                              # $fixture_name in step values, e.g.:
+                              #   fixtures:
+                              #     location_id: "10000"
+                              #     location_name: "Gehrig Group AG test"
+
   steps:
-    - action: ""              # navigate | click | input | read | verify | wait
+    - action: ""              # navigate | click | input | read | assert | verify | wait
       site: ""                # Which site this step runs on (required for cross-site workflows)
       page: ""                # Page name (references a page YAML file)
       element: ""             # Element name from the page map
-      value: ""               # Value to input, or parameter reference like "$tag_name"
+      value: ""               # Value to input, a URL to navigate to, or a reference
+                              #   like "$param", "$fixture", or "$captured_var"
       capture: ""             # Store step output in a named variable (e.g., "offline_devices")
+      expect: null            # For action: assert — the expected condition (see below)
       description: ""         # Human-readable step description
 
   verify:
-    - ""                      # Expected outcome to check after workflow completes
+    - ""                      # Prose expected outcome, checked after the workflow completes.
+                              # Coarse/human-readable. Prefer structured `assert` steps for
+                              # anything a runner should evaluate mechanically.
 
+# action: assert
+#   A checkable, per-step assertion against a mapped element. `expect` is one of:
+#     visible                       # element is present and visible
+#     absent                        # element is NOT present (e.g. capability-dependent tab)
+#     enabled                       # element is enabled/interactive
+#     disabled                      # element is present but disabled
+#     { contains: "text" }          # element text contains the substring
+#     { equals: "text" }            # element text equals exactly
+#     { value: "text" }             # input/select current value equals
+#     { count: 3 }                  # number of matching elements equals N
+#     { url_matches: "/path/.*" }   # current page URL matches the pattern
+#   Each assert contributes one entry to result.assertions (id, expect, actual, pass).
+#
 # Variable references:
 #   $param_name     — references a workflow parameter
+#   $fixture_name   — references a pinned fixture value
 #   $captured_var   — references a value captured by a previous step
 #   Captured variables are available to all subsequent steps, even across sites.

@@ -1,0 +1,77 @@
+workflow:
+  name: test-maschinenpark-geraeteliste
+  description: UI smoke test for the machine-list (Geräteliste) page of a location - verifies the page loads, its controls and the three device sections are present, and that clicking a device opens the preview drawer.
+  site: connect-ggplus-ch-dev
+  mode: deterministic
+
+  fixtures:
+    partner_id: "10000"
+    location_id: "10000"
+    location_name: "Gehrig Group AG test"
+
+  steps:
+    - action: navigate
+      page: maschinenpark-geraeteliste
+      value: "/geraete/maschinenpark/$partner_id/$location_id"
+      description: Open the machine-list page for the fixture location
+
+    - action: wait
+      description: The device sections load asynchronously after navigation - wait for the list to render before asserting on the sections
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: location-header
+      expect: { contains: "$location_name" }
+      description: Header shows the selected location
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-filter
+      expect: visible
+      description: "Geräte filtern search input is present"
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: device-grouping-dropdown
+      expect: { value: "IOT-Geräte" }
+      description: Gerätegruppierungen dropdown defaults to IOT-Geräte
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: favoriten-section
+      expect: visible
+      description: Favoriten section present
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: neu-section
+      expect: visible
+      description: "Neu (noch nicht im IOT-Hub) section present"
+
+    - action: assert
+      page: maschinenpark-geraeteliste
+      element: bestehender-section
+      expect: visible
+      description: Bestehender Maschinenpark section present
+
+    - action: read
+      page: maschinenpark-geraeteliste
+      element: bestehender-section
+      capture: bestehender_count
+      description: Read the device-count badge for the existing-park section
+
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: device-row
+      description: Open the first device's preview drawer
+
+    - action: assert
+      page: geraet-vorschau
+      element: open-full-view-button
+      expect: visible
+      description: Preview drawer opened (Vollansicht öffnen present)
+
+  verify:
+    - Machine-list page loads for location 10000 with header "Gehrig Group AG test"
+    - Filter, grouping dropdown, and all three device sections are present
+    - Clicking a device row opens the preview drawer
