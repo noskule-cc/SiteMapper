@@ -1,0 +1,232 @@
+workflow:
+  name: gateway-update-effect-tracking
+  description: >
+    Track the effect of the gateway firmware rollout (v1.15.1.2+) by measuring
+    connectivity discrepancies. Produces three counts over the fleet:
+      (1) Headwind online but gateway Status offline,
+      (2) firmware >= 1.15.1.2 but Headwind offline,
+      (3) gateway Status offline yet still sending/receiving data on Swisscom
+          in the last 24h.
+    Runs across the GG+connect gateway-monitoring page and the Swisscom M2M
+    portal, joined on the gateway serial number (= Swisscom "Gateway Ausprägung").
+  sites:
+    - connect-ggplus-ch
+    - portal-m2m-swisscom-ch
+  mode: agentic          # needs DOM/JS scraping + per-gateway judgement on Swisscom
+
+  fixtures:
+    version_threshold: "1.15.1.2"        # inclusive lower bound for "updated"
+    excluded_vertragsnummern: ["1000", "10000", "3086769"]  # internal/test/demo
+    swisscom_account_id: "02001639"      # Gehrig Group M2M account (in the Swisscom URL)
+
+  setup:
+    - action: navigate
+      site: connect-ggplus-ch
+      page: admin-gateway-monitoring
+      value: "https://connect.ggplus.ch/adminbereich/gateway-monitoring"
+      description: Open Gateway Monitoring
+
+    - action: wait
+      site: connect-ggplus-ch
+      page: admin-gateway-monitoring
+      description: >
+        Wait for the red spinner to clear and the table to render. Confirm by
+        polling document.querySelector('table tbody tr') until rows exist
+        (all rows load at once — no pagination, ~372 rows).
+
+    - action: assert
+      site: connect-ggplus-ch
+      page: admin-gateway-monitoring
+      element: status-filter
+      expect: { value: "Unkonfiguriert, Verbunden, Offline" }
+      description: >
+        Ensure the Status filter has all three states selected so the full fleet
+        is present in the DOM before scraping. If not, select all three.
+
+  steps:
+    # --- Metrics 1 & 2: scraped entirely from the monitoring page ---
+    - action: read
+      site: connect-ggplus-ch
+      page: admin-gateway-monitoring
+      element: gateway-table
+      capture: fleet
+      description: >
+        Inject the extractor below via the browser javascript_tool over the
+        gateway table. It classifies each row and applies the exclusions
+        (Vertragsnummer not in excluded_vertragsnummern, Version non-empty),
+        returning the kept gateways plus the three metric results. Status is
+        read from the connectionState router-icon COLOUR (red=offline,
+        green=verbunden, grey=unkonfiguriert); Headwind from the .status-dot
+        CSS class (status-red/green/grey/yellow); Version compared numerically
+        per dotted segment against version_threshold.
+      value: |
+        (() => {
+          const EXCLUDE = new Set(['1000','10000','3086769']);
+          const BASE = [1,15,1,2]; // version_threshold 1.15.1.2
+          const table = document.querySelector('table');
+          const rows = [...table.querySelectorAll('tbody tr')];
+          const classifyConn = (cell) => {
+            const icon = cell.querySelector('mat-icon');
+            if (!icon) return 'none';
+            const [r,g] = getComputedStyle(icon).color.match(/\d+/g).map(Number);
+            if (r > 150 && g < 90) return 'offline';    // red
+            if (g > 110 && r < 130) return 'verbunden'; // green
+            return 'unkonfiguriert';                    // grey
+          };
+          const classifyHead = (cell) => {
+            const dot = cell.querySelector('.status-dot');
+            const m = dot && dot.className.match(/status-(red|green|grey|yellow)/);
+            return m ? m[1] : 'none';
+          };
+          const cmpVer = (v) => {
+            if (!v) return null;
+            const p = v.split('.').map(x=>parseInt(x,10)||0);
+            for (let i=0;i<Math.max(p.length,BASE.length);i++){
+              const a=p[i]||0, b=BASE[i]||0;
+              if (a!==b) return a>b ? 1 : -1;
+            }
+            return 0;
+          };
+          const data = rows.map(r => {
+            const c = [...r.querySelectorAll('td')];
+            return {
+              status: classifyConn(c[0]),
+              headwind: classifyHead(c[2]),
+              vertragsnummer: c[3]?.innerText.trim(),
+              vertragspartner: c[4]?.innerText.trim(),
+              seriennummer: c[7]?.innerText.trim(),
+              version: c[9]?.innerText.trim(),
+            };
+          });
+          const kept = data.filter(d => !EXCLUDE.has(d.vertragsnummer) && d.version);
+          const m1 = kept.filter(d => d.headwind==='green' && d.status==='offline');
+          const m2 = kept.filter(d => cmpVer(d.version) >= 0 && d.headwind==='red');
+          const m3 = kept.filter(d => d.status==='offline' && cmpVer(d.version) >= 0);
+          const dedupe = a => [...new Set(a)];
+          return {
+            totalRows: data.length,
+            kept: kept.length,
+            metric1_count: m1.length,
+            metric1: m1,
+            metric2_count: m2.length,
+            metric2: m2,
+            metric3_serials: dedupe(m3.map(d=>d.seriennummer)),
+            metric3_rows: m3,
+          };
+        })()
+
+    - action: read
+      site: connect-ggplus-ch
+      page: admin-gateway-monitoring
+      capture: metric1_count
+      value: "$fleet.metric1_count"
+      description: "METRIC 1 — Headwind online (green) but gateway Status offline (red)."
+
+    - action: read
+      site: connect-ggplus-ch
+      page: admin-gateway-monitoring
+      capture: metric2_count
+      value: "$fleet.metric2_count"
+      description: "METRIC 2 — Version >= 1.15.1.2 but Headwind offline (red)."
+
+    - action: read
+      site: connect-ggplus-ch
+      page: admin-gateway-monitoring
+      capture: metric3_serials
+      value: "$fleet.metric3_serials"
+      description: >
+        Candidate serials for METRIC 3 — gateways with Status offline AND
+        version >= 1.15.1.2 (deduped). Each is checked on Swisscom below.
+
+    # --- Metric 3: per-serial Swisscom traffic check ---
+    # Baked recipe (validated 2026-07-09). The Swisscom detail is a Vaadin 8 app
+    # with opaque /portal/UIDL/ RPC — there is NO per-IMSI REST API, so each serial
+    # must be driven through the UI. Repeat steps A–F for EACH serial in
+    # $metric3_serials, accumulating into metric3_results. Run sequentially in ONE
+    # tab; batching ~4 serials per browser_batch call is a good throughput/robustness
+    # balance. Do NOT click the Status edit pencil or any mutating control.
+    #
+    #   A. navigate → https://portal.m2m.swisscom.ch/portal/#/de/{accountId}/subscriptions
+    #      (accountId = swisscom_account_id fixture); wait 3s.
+    #   B. scroll the list UP ~40 ticks FIRST. Critical: a prior 0-result search
+    #      leaves the list scrolled, which shifts the search box off the click point.
+    #   C. click search-input, key ctrl+a, key Delete (clear — the field is sticky
+    #      across navigations), type the serial, key Return; wait 2s.
+    #   D. read the result via search_read_js (below). If found=false → record
+    #      {serial, found:false} and go to the next serial. Else keep imsi.
+    #   E. navigate → …/subscriptions/{imsi}/  (direct URL is more robust than
+    #      clicking the row); wait 3s. Scroll DOWN ~40 ticks to render the collapsed
+    #      panels, then click the "Letzte 24 Stunden" chevron to expand; wait 2s.
+    #      (The panels are Angular virtual-scroll — only in the DOM when in view —
+    #      and the expand state does NOT persist across SIMs, so expand every time.)
+    #   F. read traffic via traffic_read_js (below) and record
+    #      {serial, imsi, up, down, has_traffic, negligible}.
+    #
+    # Coordinate fallbacks (validated at viewport 1568x765; re-derive from a
+    # screenshot if the window differs): search-input ≈ (760,156) with the list
+    # scrolled to top; "Letzte 24 Stunden" chevron ≈ (1516,522) after scrolling the
+    # detail to the bottom. Prefer element refs / find() over raw coordinates when
+    # available.
+    - action: verify
+      site: portal-m2m-swisscom-ch
+      page: subscription-detail
+      capture: metric3_results
+      description: >
+        Per-serial Swisscom last-24h traffic check — see the baked recipe (steps
+        A–F) in the comment above this step. has_traffic = Daten hochgeladen OR
+        heruntergeladen is a non-zero amount; negligible = both are Byte-level
+        (keep-alive, not real usage, e.g. "184.00 Bytes"). Serials returning 0 rows
+        are recorded found=false (SIM not in this Swisscom account) and are NOT
+        counted as traffic.
+      value: |
+        // --- search_read_js: run on the subscriptions LIST after step C ---
+        (() => {
+          const rows = [...document.querySelectorAll('table tbody tr')];
+          if (!rows.length) return { found: false };
+          const c = [...rows[0].querySelectorAll('td')].map(x => x.innerText.trim());
+          // list columns: [checkbox, IMSI, Label, Gateway Ausprägung, ICCID,
+          //                MSISDN, Status, Erstes Aktivierungsdatum, Monatliche Daten, Kommentar]
+          return { found: true, imsi: c[1], gateway_auspraegung: c[3], status: c[6] };
+        })()
+
+        // --- traffic_read_js: run on the DETAIL page after step E (panel expanded) ---
+        (() => {
+          let up = null, down = null;
+          for (const r of document.querySelectorAll('tr')) {
+            const t = r.innerText;
+            const cells = [...r.querySelectorAll('td')].map(x => x.innerText.trim());
+            if (/Daten hochgeladen/.test(t))    up   = cells[1]; // "Betrag" column
+            if (/Daten heruntergeladen/.test(t)) down = cells[1];
+          }
+          const nz = s => !!s && !/^0(\.0+)?\s*(Bytes|B)?$/i.test(s.trim());
+          const byteLevel = s => /\bBytes?\b/i.test(s || '');
+          const has_traffic = nz(up) || nz(down);
+          return {
+            up, down, has_traffic,
+            negligible: has_traffic && byteLevel(up) && byteLevel(down),
+            expanded: up !== null, // false => panel not expanded / not on detail; retry step E
+          };
+        })()
+
+    - action: read
+      site: portal-m2m-swisscom-ch
+      page: subscription-detail
+      capture: metric3_count
+      value: "count of $metric3_results where found != false AND has_traffic == true"
+      description: >
+        METRIC 3 — offline (v>=1.15.1.2) gateways that nevertheless show traffic
+        in the Swisscom last-24h view. Also report the split: with-traffic
+        (of which any negligible/byte-level), zero-traffic, and not-found-on-Swisscom
+        (found=false, excluded from the count).
+
+  verify:
+    - Report three headline counts — metric1_count, metric2_count, metric3_count — each with the list of gateways behind it (Vertragspartner, Seriennummer, Version).
+    - Metric 3 report distinguishes gateways WITH last-24h traffic (offline is likely a false negative / stale status) from those with none (genuinely silent) and any serial not found on the Swisscom account.
+    - State the fleet totals used (totalRows, kept after exclusions) and the exclusion set applied, so the numbers are reproducible.
+
+# Notes
+#   - Data source is a live DOM scrape (the CSV export currently omits the
+#     Status Headwind and Version columns). Re-check the CSV periodically; if it
+#     gains those columns, this workflow can switch to CSV parsing.
+#   - Join key: monitoring "Seriennummer" == Swisscom "Gateway Ausprägung".
+#   - accountId 02001639 in the Swisscom URL is the Gehrig Group M2M account.

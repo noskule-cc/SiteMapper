@@ -1,0 +1,96 @@
+page:
+  name: Teilnehmer (Subscriptions List)
+  url_pattern: /portal/#/de/{accountId}/subscriptions
+  purpose: >
+    Searchable list of all SIM subscriptions (Teilnehmer) for the account.
+    Primary entry point to find a specific gateway SIM by its serial number and
+    drill into its detail page. accountId = 02001639 for Gehrig Group AG.
+
+  elements:
+    # Top navigation
+    - name: nav-menubar
+      type: container
+      locator:
+        strategy: role
+        value: menubar
+      description: Top nav — Eingang, Bestand, Betrieb, Berichte, Support
+
+    # Search / filter bar
+    - name: search-input
+      type: input
+      locator:
+        strategy: css
+        value: "input[placeholder^='Suchen Sie nach IMSI']"
+      description: >
+        Global free-text search. Matches IMSI, MSISDN, ICCID, erkannte IMEI,
+        Label, Teilnehmerpaket, Spezifikations-ID, Unternehmensnamen AND the
+        "Gateway Ausprägung" custom field (the gateway serial number). Type the
+        serial number and press Enter to filter. Max 50 chars (counter shown).
+
+    - name: filter-add-button
+      type: button
+      locator:
+        strategy: text
+        value: Filter hinzufügen
+      description: Dropdown to add structured filters (status, package, etc.)
+
+    - name: apply-button
+      type: button
+      locator:
+        strategy: text
+        value: ANWENDEN
+      description: Applies structured filters added via "Filter hinzufügen"
+
+    # Summary card
+    - name: summary-card
+      type: container
+      locator:
+        strategy: text
+        value: Teilnehmerzusammenfassung
+      description: >
+        Summary — Gesamt (total), Gefilterte Ergebnisse (filtered result count),
+        Neueste Suche (timestamp), and status breakdown counts (Aktiv, Pausiert,
+        Deaktiviert, Beendet, Gesperrt). Counts reflect the current filter.
+
+    - name: filtered-results-count
+      type: text
+      locator:
+        strategy: text
+        value: Gefilterte Ergebnisse
+      description: Number of subscriptions matching the current search/filter
+
+    # Actions
+    - name: aktionen-button
+      type: button
+      locator:
+        strategy: text
+        value: Aktionen
+      description: Bulk actions dropdown for selected rows
+
+    # Results table
+    - name: results-table
+      type: table
+      locator:
+        strategy: css
+        value: "table"
+      description: >
+        Columns: checkbox, IMSI, Label, Gateway Ausprägung (serial number),
+        ICCID, MSISDN, Status, Erstes Aktivierungsdatum,
+        Monatliche Datennutzung, Kommentar. Status column shows Aktiv/Pausiert/etc.
+
+    - name: imsi-link
+      type: link
+      locator:
+        strategy: css
+        value: "table a"
+      description: >
+        IMSI value in the first column, links to the subscription detail page
+        (/subscriptions/{imsi}). Click the row matching the searched serial number.
+
+  gotchas:
+    - Serial number is stored in the "Gateway Ausprägung" custom field. It is matched by the global search even though not named in the search placeholder text.
+    - Free-text search is triggered by pressing Enter in the search box — the ANWENDEN button is only for structured filters added via "Filter hinzufügen".
+    - accountId (02001639) is embedded in the URL and identifies the Gehrig Group customer account; it is not a per-record id.
+    - SPA hash routing (#/...) — the URL changes without a full page reload.
+    - The "Gesamt" figure is the account total; "Gefilterte Ergebnisse" and the status counts below reflect only the current filter.
+    - A serial-number search that matches exactly one gateway yields a single row; click its IMSI to open the detail page.

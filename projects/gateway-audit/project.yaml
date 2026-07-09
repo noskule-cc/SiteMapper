@@ -1,0 +1,12 @@
+project:
+  name: Gateway Audit
+  description: >
+    Cross-site audits of the IoT gateway fleet, correlating the GG+connect
+    gateway-monitoring view (connection Status, Headwind status, firmware
+    Version) with the Swisscom M2M portal (SIM status, last-24h traffic).
+    Join key: monitoring Seriennummer == Swisscom "Gateway Ausprägung".
+  sites:
+    - connect-ggplus-ch
+    - portal-m2m-swisscom-ch
+  workflows:
+    - gateway-update-effect-tracking.yaml

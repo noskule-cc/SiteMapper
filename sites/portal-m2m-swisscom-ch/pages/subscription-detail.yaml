@@ -1,0 +1,107 @@
+page:
+  name: Teilnehmer Detail (Subscription Detail)
+  url_pattern: /portal/#/de/{accountId}/subscriptions/{imsi}
+  purpose: >
+    Detail view for a single SIM subscription. Used to read the SIM Status
+    (Aktiv?) and to check whether the gateway sent/received data in the last
+    24 hours (traffic health check). Reached by clicking an IMSI on the
+    subscriptions list. {imsi} is the runtime record id (e.g. 228017003424305).
+
+  elements:
+    # Header
+    - name: page-title
+      type: text
+      locator:
+        strategy: text
+        value: "IMSI:"
+      description: 'Header shows "IMSI: <imsi>" for the current subscription'
+
+    # Eigenschaften (properties) section
+    - name: status-value
+      type: text
+      locator:
+        strategy: text
+        value: Status
+      description: >
+        Current SIM status under the "Status" label in the Eigenschaften block.
+        Value is Aktiv | Pausiert | Deaktiviert | Beendet | Gesperrt. Has an
+        inline pencil to edit — do NOT click the pencil when only reading.
+
+    - name: unternehmen-value
+      type: text
+      locator:
+        strategy: text
+        value: Unternehmen
+      description: Owning company (e.g. Gehrig Group AG)
+
+    - name: gateway-auspraegung-value
+      type: text
+      locator:
+        strategy: text
+        value: Gateway Ausprägung
+      description: >
+        Row in "Benutzerdefinierte Labels" holding the gateway serial number —
+        confirms this detail page matches the searched serial.
+
+    # Letzte 24 Stunden (last 24h traffic) — collapsible
+    - name: letzte-24-stunden-section
+      type: container
+      locator:
+        strategy: text
+        value: Letzte 24 Stunden
+      description: >
+        Collapsible panel with last-24h activity. Click its header (or the
+        chevron on the right) to expand and load the data.
+      states: [collapsed, expanded]
+
+    - name: letzte-24-stunden-daten-summary
+      type: text
+      locator:
+        strategy: text
+        value: Daten
+      description: >
+        Summary "Daten" total within the Letzte 24 Stunden panel (e.g. 4.37 MB),
+        alongside Sitzungen öffnen, SMS and Fehler. "0 Bytes"/absence of a value
+        means no traffic in the last 24h.
+
+    - name: daten-tab
+      type: link
+      locator:
+        strategy: text
+        value: Daten
+      description: >
+        "Daten" tab inside Letzte 24 Stunden (default active). Sibling tabs:
+        SMS, Standortaktualisierung, Sitzungseinstellungen, Fehler.
+
+    - name: daten-hochgeladen-row
+      type: text
+      locator:
+        strategy: text
+        value: Daten hochgeladen
+      description: >
+        Row in the Daten table — uploaded data. "Betrag" column holds the amount
+        (e.g. 2.56 MB); also Letzte Aktivität, Letzte Uhrzeit (UTC), Land/Region,
+        Letzter Betreiber. Absent/0 if nothing was uploaded in the last 24h.
+
+    - name: daten-heruntergeladen-row
+      type: text
+      locator:
+        strategy: text
+        value: Daten heruntergeladen
+      description: >
+        Row in the Daten table — downloaded data. "Betrag" column holds the
+        amount (e.g. 1.81 MB). Absent/0 if nothing was downloaded in the last 24h.
+
+    - name: realtime-diagnostics-link
+      type: link
+      locator:
+        strategy: text
+        value: IN „ECHTZEITDIAGNOSE“ ANZEIGEN
+      description: Opens the real-time diagnostics view for deeper troubleshooting
+
+  gotchas:
+    - The "Letzte 24 Stunden" panel is collapsed on load — you must click its header/chevron to expand it before the Daten hochgeladen / heruntergeladen rows are present in the DOM.
+    - Timestamps in the traffic table ("Letzte Uhrzeit") are UTC.
+    - Traffic is considered present when the Daten summary is greater than 0 Bytes, i.e. Daten hochgeladen and/or Daten heruntergeladen has a non-zero Betrag. A SIM can be Aktiv but still show 0 traffic (idle / disconnected gateway).
+    - Status has an inline edit pencil next to the value — treat the page as read-only for the health check; never click the pencil.
+    - The detail page has several other collapsible panels (Trigger-Gruppen, Volumen der vorherigen 30 Tage, Teilnehmeraktivität der letzten 7 Tage, Hinweise) that are not needed for the connectivity check.

@@ -1,0 +1,18 @@
+site:
+  name: Swisscom IoT Service Portal (M2M)
+  base_url: https://portal.m2m.swisscom.ch
+  description: >
+    Swisscom M2M / IoT connectivity management portal. Lists SIM subscriptions
+    (Teilnehmer) for the Gehrig Group account and exposes per-SIM status,
+    data usage and session activity. Used to cross-check gateway connectivity
+    against the GG+connect gateway-monitoring view.
+  auth_notes: >
+    SSO login as Benjamin Behringer. Account/customer id 02001639 (Gehrig Group AG)
+    is embedded in the URL path after /de/. SPA with hash routing (#/...).
+  mapped_at: "2026-07-09"
+  pages:
+    - subscriptions-list.yaml
+    - subscription-detail.yaml
+  workflows:
+    # Cross-site workflows using this site live under projects/:
+    #   projects/gateway-audit/workflows/gateway-update-effect-tracking.yaml

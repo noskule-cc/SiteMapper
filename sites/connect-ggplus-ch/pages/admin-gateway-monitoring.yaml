@@ -1,30 +1,34 @@
 page:
   name: Adminbereich - Gateway Monitoring
   url_pattern: /adminbereich/gateway-monitoring
-  purpose: Monitor IoT gateway device connection status across all partners
+  purpose: >
+    Monitor IoT gateway device connection status across all partners. Central
+    view correlating the gateway's own connection Status, the Headwind
+    management-channel status, firmware Version, and identity (Seriennummer,
+    Vertragsnummer). Source of truth for gateway-update / connectivity audits.
 
   elements:
-    # Status overview cards
+    # Status overview cards (clickable to filter)
     - name: verbunden-card
       type: container
       locator:
         strategy: text
         value: Verbunden
-      description: Green card showing count of connected gateways
+      description: Green card with count of connected gateways (e.g. 96)
 
     - name: offline-card
       type: container
       locator:
         strategy: text
         value: Offline
-      description: Red card showing count of offline gateways
+      description: Red card with count of offline gateways (e.g. 255)
 
     - name: unkonfiguriert-card
       type: container
       locator:
         strategy: text
         value: Unkonfiguriert
-      description: Grey card showing count of unconfigured gateways
+      description: Grey card with count of unconfigured gateways (e.g. 21)
 
     # Filters
     - name: status-filter
@@ -32,14 +36,16 @@ page:
       locator:
         strategy: text
         value: Status
-      description: Dropdown to filter by gateway status (Unkonfiguriert, Verbunden, Offline, etc.)
+      description: >
+        Multi-select dropdown filtering the table by gateway Status. Options:
+        Unkonfiguriert, Verbunden, Offline. Default selection is all three.
 
     - name: text-filter
       type: input
       locator:
         strategy: text
         value: Filter
-      description: Free text filter for the gateway table
+      description: Free text filter applied across the gateway table
 
     # Actions
     - name: csv-export-button
@@ -47,7 +53,10 @@ page:
       locator:
         strategy: text
         value: CSV Export
-      description: Red button to export gateway data as CSV
+      description: >
+        Red button exporting the currently filtered gateway table as CSV. Best
+        way to get the full dataset (all columns incl. Status, Status Headwind,
+        Version, Seriennummer, Vertragsnummer) in one shot for offline analysis.
 
     # Table
     - name: gateway-table
@@ -55,11 +64,69 @@ page:
       locator:
         strategy: css
         value: "table"
-      description: Table with Status, Zeitpunkt, Status Headwind, Vertragsnummer, Vertragspartner, Interner Name, Interne Notiz, Seriennummer columns
+      description: >
+        One row per gateway. Columns (left to right): Status, Zeitpunkt,
+        Status Headwind, Vertragsnummer, Vertragspartner, Interner Name,
+        Interne Notiz, Seriennummer, Installationsdatum, Version, SimKarte/WiFi,
+        plus per-row history and detail icons.
+
+    # Key columns (documented individually because the audit workflow keys on them)
+    - name: col-status
+      type: text
+      locator:
+        strategy: text
+        value: Status
+      description: >
+        Gateway connection status shown as a ROUTER ICON, colour-coded:
+        green = Verbunden (connected/online), red = Offline, grey = Unkonfiguriert.
+        This is the gateway's own reported connectivity.
+
+    - name: col-status-headwind
+      type: text
+      locator:
+        strategy: text
+        value: Status Headwind
+      description: >
+        Headwind management-channel status shown as a coloured DOT:
+        green = online, red = offline, yellow = warning/partial,
+        grey = not reporting / unknown (typically older firmware without Headwind).
+        Independent of col-status.
+
+    - name: col-vertragsnummer
+      type: text
+      locator:
+        strategy: text
+        value: Vertragsnummer
+      description: >
+        Contract number identifying the end customer. Internal/test contracts
+        (1000, 10000, 3086769) are typically excluded from fleet audits.
+
+    - name: col-version
+      type: text
+      locator:
+        strategy: text
+        value: Version
+      description: >
+        Gateway firmware version (e.g. 1.14.1.0, 1.15.1.2, 1.15.1.3, 1.15.2.4).
+        May be empty for gateways that never reported a version. Compare as a
+        dotted numeric tuple, not as a string (1.15.1.10 > 1.15.1.2).
+
+    - name: col-seriennummer
+      type: text
+      locator:
+        strategy: text
+        value: Seriennummer
+      description: >
+        Gateway serial number. Join key to the Swisscom M2M portal, where it is
+        stored in the "Gateway Ausprägung" field of the SIM subscription.
 
   gotchas:
-    - Page takes a few seconds to load (shows spinner)
-    - Status dots in the table are color-coded (green=connected, grey=unconfigured, red=offline)
-    - The three status cards at the top are clickable to filter the table
-    - Large dataset — 339 unconfigured gateways in the demo account
-    - Table columns are sortable
+    - Page takes a few seconds to load (shows a red spinner) before the table appears.
+    - Two distinct status indicators — do not conflate them. "Status" (router icon) is the gateway's connectivity; "Status Headwind" (dot) is the management-channel status. They can disagree (e.g. Headwind green while Status red).
+    - Status icon colours — green = Verbunden, red = Offline, grey = Unkonfiguriert. Headwind dot colours — green = online, red = offline, yellow = warning, grey = not reporting.
+    - The three status cards at the top are clickable and filter the table.
+    - Large dataset (hundreds of gateways). Prefer CSV Export over DOM scraping for full-fleet counts; the table may lazy-load / paginate on scroll.
+    - Version can be empty; treat empty version as "no version reported" and exclude it from version-based comparisons.
+    - Compare Version numerically per dotted segment, not lexically.
+    - Table columns are sortable by clicking the header.
+    - The Seriennummer here corresponds to "Gateway Ausprägung" on the Swisscom M2M portal (portal-m2m-swisscom-ch site) — use it to cross-check SIM status and last-24h traffic.

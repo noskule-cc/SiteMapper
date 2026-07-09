@@ -39,3 +39,5 @@ site:
     - logs.yaml
   workflows:
     - switch-partner-to-maschinenpark.yaml
+    # Cross-site workflows that also use this site live under projects/:
+    #   projects/gateway-audit/workflows/gateway-update-effect-tracking.yaml
