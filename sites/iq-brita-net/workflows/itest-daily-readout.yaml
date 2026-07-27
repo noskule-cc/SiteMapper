@@ -1,0 +1,101 @@
+workflow:
+  name: itest-daily-readout
+  description: >
+    Daily readout for the two iQ-Meter test devices (Werkstatt 3086769 and
+    Pausenraum 10000) tracked on the BRITA iQ filter list. Reads each device's
+    "Capacity remaining" and "Last activity" from the /purityciqs list and emits
+    them as the workflow result.
+
+    SiteMapper is sink-agnostic: this workflow only READS. The host that runs it
+    appends the captured values as a new dated row to each device's table on the
+    GG+ wiki page 2599 (see host_sink below) — GGplus is WIKI ONLY per the ado
+    access guardrail (CLAUDE.md).
+  site: iq-brita-net
+  mode: agentic          # locate each device's row by name in the list, read its cells
+
+  fixtures:
+    # The two devices under test, keyed by their stable list-name fragment.
+    werkstatt:
+      list_name_contains: "3086769"          # "3086769 - iQ Meter … G5UYU6ZPRE - Werkstatt"
+      flowmeter_id: d3e78486-13c6-436c-abe8-8996aa49113e
+      wiki_section: "Werkstatt Test"
+    pausenraum:
+      list_name_contains: "10000"            # "10000 - iQ Meter … 353141283975881 - Pausenraum"
+      flowmeter_id: 6c9a40e6-76f8-47fd-a589-9b04b7bc4443
+      wiki_section: "Pausenraum Test"
+    # Where the host writes the result (NOT written by this workflow).
+    host_sink:
+      ado_project: GGplus
+      wiki_id: e41ca9e1-2b78-4af4-b232-5998ea336426
+      wiki_page_path: "/Testing/Brita/2026-07-11 iQ-Meter Test - laufend"
+
+  setup:
+    - action: navigate
+      site: iq-brita-net
+      page: filters-list
+      value: https://iq.brita.net/purityciqs
+      description: >
+        Open the Professional Filters list. Requires an authenticated BRITA session
+        (see site.yaml auth_notes) — confirm the user is logged in; never enter
+        credentials. A failure here is a setup error (the run cannot start).
+    - action: wait
+      value: "3"
+      description: Let the device grid render (brief spinner) before reading.
+
+  steps:
+    - action: assert
+      page: filters-list
+      element: device-count
+      expect: { contains: "Devices" }
+      description: The "N Devices" count is present — the list finished loading.
+
+    - action: read
+      page: filters-list
+      element: device-table
+      capture: werkstatt_reading
+      value: >
+        In the row whose Name contains "$werkstatt.list_name_contains", read
+        { capacity_remaining: Capacity-remaining cell as an integer (strip " litres"),
+          last_activity: Last-activity cell verbatim ("DD/MM/YYYY, HH:MM") }.
+        If the cells show "-", capture null (device offline / no reading), not 0.
+      description: Read the Werkstatt (3086769) device row.
+
+    - action: read
+      page: filters-list
+      element: device-table
+      capture: pausenraum_reading
+      value: >
+        In the row whose Name contains "$pausenraum.list_name_contains", read
+        { capacity_remaining: integer (strip " litres"), last_activity: verbatim }.
+        "-" cells capture as null, not 0.
+      description: Read the Pausenraum (10000) device row.
+
+    - action: read
+      capture: result
+      value: >
+        { werkstatt: $werkstatt_reading, pausenraum: $pausenraum_reading }
+      description: >
+        The workflow result. The host appends, per device, one row to the matching
+        $host_sink wiki table via the ado MCP (wiki_create_or_update_page), newest on
+        top: | Datum=<run date YYYY-MM-DD> | Letzte Aktualisierung=<last_activity> |
+        Kapazität übrig=<capacity_remaining> | Bemerkung=<empty> |. A null reading is
+        written as an empty cell with a short Bemerkung, never as 0.
+
+  verify:
+    - Both devices are found by their list-name fragment; a missing device is an error, not a silent skip.
+    - Capacity is a plain integer with no "litres" suffix; last_activity is kept verbatim as "DD/MM/YYYY, HH:MM".
+    - A "-" (offline / never-active) reading is reported as null/empty, never coerced to 0.
+    - The workflow does NOT write to Azure DevOps — the wiki append is the host's job and stays within the GGplus WIKI-ONLY guardrail.
+
+# Notes
+#   - Extraction: the /purityciqs grid has no stable per-cell ids; anchor each row by the
+#     device-name link (its text contains the list_name_contains fragment) and read the
+#     sibling Capacity-remaining / Last-activity cells positionally. get_page_text returns
+#     all rows at once (no scroll/pagination). See sites/iq-brita-net/pages/filters-list.yaml.
+#   - Wiki page path: the URL slug hides the real path. Full path is
+#     /Testing/Brita/2026-07-11 iQ-Meter Test - laufend (id 2599); resolve/etag via the
+#     ado MCP before updating so the page is UPDATED, not duplicated.
+#   - Datum year: existing rows carry a "2029" typo where the activity year is 2026 — write
+#     correct YYYY-MM-DD for new rows; do not copy the typo.
+#   - These two device numbers (10000, 3086769) are the same internal/test devices excluded
+#     in projects/gateway-audit (excluded_vertragsnummern), confirming their test status.

@@ -1,0 +1,17 @@
+site:
+  name: BRITA iQ Portal
+  base_url: https://iq.brita.net
+  description: >
+    BRITA iQ professional water-filter portal. Monitors connected filter systems
+    (PURITY C iQ cartridges) and iQ Meters/flowmeters per organization, showing
+    capacity/lifetime remaining, water consumption, and last activity. Filter
+    device list lives at /purityciqs ("Professional Filters").
+  auth_notes: >
+    Requires a logged-in session; do not enter credentials via automation. Mapped
+    while logged in as Benjamin Behringer (org: Gehrig Group). Confirm the user is
+    authenticated before running any workflow.
+  mapped_at: "2026-07-27"
+  pages:
+    - filters-list.yaml
+  workflows:
+    - itest-daily-readout.yaml

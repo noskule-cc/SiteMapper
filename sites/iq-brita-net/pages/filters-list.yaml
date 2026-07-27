@@ -1,0 +1,149 @@
+page:
+  name: Professional Filters (device list)
+  url_pattern: /purityciqs
+  purpose: >
+    Lists all filter/meter devices for the logged-in organization with their
+    current status. Primary source for the daily readout of "Capacity remaining"
+    and "Last activity" per device that is copied into the Azure DevOps wiki.
+  screenshot: ""
+
+  elements:
+    - name: page-heading
+      type: text
+      locator:
+        strategy: text
+        value: Professional Filters
+      description: Page title; browser tab reads "Professional Filters - BRITA iQ Portal".
+
+    - name: device-count
+      type: text
+      locator:
+        strategy: text
+        value: "Devices"
+      description: >
+        Total device count, e.g. "18 Devices". Use to confirm all rows were read.
+
+    - name: search-input
+      type: input
+      locator:
+        strategy: aria-label
+        value: Search
+      description: Free-text filter over the device list (filters by name).
+
+    - name: filter-purity-c-iq
+      type: button
+      locator:
+        strategy: text
+        value: PURITY C iQ
+      description: Quick filter — show only PURITY C iQ filter devices.
+
+    - name: filter-iq-meter
+      type: button
+      locator:
+        strategy: text
+        value: iQ Meter
+      description: Quick filter — show only iQ Meter / flowmeter devices.
+
+    - name: filter-inactive-3d
+      type: button
+      locator:
+        strategy: text
+        value: Inactive > 3d
+      description: Quick filter — show only devices inactive for more than 3 days.
+
+    - name: show-hide-columns
+      type: button
+      locator:
+        strategy: aria-label
+        value: Show/Hide columns
+      description: >
+        Toggles which columns are visible. Capacity remaining and Last activity
+        are shown by default — no need to change columns for the daily readout.
+
+    - name: device-table
+      type: table
+      locator:
+        strategy: role
+        value: table
+      description: >
+        The device grid. One header row then one row group per device. Each row is
+        7 positional cells in order: (1) device-type icon, (2) name link + cartridge
+        model subtitle, (3) Lifetime remaining, (4) Capacity remaining,
+        (5) Water consumption of last week, (6) Organization link, (7) Last activity.
+      children:
+        - name: col-name
+          type: text
+          locator: {strategy: text, value: Name}
+          description: Column 1 header.
+        - name: col-lifetime-remaining
+          type: text
+          locator: {strategy: text, value: Lifetime remaining}
+          description: Column 2 header.
+        - name: col-capacity-remaining
+          type: text
+          locator: {strategy: text, value: Capacity remaining}
+          description: Column 3 header — TARGET field. Values like "1859 litres" or "- litres".
+        - name: col-water-consumption
+          type: text
+          locator: {strategy: text, value: Water consumption of last week}
+          description: Column 4 header.
+        - name: col-organization
+          type: text
+          locator: {strategy: text, value: Organization}
+          description: Column 5 header.
+        - name: col-last-activity
+          type: text
+          locator: {strategy: text, value: Last activity}
+          description: >
+            Column 6 header — TARGET field. Values formatted DD/MM/YYYY, HH:MM
+            (e.g. "27/07/2026, 07:29"); empty ("-") for never-active devices.
+
+    - name: device-name-link
+      type: link
+      locator:
+        strategy: css
+        value: "a[href^='/purityciqs/'], a[href^='/flowmeters/']"
+      description: >
+        Per-device link in the Name cell — the only stable per-row anchor (no
+        data-testid exists). Two href shapes: /purityciqs/{orgId}/{deviceId} for
+        PURITY C iQ filters, /flowmeters/{orgId}/{deviceId} for iQ Meters. The
+        link TEXT is the device display name used as the wiki row key.
+
+    - name: register-device
+      type: link
+      locator:
+        strategy: text
+        value: Register device
+      description: Opens /claim to add a device. Not used by the readout workflow.
+
+  gotchas:
+    - >
+      No data-testid or stable cell ids — the grid is CSS/div-based with generic
+      roles. Extract by row order: the 7 cells per device are always in the fixed
+      order listed under device-table. Anchor a row by its device-name link
+      (text/href), then read the sibling cells positionally.
+    - >
+      get_page_text returns ALL rows at once (all 18) in table order with fields
+      per device as: name / cartridge-model / lifetime / capacity / water-consumption
+      / organization / last-activity. This is the most reliable extraction path for
+      the daily readout — no scrolling or pagination needed; the whole list is in the DOM.
+    - >
+      Values carry unit text: capacity is "1859 litres" (parse the leading number),
+      lifetime is "-1 weeks"/"45 weeks". Never-initialized devices show "-" /
+      "- litres" / "- weeks" and a blank Last activity — record these as empty/unknown,
+      not zero.
+    - >
+      Column visibility depends on window width. At ~980px the Organization and Last
+      activity columns scroll off the right edge (horizontal scroll needed); at
+      ~1568px+ all six columns are visible. Prefer a wide viewport, or rely on
+      get_page_text/DOM which returns every field regardless of viewport width.
+    - >
+      The list mixes two device types (PURITY C iQ filters and iQ Meters). Both expose
+      Capacity remaining and Last activity, so no type filtering is required for the readout.
+    - >
+      The "Enable new design" toggle is NOT present on this list page — it only appears
+      on device detail pages. The list layout is single-design and stable regardless of
+      that toggle.
+    - >
+      Requires an authenticated session (see site.yaml auth_notes). Loads with a brief
+      spinner; wait for the "N Devices" count / table before reading.
