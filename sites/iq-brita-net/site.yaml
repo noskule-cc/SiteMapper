@@ -7,11 +7,27 @@ site:
     capacity/lifetime remaining, water consumption, and last activity. Filter
     device list lives at /purityciqs ("Professional Filters").
   auth_notes: >
-    Requires a logged-in session; do not enter credentials via automation. Mapped
-    while logged in as Benjamin Behringer (org: Gehrig Group). Confirm the user is
-    authenticated before running any workflow.
+    Browser: requires a logged-in session (Azure AD B2C); do not enter credentials via
+    automation. Mapped while logged in as Benjamin Behringer (org: Gehrig Group).
+    Headless/API access is currently BLOCKED (no ROPC, no loopback redirect, encrypted
+    MSAL cache) — the daily readout runs browser-driven. See scripts/README.md for the
+    auth findings. Confirm the user is logged in before running any workflow.
   mapped_at: "2026-07-27"
   pages:
     - filters-list.yaml
   workflows:
     - itest-daily-readout.yaml
+  # PARKED — headless auth to the BRITA API is blocked (see scripts/README.md).
+  # Kept as reference; not used by any workflow. The daily readout is browser-driven.
+  scripts:
+    - name: brita_auth.py
+      description: >
+        [PARKED] Azure AD B2C refresh-token grant, keyring-stored. Needs a seeded
+        refresh token, which cannot be obtained headlessly today (encrypted MSAL cache).
+    - name: brita_api.py
+      description: >
+        [PARKED] Thin REST client for iq.brita.net/api (get_resource, get_tenant).
+    - name: get_itest_readout.py
+      description: >
+        [PARKED] Headless readout of Werkstatt + Pausenraum capacity + last activity
+        (--json / --raw). Blocked on auth; reusable if BRITA grants API access.
