@@ -1,0 +1,471 @@
+{
+  "2023110600000239": {
+    "outcome": "VOR_ORT_SIGNAL_FLASH",
+    "up": "548.00 Bytes",
+    "down": "805.00 Bytes",
+    "up_bytes": 548,
+    "down_bytes": 805,
+    "monthly": "2.21 GB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096932"
+  },
+  "2023110600000254": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096925"
+  },
+  "2023110600000509": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017003424365"
+  },
+  "2023110600000353": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "32.41 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096889",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000096": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "31.67 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096971",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000493": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "2.78 GB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096943",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000436": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "887.59 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096824",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000175": {
+    "outcome": "PENDING_SIM_ACTIVATION",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "5.00 GB",
+    "sim_status": "Deaktiviert",
+    "imsi": "228017005096801",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000377": {
+    "outcome": "VOR_ORT_SIGNAL_FLASH",
+    "up": "915.82 kB",
+    "down": "29.34 MB",
+    "up_bytes": 937800,
+    "down_bytes": 30765220,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096960"
+  },
+  "2023110600000330": {
+    "outcome": "PENDING_SIM_ACTIVATION",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "5.03 GB",
+    "sim_status": "Deaktiviert",
+    "imsi": "228017003424470",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000122": {
+    "outcome": "PENDING_SIM_ACTIVATION",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "5.03 GB",
+    "sim_status": "Deaktiviert",
+    "imsi": "228017005096826",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000007": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "1.51 GB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096990",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000083": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096936"
+  },
+  "2023110600000048": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017003424445"
+  },
+  "2023110600000049": {
+    "outcome": "VOR_ORT_SIGNAL_FLASH",
+    "up": "15.34 MB",
+    "down": "102.06 MB",
+    "up_bytes": 16085156,
+    "down_bytes": 107017667,
+    "monthly": "5.03 GB",
+    "sim_status": "Deaktiviert",
+    "imsi": "228017003424434",
+    "note": "SIM shows Deaktiviert yet moved data in the last 24h - node 12 is asked before node 13, so it never reaches the SIM question"
+  },
+  "2023110600000279": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096937"
+  },
+  "2023110600000152": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096803"
+  },
+  "2023110600000411": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096830"
+  },
+  "2023110600000413": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096822"
+  },
+  "2023110600000160": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017003424392"
+  },
+  "2023110600000012": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096838"
+  },
+  "2023110600000421": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096820"
+  },
+  "2023110600000398": {
+    "outcome": "PENDING_SIM_ACTIVATION",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "5.01 GB",
+    "sim_status": "Deaktiviert",
+    "imsi": "228017005096976",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000428": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "607.20 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096815",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000344": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096828"
+  },
+  "2023110600000489": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "1.06 GB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096957",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000427": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096958"
+  },
+  "2023110600000136": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096809"
+  },
+  "2023110600000548": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096806"
+  },
+  "2023110600000504": {
+    "outcome": "VOR_ORT_SIGNAL_FLASH",
+    "up": "104.00 Bytes",
+    "down": "156.00 Bytes",
+    "up_bytes": 104,
+    "down_bytes": 156,
+    "monthly": "37.17 kB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096849"
+  },
+  "2023110600000296": {
+    "outcome": "PENDING_SIM_ACTIVATION",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "5.01 GB",
+    "sim_status": "Deaktiviert",
+    "imsi": "228017003424400",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000306": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017003424464"
+  },
+  "2023110600000147": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "615.19 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017003424447",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000370": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096939"
+  },
+  "2023110600000375": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "112.93 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096955",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000498": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096871"
+  },
+  "2023110600000420": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096818"
+  },
+  "2023110600000092": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017003424423"
+  },
+  "2023110600000335": {
+    "outcome": "VOR_ORT_SIGNAL_FLASH",
+    "up": "125.63 MB",
+    "down": "1.00 GB",
+    "up_bytes": 131732603,
+    "down_bytes": 1073741824,
+    "monthly": "3.20 GB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096972"
+  },
+  "2023110600000141": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "30.83 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096836",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000087": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096835"
+  },
+  "2023110600000132": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096954"
+  },
+  "2023110600000386": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "31.21 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096825",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000395": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "37.02 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096967",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000399": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "up_bytes": 0,
+    "down_bytes": 0,
+    "monthly": "68.16 MB",
+    "sim_status": "Aktiv",
+    "imsi": "228017005096896",
+    "note": "monthly>0 but silent in last 24h"
+  }
+}

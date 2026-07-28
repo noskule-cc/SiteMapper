@@ -1,0 +1,318 @@
+workflow:
+  name: gateway-online-status
+  description: >
+    Triage the whole gateway fleet into one action per gateway by walking the
+    gateway-status decision tree (see gateway_online_status.drawio). Every box in that
+    diagram is numbered 1-19; those numbers are the reference key used here, in the
+    companion .md, and in the result doc.
+
+      1  Version >= 1.15.1.2 ?    false/none -> 2  connect Status online ? (version low)
+      2  connect Status online ?   true       -> 3  Vor Ort: Flash Gateway -> 4  Version low, online: Gateway Upgrade List
+                                   false      -> 5  Vor Ort: Flash Gateway -> 6  Version low, offline: Gateway Upgrade List
+      1  Version >= 1.15.1.2 ?    true       -> 7  MDM Status green ?
+      7  MDM Status green ?        true       -> 8  connect Status online ?
+      8  connect Status online ?   true       -> 9  Gateway OK: nothing to do
+                                   false      -> 10 Analyse Logs from Headwind -> 11 Connect offline: Logs Summary
+      7  MDM Status green ?        false      -> 12 LTE Traffic (last 24h) ?
+      12 LTE Traffic ?             true       -> 18 Analyse Logs, Vor Ort: Flash Gateway -> 19 Unknown MDM error: offline Logs Summary
+                                   false      -> 13 Swisscom Portal: SIM aktiv ?
+      13 SIM aktiv ?               true       -> 16 Vor Ort: Reset (Flash) Gateway -> 17 Unknown Network Error: Gateway Reset List
+                                   not found  -> 15 SIM nicht im Account: Gateway List
+                                   false      -> 14 activate SIM, check ok ?
+      14 activate SIM, check ok ?  true       -> 9  Gateway OK: nothing to do
+                                   false      -> 16 Vor Ort: Reset (Flash) Gateway -> 17 Unknown Network Error: Gateway Reset List
+
+    Produces one Rapport per gateway (the seven terminal boxes 4/6/9/11/15/17/19) plus
+    headline counts, so the fleet is worked off by action rather than read row by row.
+    Version low splits by connect Status into ONLINE (box 3/4, reachable - a remote push
+    may avoid the trip) and OFFLINE (box 5/6, guaranteed site visit) - same action
+    "Vor Ort: Flash", but two separate lists.
+  sites:
+    - connect-ggplus-ch
+    - portal-m2m-swisscom-ch
+  mode: agentic          # API + SignalR on connect; per-gateway UI judgement on Swisscom
+
+  fixtures:
+    version_threshold: "1.15.1.2"        # inclusive lower bound for "updated"
+    excluded_vertragsnummern: ["1000", "10000", "3086769"]  # internal/test/demo
+    swisscom_account_id: "02001639"      # Gehrig Group M2M account (in the Swisscom URL)
+    log_lookback_days: 5                 # Headwind log window (severity WARNING = incl. ERROR)
+
+  # --- Decision tree semantics (rev. 2026-07-16) -------------------------------
+  #   Node numbers below match gateway_online_status.drawio.
+  #
+  #   1  Version    : numeric dotted compare against version_threshold, INCLUSIVE.
+  #                   An EMPTY version means "the device never told us what it runs",
+  #                   which needs a technician just like an outdated one -> same FLASH
+  #                   action, but `reason` keeps the two distinguishable (a fleet-wide
+  #                   reporting problem looks nothing like an update gap).
+  #   2  connect    : version-low ONLY. Split the flash cohort by connect Status:
+  #      Status       online (Connected) -> FLASH_ONLINE (box 3/4, reachable - a remote
+  #      (vers.low)   push may avoid the trip); offline -> FLASH_OFFLINE (box 5/6, a
+  #                   guaranteed site visit). Same action, two separate lists.
+  #   7  MDM Status : the "Status Headwind" dot. ONLY green passes.
+  #   8  connect    : the "Status" router icon / SignalR ConnectionState. Only
+  #      Status       Connected passes; Disconnected and Unconfigured both fail.
+  #   12 LTE Traffic: Swisscom last-24h Daten hoch-/heruntergeladen. Any real movement
+  #                   counts as traffic; 0 Bytes both directions is "no traffic".
+  #   13 SIM aktiv  : the Swisscom subscription Status (Aktiviert / Deaktiviert). A serial
+  #                   that is not in the account AT ALL is a THIRD outcome ("not found"),
+  #                   detected at the search step -> box 15, an inventory problem.
+  #   14 activate   : REACTIVATE a deactivated SIM, then re-check. THIS MUTATES SWISSCOM
+  #      SIM         STATE - it is operator-gated (see the step): do NOT auto-reactivate.
+  #
+  #   WHY THE TWO LOWER BRANCHES ASK DIFFERENT QUESTIONS:
+  #     MDM red (node 7 false) -> the management channel is dead, so no remote fix exists:
+  #                  a reset cannot be pushed through the very channel that is down. So ask
+  #                  the NETWORK whether the device is even alive (nodes 12-19).
+  #     MDM green -> the device IS reachable, so a Swisscom lookup would only confirm what
+  #                  MDM already proved. Ask the DEVICE instead (Headwind logs, node 10).
+  #
+  #   NOT MODELLED IN THE TREE: WiFi gateways have no SIM, so "LTE traffic?" is undefined
+  #   for them (not false). They never reach node 12 - they are listed separately as
+  #   $triage.lte_skipped_wifi and get an on-site diagnosis (Vor Ort: Analyse) directly.
+  # ----------------------------------------------------------------------------
+
+  setup:
+    # The connect side needs NO browser at all - it runs against the BFF API.
+    # Only the Swisscom side (LTE traffic + SIM status) still drives Chrome.
+    - action: script
+      site: connect-ggplus-ch
+      script: ggplus_auth.py
+      capture: auth_ok
+      description: >
+        Ensure a valid GG+connect access token. Uses the stored login from the OS
+        keyring (service "SiteMapper"), refreshing via the refresh_token grant if the
+        access token has expired. If nothing is stored and the run is interactive, it
+        prompts once for username/password; if it is non-interactive, set
+        GGPLUS_USER_PROD / GGPLUS_PASS_PROD. Credentials never touch the repo.
+        A failure here is a setup error - the run cannot start.
+
+  steps:
+    # === Nodes 1-11: the whole fleet, triaged, via the BFF API (no browser) =====
+    - action: script
+      site: connect-ggplus-ch
+      script: get_gateway_status_table.py
+      value: >
+        --json --threshold $version_threshold
+        > projects/gateway-audit/results/gateway-online-status.$today/triage.json
+      capture: triage
+      description: >
+        Run sites/connect-ggplus-ch/scripts/get_gateway_status_table.py. It logs in
+        (OS keyring), reads GET /gateway/api/v1/gateway/all, fetches the live connect
+        Status from the SignalR hub (AddDeviceWatcher -> ConnectionState), applies the
+        partner exclusions, and walks nodes 1/2/7/8 of the tree - returning one bucket
+        per gateway plus the counts. Emits:
+          fleet_total, fleet_kept, counts{OK, FLASH_ONLINE, FLASH_OFFLINE, ANALYZE_LOGS, LTE_CHECK},
+          flash_reasons{VERSION_BELOW_THRESHOLD, NO_VERSION_REPORTED},
+          gateways[...], lte_candidates[], lte_skipped_wifi[], no_state_received[]
+        NOTE: the page's CSV Export button is a client-side Blob, not an endpoint -
+        there is nothing to download; the script reproduces the same columns from the API.
+        THIS IS THE RUN'S ONLY FLEET SWEEP. Save it to triage.json and pass --triage to
+        every later step: the SignalR hub refuses a second connection in the same session
+        (Handshake status 404), and a re-sweep is a DIFFERENT snapshot - the fleet flaps
+        between passes, so a worklist built from a fresh sweep would not match the
+        Swisscom outcomes gathered against this one.
+
+    - action: read
+      site: connect-ggplus-ch
+      capture: bucket_counts
+      value: "$triage.counts"
+      description: >
+        Headline counts per bucket - OK (box 9), FLASH_ONLINE (box 3/4) and FLASH_OFFLINE
+        (box 5/6) reported as SEPARATE lists (same action, but online is reachable and
+        offline is a guaranteed site visit), ANALYZE_LOGS (box 10/11), LTE_CHECK (the
+        MDM-red branch, nodes 12-19) - plus $triage.flash_reasons, which splits the flash
+        cohort into VERSION_BELOW_THRESHOLD vs NO_VERSION_REPORTED. The overview the
+        workflow exists for.
+
+    - action: read
+      site: connect-ggplus-ch
+      capture: lte_candidates
+      value: "$triage.lte_candidates"
+      description: >
+        Serials that reached node 12 (Version ok AND MDM not green), EXCLUDING WiFi
+        gateways - a WiFi gateway has no SIM, so "LTE traffic?" is undefined for it. Those
+        are listed separately as $triage.lte_skipped_wifi and are pre-assigned
+        VOR_ORT_ANALYSE without asking Swisscom. Each candidate needs one (slow, manual)
+        Swisscom UI lookup.
+
+    # === Node 7 -> Node 8: "Analyse Logs from Headwind" -> "Connect offline: Logs Summary"
+    # The MDM-green branch: MDM green but connect offline. We can reach these devices, so
+    # ask them why they will not talk to connect. NOT the LTE population.
+    - action: script
+      site: connect-ggplus-ch
+      script: get_gateway_logs.py
+      value: >
+        --bucket ANALYZE_LOGS --days $log_lookback_days
+        --triage projects/gateway-audit/results/gateway-online-status.$today/triage.json
+        --out projects/gateway-audit/results/gateway-online-status.$today/logs
+      capture: headwind_logs
+      description: >
+        POST /gateway/api/v1/hmdm/logs per candidate, over the last
+        $log_lookback_days days at severity WARNING - which already INCLUDES ERROR,
+        because the severity filter is cumulative rather than an exact level.
+        Classifies WHY each gateway is unreachable:
+          NO_DNS          - cannot resolve bff.ggplus.ch; no network at all
+          HUB_HANDSHAKE   - network up, but the SignalR handshake with connect fails
+          WATCHDOG_REBOOT - watchdog reboot loop, a service is not reporting
+          CONFIG_FAILED   - config update failing (network error)
+        Writes into the run's evidence folder (Rapport box 11 "Connect offline: Logs
+        Summary"): logs/<serial>.log, logs/<serial>.md, logs/Summary.md (incl. the
+        gateways that logged NOTHING - not a clean bill of health, a silent device may
+        have stopped reporting). The findings inform the diagnosis; they do NOT re-bucket.
+
+    # === Nodes 9-16: the MDM-red branch, driven through the Swisscom M2M portal ==
+    # The Swisscom detail is a Vaadin 8 app with opaque /portal/UIDL/ RPC - there is NO
+    # per-IMSI REST API, so each serial must be driven through the UI. Repeat A-F for EACH
+    # serial in $lte_candidates, accumulating into lte_results. Run sequentially in ONE tab;
+    # batching ~4 serials per browser_batch call is a good throughput/robustness balance.
+    # Do NOT click the Status edit pencil or any mutating control EXCEPT the operator-gated
+    # SIM reactivation in step F.iii.
+    #
+    #   A. navigate -> https://portal.m2m.swisscom.ch/portal/#/de/{accountId}/subscriptions
+    #      (accountId = swisscom_account_id fixture); wait 3s.
+    #   B. scroll the list UP ~40 ticks FIRST (a prior 0-result search leaves the list
+    #      scrolled, which shifts the search box off the click point).
+    #   C. click search-input, key ctrl+a, key Delete (the field is sticky across
+    #      navigations), type the serial, key Return; wait 2s. POLL until the grid's first
+    #      row matches the serial asked for (the grid lags the search box - reading rows[0]
+    #      after a fixed wait returns the PREVIOUS serial).
+    #   D. read the list row via search_read_js (below).
+    #        found = false                       -> NODE 10 "not found" -> record
+    #           {serial, outcome: SIM_NICHT_IM_ACCOUNT} and go to the next serial (box 15).
+    #        found = true                        -> keep imsi + sim_status (Aktiviert/Deaktiviert).
+    #   E. navigate -> .../subscriptions/{imsi}/ ; wait 3s. Scroll DOWN ~40 ticks, click the
+    #      "Letzte 24 Stunden" chevron to expand; wait 2s. Read traffic via traffic_read_js.
+    #      Verify the detail's IMSI against the page URL before trusting the numbers.
+    #   F. apply nodes 12 -> 13/14:
+    #        i.   has_traffic = true  (node 12 true)  -> VOR_ORT_SIGNAL_FLASH (box 18 -> 19):
+    #             the device is alive on cellular but unreachable in connect (a handshake/
+    #             DNS problem, not a dead gateway). Analyse its logs + on-site
+    #             Signalstärke-Test, Flash.
+    #        ii.  has_traffic = false, sim_status = Aktiviert (node 13 true)
+    #                                                 -> VOR_ORT_RESET_FLASH (box 16 -> 17):
+    #             SIM live but silent - on-site Reset (Flash).
+    #        iii. has_traffic = false, sim_status = Deaktiviert (node 13 false -> node 14):
+    #             OPERATOR-GATED MUTATION. Reactivating the SIM changes Swisscom state and
+    #             is outward-facing - do NOT do it autonomously. Surface it, get an explicit
+    #             go-ahead, then reactivate and re-check:
+    #               recovered (traffic/connect returns) -> OK (box 9) - no site visit
+    #               still dead                           -> VOR_ORT_RESET_FLASH (box 16 -> 17)
+    #             Until the operator confirms, record {serial, outcome: PENDING_SIM_ACTIVATION}.
+    #
+    # Coordinate fallbacks (validated at viewport 1568x765; re-derive from a screenshot if the
+    # window differs): search-input ~ (760,156) with the list scrolled to top; "Letzte 24
+    # Stunden" chevron ~ (1516,522) after scrolling the detail to the bottom. Prefer element
+    # refs / find() over raw coordinates when available.
+    - action: verify
+      site: portal-m2m-swisscom-ch
+      page: subscription-detail
+      capture: lte_results
+      description: >
+        Per-serial Swisscom check for $lte_candidates - see the baked recipe (A-F) above.
+        Apply nodes 12/13/14 to assign one outcome per serial. Two outcomes are NOT site
+        visits and must not be forced into one:
+          SIM_NICHT_IM_ACCOUNT (box 15) - serial not on the account. A SIM-inventory
+            problem, not a gateway fault; a technician cannot fix it. Report separately.
+          OK (box 9, via node 14) - a deactivated SIM that reactivation brought back.
+        Everything else (VOR_ORT_SIGNAL_FLASH, VOR_ORT_RESET_FLASH) is a site visit.
+      value: |
+        // --- search_read_js: run on the subscriptions LIST after step C ---
+        (() => {
+          const rows = [...document.querySelectorAll('table tbody tr')];
+          if (!rows.length) return { found: false };
+          const c = [...rows[0].querySelectorAll('td')].map(x => x.innerText.trim());
+          // list columns: [checkbox, IMSI, Label, Gateway Ausprägung, ICCID,
+          //                MSISDN, Status, Erstes Aktivierungsdatum, Monatliche Daten, Kommentar]
+          return { found: true, imsi: c[1], gateway_auspraegung: c[3], sim_status: c[6] };
+        })()
+
+        // --- traffic_read_js: run on the DETAIL page after step E (panel expanded) ---
+        (() => {
+          let up = null, down = null;
+          for (const r of document.querySelectorAll('tr')) {
+            const t = r.innerText;
+            const cells = [...r.querySelectorAll('td')].map(x => x.innerText.trim());
+            if (/Daten hochgeladen/.test(t))     up   = cells[1]; // "Betrag" column
+            if (/Daten heruntergeladen/.test(t)) down = cells[1];
+          }
+          const nz = s => !!s && !/^0(\.0+)?\s*(Bytes|B)?$/i.test(s.trim());
+          const has_traffic = nz(up) || nz(down);         // node 12: any real movement
+          return {
+            up, down, has_traffic,
+            expanded: up !== null, // false => panel not expanded / not on detail; retry step E
+          };
+        })()
+
+    - action: read
+      site: portal-m2m-swisscom-ch
+      page: subscription-detail
+      capture: action_counts
+      value: >
+        counts of $lte_results grouped by outcome (VOR_ORT_SIGNAL_FLASH | VOR_ORT_RESET_FLASH |
+        SIM_NICHT_IM_ACCOUNT | OK | PENDING_SIM_ACTIVATION), plus $triage.lte_skipped_wifi
+        folded into VOR_ORT_ANALYSE
+      description: >
+        Final action totals for the MDM-red branch. Together with bucket_counts these are
+        the headline numbers of the run - and the site-visit workload it implies.
+
+    # === Assemble the deliverable: one action per gateway, sorted by action =====
+    - action: script
+      site: connect-ggplus-ch
+      script: get_gateway_status_table.py
+      value: >
+        --triage projects/gateway-audit/results/gateway-online-status.$today/triage.json
+        --lte-results $lte_results
+        --out projects/gateway-audit/results/gateway-online-status.$today
+      capture: worklist
+      description: >
+        Fold the Swisscom outcomes back into the SAVED triage (--triage, never a re-fetch:
+        a fresh sweep is a different fleet state) and emit the run's deliverable,
+        GROUPED BY ACTION - so the fleet is worked off by "what do we have to do with
+        this gateway", not read row by row. Writes into the dated run folder:
+          triage.json    every gateway, machine-readable
+          worklist.md    grouped by action (the seven Rapport boxes)
+          worklist.csv   the same, pasteable into a ticket
+        Serials are written in FULL - this is a worklist, the value has to be pasteable.
+        The headline number is `site_visits`: every Vor Ort:* gateway is a technician's
+        trip, and that is the run's real operational cost.
+
+  verify:
+    - Every kept gateway is assigned exactly one bucket - OK, FLASH_ONLINE, FLASH_OFFLINE, ANALYZE_LOGS, LTE_CHECK - and the counts sum to fleet_kept.
+    - The reason split matters — NO_VERSION_REPORTED ("we cannot ask the device what it runs") is a different claim from VERSION_BELOW_THRESHOLD ("it runs an old version"), and it tells you whether the fleet has a reporting problem or an update problem. Report it within both flash lists.
+    - The flash cohort is reported as TWO lists - FLASH_ONLINE (box 3/4, reachable) and FLASH_OFFLINE (box 5/6, offline) - same action (Vor Ort: Flash) but separated so the offline list is worked as guaranteed site visits and the online list can be tried remotely first. Both are still split by reason (VERSION_BELOW_THRESHOLD vs NO_VERSION_REPORTED).
+    - Every LTE_CHECK gateway has a final outcome - VOR_ORT_SIGNAL_FLASH (box 18/19), VOR_ORT_RESET_FLASH (box 16/17), SIM_NICHT_IM_ACCOUNT (box 15), OK (box 9, via SIM reactivation), or PENDING_SIM_ACTIVATION - with its up/down 24h figures shown.
+    - State plainly how many site visits the run implies. FLASH_OFFLINE, VOR_ORT_SIGNAL_FLASH and VOR_ORT_RESET_FLASH are site visits; SIM_NICHT_IM_ACCOUNT and a reactivation that recovered (OK) are NOT. FLASH_ONLINE is a site visit only if the remote push is not attempted or fails. This is the run's real operational cost and must not be buried.
+    - SIM_NICHT_IM_ACCOUNT (box 15) is reported as a SIM-inventory problem, NOT as a site visit - a technician cannot fix a SIM that is missing from the Swisscom account.
+    - Any SIM reactivation (node 14) was operator-confirmed before it happened - the run never reactivates a SIM autonomously. Unconfirmed ones are reported as PENDING_SIM_ACTIVATION, not silently actioned.
+    - WiFi gateways are shown as skipping node 12 (no SIM - the traffic question is undefined, not false), pre-assigned VOR_ORT_ANALYSE.
+    - Headwind log findings are shown per ANALYZE_LOGS gateway (Rapport box 11); they inform the diagnosis but do not re-bucket.
+    - State fleet_total, fleet_kept and the exclusion set applied, so the numbers are reproducible.
+    - Identifiers are written in FULL — Seriennummer, Vertragsnummer, IMSI, IMEI. Never abbreviated (no "…296"), because the report is a worklist: the serial has to be pasteable into the monitoring filter, the Swisscom search box or a ticket. The fleet's serials share a long common prefix, so a truncated one is not even unique. If a table is too wide, drop a column, not the digits of the key.
+
+# Notes
+#   - Decision tree source: gateway_online_status.drawio (same folder); boxes numbered 1-16.
+#   - The connect side is API-only (no browser). Verified 2026-07-13:
+#       * GET  /gateway/api/v1/gateway/all  - fleet list. Its `connectionState` is a
+#         PLACEHOLDER ("Unconfigured" for all 376); the real connect Status exists only
+#         on the SignalR hub /gateway/device-connection (invoke AddDeviceWatcher ->
+#         server pushes ConnectionState). get_gateway_status_table.py does both.
+#       * The "Version" column is a HYBRID: hmdmConnectVersionInstalled unless Status
+#         Headwind is grey, then firmwareVersion. Reading firmwareVersion naively
+#         mis-sorts the whole flash cohort.
+#   - Join key: monitoring "Seriennummer" == Swisscom "Gateway Ausprägung".
+#   - accountId 02001639 in the Swisscom URL is the Gehrig Group M2M account.
+#   - The tree keeps the expensive Swisscom step cheap: only gateways that are updated
+#     AND MDM-red reach node 12, not all offline gateways. WiFi gateways are excluded from
+#     it entirely (no SIM).
+#   - Pairing the two branches is what makes the diagnosis: a HUB_HANDSHAKE log finding
+#     (node 15) together with real LTE traffic proves the gateway is alive and the
+#     "offline" Status is a false negative.
+#   - The SIM-reactivation path (node 14) is the one place this workflow can MUTATE an
+#     external system. It is operator-gated: never reactivate a SIM without explicit
+#     confirmation. It is also the one path that can clear an LTE_CHECK gateway to OK
+#     without a site visit.
+#   - Overlap with gateway-update-effect-tracking: that workflow answers "what did the
+#     rollout change?" (three discrepancy metrics). This one answers "what do we DO
+#     with each gateway?" (one action per gateway).
