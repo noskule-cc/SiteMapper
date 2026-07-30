@@ -54,9 +54,14 @@ page:
         strategy: text
         value: CSV Export
       description: >
-        Red button exporting the currently filtered gateway table as CSV. Best
-        way to get the full dataset (all columns incl. Status, Status Headwind,
-        Version, Seriennummer, Vertragsnummer) in one shot for offline analysis.
+        Red button exporting the currently filtered gateway table as CSV. It exports
+        10 columns: Status, Zeitpunkt, Status Headwind, Vertragsnummer, Hersteller,
+        Interner Name, Interne Notiz, Seriennummer, Version, SimKarte/WiFi.
+        NOT an API call — the file is built in the browser
+        (exportAsCsv(dataSource.filteredData) -> convertToCSV() -> new Blob(...)),
+        so there is no CSV endpoint to request. For automation do NOT click this;
+        use scripts/get_gateway_status_table.py, which reproduces the same columns
+        from the API. See scripts/README.md.
 
     # Table
     - name: gateway-table
@@ -121,12 +126,19 @@ page:
         stored in the "Gateway Ausprägung" field of the SIM subscription.
 
   gotchas:
+    - "PREFER THE API OVER THIS PAGE. Everything below is reachable directly from the BFF — see scripts/get_gateway_status_table.py. Drive the browser only if you specifically need to test the UI."
     - Page takes a few seconds to load (shows a red spinner) before the table appears.
     - Two distinct status indicators — do not conflate them. "Status" (router icon) is the gateway's connectivity; "Status Headwind" (dot) is the management-channel status. They can disagree (e.g. Headwind green while Status red).
     - Status icon colours — green = Verbunden, red = Offline, grey = Unkonfiguriert. Headwind dot colours — green = online, red = offline, yellow = warning, grey = not reporting.
     - The three status cards at the top are clickable and filter the table.
-    - Large dataset (hundreds of gateways). Prefer CSV Export over DOM scraping for full-fleet counts; the table may lazy-load / paginate on scroll.
-    - Version can be empty; treat empty version as "no version reported" and exclude it from version-based comparisons.
-    - Compare Version numerically per dotted segment, not lexically.
     - Table columns are sortable by clicking the header.
+    - Compare Version numerically per dotted segment, not lexically (1.15.1.10 > 1.15.1.2).
+    - Version can be empty — that means "no version reported at all", which is NOT the same as "old version". Bucket it separately rather than treating it as outdated.
     - The Seriennummer here corresponds to "Gateway Ausprägung" on the Swisscom M2M portal (portal-m2m-swisscom-ch site) — use it to cross-check SIM status and last-24h traffic.
+
+    # --- API-level gotchas (verified 2026-07-13 against the live app) ---
+    - "The 'Version' column is a HYBRID field, not one property: it shows hmdmConnectVersionInstalled UNLESS Status Headwind is grey, in which case it shows firmwareVersion. Reading firmwareVersion naively gives a different, wrong answer (e.g. serial 2023010300000004 has firmwareVersion 1.14.1.0 but displays 1.15.0.3). Reproduce the app's getDisplayedVersion() exactly."
+    - "connectionState from GET /gateway/api/v1/gateway/all is a PLACEHOLDER — it is \"Unconfigured\" for every gateway. The real Status arrives over the SignalR hub /gateway/device-connection: invoke AddDeviceWatcher(deviceId, classification) and the server pushes a ConnectionState message ({deviceId, deviceIotConnectionStatus}). A plain HTTP call cannot tell you whether a gateway is online."
+    - "The CSV Export button is NOT an API call — the file is generated in the browser from data already in memory. There is no CSV endpoint."
+    - "internetConnectionType (SimCard / Wifi / null) decides whether an LTE traffic check is even meaningful — a WiFi gateway has no SIM and must not be sent down the LTE branch."
+    - "Headwind logs: POST /gateway/api/v1/hmdm/logs. Its `severity` filter is CUMULATIVE, not an exact level — severity=2 returns WARNING+ERROR only (and drops ~92% of the volume server-side)."

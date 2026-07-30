@@ -13,11 +13,11 @@ correlating GG+connect gateway-monitoring with the Swisscom M2M portal.
 
 ## Headline metrics
 
-| # | Metric | Count |
-|---|--------|------:|
-| 1 | Headwind online (green) **but** gateway Status offline | **5** |
-| 2 | Version ≥ 1.15.1.2 **but** Headwind offline (red) | **34** |
-| 3 | Status offline **and** version ≥ 1.15.1.2 **and** last-24h Swisscom traffic | **5** |
+| # | Metric                                                                      | Count   |
+|---|-----------------------------------------------------------------------------|--------:|
+| 1 | Headwind online (green) **but** gateway Status offline                      |   **5** |
+| 2 | Version ≥ 1.15.1.2 **but** Headwind offline (red)                           |  **34** |
+| 3 | Status offline **and** version ≥ 1.15.1.2 **and** last-24h Swisscom traffic |   **5** |
 
 ## Metric 3 detail
 
@@ -30,28 +30,29 @@ correlating GG+connect gateway-monitoring with the Swisscom M2M portal.
 
 ### Traffic-positive (metric 3 hits)
 
-| Serial | Partner | Headwind | ↑ 24h | ↓ 24h |
-|--------|---------|:--------:|------:|------:|
-| …296 | Japigo GmbH | 🟢 | 47.32 MB | 341.40 MB |
-| …448 | Amrize Technology Switzerland GmbH | 🟢 | 39.32 MB | 247.93 MB |
-| …493 | Pestalozzi Jugendstätte Burghof | 🟢 | 32.40 MB | 10.04 MB |
-| …182 | GHG Rosenberg (M. Bühler) | 🟢 | 10.87 MB | 45.43 MB |
-| …504 | Migrantenseelsorge Luzern | 🔴 | 184 B | 295 B *(negligible)* |
+| Serial           | Partner                            | Headwind   |   ↑ 24h  |               ↓ 24h  |
+|------------------|------------------------------------|:----------:|---------:|---------------------:|
+| 2023110600000296 | Japigo GmbH                        |     🟢     | 47.32 MB |            341.40 MB |
+| 2023110600000448 | Amrize Technology Switzerland GmbH |     🟢     | 39.32 MB |            247.93 MB |
+| 2023110600000493 | Pestalozzi Jugendstätte Burghof    |     🟢     | 32.40 MB |             10.04 MB |
+| 2023110600000182 | GHG Rosenberg (M. Bühler)          |     🟢     | 10.87 MB |             45.43 MB |
+| 2023110600000504 | Migrantenseelsorge Luzern          |     🔴     |    184 B | 295 B *(negligible)* |
 
 ### Not found on Swisscom (excluded from the traffic count)
 
-| Serial | Partner | Vertrag | Headwind |
-|--------|---------|---------|:--------:|
-| …136 | Lakeside School | 2998514 | 🔴 |
-| …427 | Kinderkrippe Hexenburg | 2936574 | 🔴 |
+| Serial           | Partner                | Vertrag   | Headwind   |
+|------------------|------------------------|-----------|:----------:|
+| 2023110600000136 | Lakeside School        | 2998514   |     🔴     |
+| 2023110600000427 | Kinderkrippe Hexenburg | 2936574   |     🔴     |
 
 ## Finding
 
-**4 of the 5 traffic-positive gateways also have Headwind = green** (all except …504).
-For those, the monitoring **"offline" Status is a false negative** — Headwind reports the
-management channel online *and* the SIM is moving real MB of data, so the gateway is in
-fact connected. The gateway's own connection-status reporting is what is stale, not the
-connectivity. …504 is borderline (a few hundred bytes = keep-alive traffic, not usage).
+**4 of the 5 traffic-positive gateways also have Headwind = green** (all except
+`2023110600000504`). For those, the monitoring **"offline" Status is a false negative** —
+Headwind reports the management channel online *and* the SIM is moving real MB of data,
+so the gateway is in fact connected. The gateway's own connection-status reporting is what
+is stale, not the connectivity. `2023110600000504` is borderline (a few hundred bytes =
+keep-alive traffic, not usage).
 
 ## Machine-readable result
 

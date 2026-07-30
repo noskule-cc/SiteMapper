@@ -1,0 +1,223 @@
+{
+  "2023110600000504": {
+    "outcome": "VOR_ORT_SIGNAL_FLASH",
+    "up": "2.64 kB",
+    "down": "2.66 kB",
+    "monthly": "22.63 kB",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000493": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "1.93 GB",
+    "sim_status": "Aktiv",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000436": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "887.59 MB",
+    "sim_status": "Aktiv",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000019": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "50.43 MB",
+    "sim_status": "Aktiv",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000147": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "615.19 MB",
+    "sim_status": "Aktiv",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000375": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "112.93 MB",
+    "sim_status": "Aktiv",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000141": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "30.83 MB",
+    "sim_status": "Aktiv",
+    "note": "monthly>0 but silent in last 24h"
+  },
+  "2023110600000254": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000509": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000083": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000048": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000279": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000152": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000411": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000413": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000160": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000012": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000421": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000344": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000427": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000136": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000127": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000548": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000306": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000370": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000498": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000420": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000092": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000087": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000132": {
+    "outcome": "VOR_ORT_RESET_FLASH",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "monthly": "0.00 Bytes",
+    "sim_status": "Aktiv"
+  },
+  "2023110600000175": {
+    "outcome": "PENDING_SIM_ACTIVATION",
+    "sim_status": "Deaktiviert",
+    "monthly": "5.00 GB"
+  }
+}

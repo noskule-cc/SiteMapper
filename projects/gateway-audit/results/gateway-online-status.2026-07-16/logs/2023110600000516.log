@@ -1,0 +1,1368 @@
+# 2023110600000516 — Headwind log
+# window: last 5.0d (2026-07-11T18:10:25 .. 2026-07-16T17:42:59)
+# severity: WARNING+ERROR | rows: 510 of 510 on server
+
+2026-07-16T17:42:59  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T17:41:31  WARNING  Failed to update config: network error
+2026-07-16T17:41:25  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T17:40:28  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T17:40:28  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T17:40:28  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T17:40:28  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:17:57  WARNING  Failed to update config: network error
+2026-07-16T16:17:52  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T16:16:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:16:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:15:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:15:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:14:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:14:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:13:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:13:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:12:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:12:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:11:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:11:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:10:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:10:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:09:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:09:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:08:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:08:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:07:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:07:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:06:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:06:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:05:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:05:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:04:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:04:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:03:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:03:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:02:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:02:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:01:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:01:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:00:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T16:00:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:59:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:59:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:58:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:58:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:57:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:57:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:56:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:56:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:55:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:55:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:54:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:54:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:53:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:53:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:52:46  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:52:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:51:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:51:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:50:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:50:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:49:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:49:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:48:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:48:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:47:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:47:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:46:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:46:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:45:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:45:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:44:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:44:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:43:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:43:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:42:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:42:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:41:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:41:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:40:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:40:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:39:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:39:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:38:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:38:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:37:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:37:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:36:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:36:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:35:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:35:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:34:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:34:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:33:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:33:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:32:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:32:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:31:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:31:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:30:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:30:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:29:45  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:29:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:28:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:28:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:27:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:27:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:26:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:26:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:25:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:25:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:24:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:24:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:23:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:23:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:22:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:22:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:21:44  WARNING  Failed to confirm reboot on server
+2026-07-16T15:21:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:21:44  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T15:21:42  WARNING  Failed to update config: network error
+2026-07-16T15:21:25  WARNING  Failed to update config: network error
+2026-07-16T15:21:19  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T15:11:24  WARNING  Failed to update config: network error
+2026-07-16T15:11:19  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T13:54:38  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T13:53:48  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T13:52:59  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T13:51:24  WARNING  Failed to update config: network error
+2026-07-16T13:51:19  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T13:42:55  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T13:41:22  WARNING  Failed to update config: network error
+2026-07-16T13:41:17  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T12:21:32  WARNING  Failed to update config: network error
+2026-07-16T12:21:27  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T12:13:06  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T12:11:34  WARNING  Failed to update config: network error
+2026-07-16T12:11:28  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T12:10:32  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T12:10:32  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T10:51:36  WARNING  Failed to update config: network error
+2026-07-16T10:51:30  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T10:41:31  WARNING  Failed to update config: network error
+2026-07-16T10:41:26  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T09:21:28  WARNING  Failed to update config: network error
+2026-07-16T09:21:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T09:11:29  WARNING  Failed to update config: network error
+2026-07-16T09:11:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T09:10:24  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T09:10:24  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T07:34:02  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T07:33:13  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-16T07:31:37  WARNING  Failed to update config: network error
+2026-07-16T07:31:30  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T07:30:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T07:30:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-16T07:21:29  WARNING  Failed to update config: network error
+2026-07-16T07:21:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T06:01:25  WARNING  Failed to update config: network error
+2026-07-16T06:01:19  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-16T06:00:15  WARNING  Rebooting by a Push message
+2026-07-15T07:31:28  WARNING  Failed to update config: network error
+2026-07-15T07:31:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T07:23:02  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-15T07:21:32  WARNING  Failed to update config: network error
+2026-07-15T07:21:27  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T07:20:29  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-15T07:20:29  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-15T06:04:39  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.WebException: Socket closed
+ ---> Java.Net.SocketException: Socket closed
+   at Java.Interop.JniEnvironment.InstanceMethods.CallIntMethod(JniObjectReference , JniMethodInfo , JniArgumentValue* )
+   at Java.Interop.JniPeerMembers.JniInstanceMethods.InvokeVirtualInt32Method(String , IJavaPeerable , JniArgumentValue* )
+   at Java.Net.HttpURLConnection.get_ResponseCode()
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass140_0.<DoProcessRequest>b__2()
+   at System.Threading.Tasks.Task`1[[System.Net.HttpStatusCode, System.Net.Primitives, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__292_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& , Thread )
+--- End of stack trace from previous location ---
+   at Xamarin.Android.Net.AndroidMessageHandler.DoProcessRequest(HttpRequestMessage , URL , HttpURLConnection , CancellationToken , RequestRedirectionState )
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+   Exception_EndOfInnerExceptionStack
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.AccessTokenHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LoggingHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage , HttpCompletionOption , CancellationTokenSource , Boolean , CancellationTokenSource , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.ReceiveLoop(ConnectionState connectionState)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.InvokeCoreAsyncCore(String methodName, Type returnType, Object[] args, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.InvokeCoreAsync(String methodName, Type returnType, Object[] args, CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.TrySendSerialNumberAsync()
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-15T06:03:19  WARNING  Failed to update config: network error
+2026-07-15T06:03:13  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T06:02:13  WARNING  Rebooting by a Push message
+2026-07-15T06:01:28  WARNING  Failed to update config: network error
+2026-07-15T06:01:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T06:00:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-15T05:51:24  WARNING  Failed to update config: network error
+2026-07-15T05:51:19  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T04:31:22  WARNING  Failed to update config: network error
+2026-07-15T04:31:16  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T04:24:04  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-15T04:23:15  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-07-15T04:22:40  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.WebException: Socket closed
+ ---> Java.Net.SocketException: Socket closed
+   at Java.Interop.JniEnvironment.InstanceMethods.CallIntMethod(JniObjectReference , JniMethodInfo , JniArgumentValue* )
+   at Java.Interop.JniPeerMembers.JniInstanceMethods.InvokeVirtualInt32Method(String , IJavaPeerable , JniArgumentValue* )
+   at Java.Net.HttpURLConnection.get_ResponseCode()
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass140_0.<DoProcessRequest>b__2()
+   at System.Threading.Tasks.Task`1[[System.Net.HttpStatusCode, System.Net.Primitives, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__292_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& , Thread )
+--- End of stack trace from previous location ---
+   at Xamarin.Android.Net.AndroidMessageHandler.DoProcessRequest(HttpRequestMessage , URL , HttpURLConnection , CancellationToken , RequestRedirectionState )
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+   Exception_EndOfInnerExceptionStack
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.AccessTokenHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LoggingHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage , HttpCompletionOption , CancellationTokenSource , Boolean , CancellationTokenSource , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-15T04:21:26  WARNING  Failed to update config: network error
+2026-07-15T04:21:20  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T03:03:02  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-15T03:01:28  WARNING  Failed to update config: network error
+2026-07-15T03:01:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T02:51:32  WARNING  Failed to update config: network error
+2026-07-15T02:51:26  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T01:31:26  WARNING  Failed to update config: network error
+2026-07-15T01:31:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T01:21:28  WARNING  Failed to update config: network error
+2026-07-15T01:21:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-15T00:01:24  WARNING  Failed to update config: network error
+2026-07-15T00:01:18  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T23:51:22  WARNING  Failed to update config: network error
+2026-07-14T23:51:16  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T22:32:56  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T22:31:24  WARNING  Failed to update config: network error
+2026-07-14T22:31:18  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T22:21:32  WARNING  Failed to update config: network error
+2026-07-14T22:21:26  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T21:03:42  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T21:02:53  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T21:01:27  WARNING  Failed to update config: network error
+2026-07-14T21:01:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T21:00:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T21:00:24  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T20:51:26  WARNING  Failed to update config: network error
+2026-07-14T20:51:20  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T20:50:24  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T20:50:23  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T19:33:41  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T19:32:52  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T19:31:35  WARNING  Failed to update config: network error
+2026-07-14T19:31:29  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T19:21:33  WARNING  Failed to update config: network error
+2026-07-14T19:21:28  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T18:03:01  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T18:01:27  WARNING  Failed to update config: network error
+2026-07-14T18:01:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T17:53:04  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T17:51:27  WARNING  Failed to update config: network error
+2026-07-14T17:51:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T16:31:27  WARNING  Failed to update config: network error
+2026-07-14T16:31:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T16:21:27  WARNING  Failed to update config: network error
+2026-07-14T16:21:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T15:02:56  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-14T15:01:26  WARNING  Failed to update config: network error
+2026-07-14T15:01:20  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T14:51:30  WARNING  Failed to update config: network error
+2026-07-14T14:51:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T13:31:21  WARNING  Failed to update config: network error
+2026-07-14T13:31:15  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T13:21:23  WARNING  Failed to update config: network error
+2026-07-14T13:21:16  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T12:01:35  WARNING  Failed to update config: network error
+2026-07-14T12:01:29  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T12:00:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T12:00:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T11:51:33  WARNING  Failed to update config: network error
+2026-07-14T11:51:28  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T10:31:31  WARNING  Failed to update config: network error
+2026-07-14T10:31:26  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T10:30:30  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T10:30:30  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T10:21:29  WARNING  Failed to update config: network error
+2026-07-14T10:21:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T10:20:26  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T09:01:28  WARNING  Failed to update config: network error
+2026-07-14T09:01:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T09:00:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T09:00:24  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T08:51:35  WARNING  Failed to update config: network error
+2026-07-14T08:51:29  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T08:50:29  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T08:50:29  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T07:31:34  WARNING  Failed to update config: network error
+2026-07-14T07:31:29  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T07:30:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T07:30:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T07:21:31  WARNING  Failed to update config: network error
+2026-07-14T07:21:26  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T07:20:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T07:20:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T06:01:18  WARNING  Failed to update config: network error
+2026-07-14T06:01:12  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T06:00:12  WARNING  Rebooting by a Push message
+2026-07-14T03:01:34  WARNING  Failed to update config: network error
+2026-07-14T03:01:28  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T03:00:29  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T03:00:29  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T02:51:37  WARNING  Failed to update config: network error
+2026-07-14T02:51:31  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T02:50:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T02:50:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T01:32:53  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-07-14T01:31:32  WARNING  Failed to update config: network error
+2026-07-14T01:31:25  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T01:30:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T01:30:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T01:21:41  WARNING  Failed to update config: network error
+2026-07-14T01:21:35  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T00:02:44  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-07-14T00:01:29  WARNING  Failed to update config: network error
+2026-07-14T00:01:24  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-14T00:00:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-14T00:00:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T23:51:26  WARNING  Failed to update config: network error
+2026-07-13T23:51:20  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T22:31:34  WARNING  Failed to update config: network error
+2026-07-13T22:31:25  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T22:21:36  WARNING  Failed to update config: network error
+2026-07-13T22:21:29  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T22:20:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T22:20:31  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T21:03:33  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T21:02:43  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T21:01:28  WARNING  Failed to update config: network error
+2026-07-13T21:01:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T21:00:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T20:51:30  WARNING  Failed to update config: network error
+2026-07-13T20:51:25  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T20:50:28  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T20:50:28  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T19:31:23  WARNING  Failed to update config: network error
+2026-07-13T19:31:17  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T19:21:42  WARNING  Failed to update config: network error
+2026-07-13T19:21:37  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T19:20:39  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T19:20:39  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T18:01:29  WARNING  Failed to update config: network error
+2026-07-13T18:01:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T18:00:26  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T18:00:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T17:53:04  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T17:51:32  WARNING  Failed to update config: network error
+2026-07-13T17:51:26  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T17:50:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T17:50:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T16:31:24  WARNING  Failed to update config: network error
+2026-07-13T16:31:19  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T16:21:41  WARNING  Failed to update config: network error
+2026-07-13T16:21:35  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T15:01:41  WARNING  Failed to update config: network error
+2026-07-13T15:01:35  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T15:00:37  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T15:00:36  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T14:51:40  WARNING  Failed to update config: network error
+2026-07-13T14:51:34  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T14:50:36  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T14:50:36  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T13:31:42  WARNING  Failed to update config: network error
+2026-07-13T13:31:36  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T13:21:41  WARNING  Failed to update config: network error
+2026-07-13T13:21:36  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T13:20:38  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T13:20:38  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T12:01:45  WARNING  Failed to update config: network error
+2026-07-13T12:01:38  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T11:53:12  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T11:51:42  WARNING  Failed to update config: network error
+2026-07-13T11:51:36  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T10:31:46  WARNING  Failed to update config: network error
+2026-07-13T10:31:41  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T10:21:51  WARNING  Failed to update config: network error
+2026-07-13T10:21:45  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T09:06:34  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T09:05:45  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T09:04:56  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T09:04:08  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T09:03:19  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T09:01:48  WARNING  Failed to update config: network error
+2026-07-13T09:01:42  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T08:51:46  WARNING  Failed to update config: network error
+2026-07-13T08:51:39  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T07:31:41  WARNING  Failed to update config: network error
+2026-07-13T07:31:35  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T07:21:40  WARNING  Failed to update config: network error
+2026-07-13T07:21:34  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T06:01:30  WARNING  Failed to update config: network error
+2026-07-13T06:01:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T06:00:25  WARNING  Rebooting by a Push message
+2026-07-13T05:03:01  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T05:01:29  WARNING  Failed to update config: network error
+2026-07-13T05:01:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T04:51:27  WARNING  Failed to update config: network error
+2026-07-13T04:51:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T03:32:57  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T03:31:24  WARNING  Failed to update config: network error
+2026-07-13T03:31:18  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T03:21:24  WARNING  Failed to update config: network error
+2026-07-13T03:21:18  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T02:01:38  WARNING  Failed to update config: network error
+2026-07-13T02:01:32  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T01:53:06  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-13T01:51:33  WARNING  Failed to update config: network error
+2026-07-13T01:51:28  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T00:31:30  WARNING  Failed to update config: network error
+2026-07-13T00:31:25  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-13T00:30:28  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-13T00:21:28  WARNING  Failed to update config: network error
+2026-07-13T00:21:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T23:01:28  WARNING  Failed to update config: network error
+2026-07-12T23:01:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T22:51:26  WARNING  Failed to update config: network error
+2026-07-12T22:51:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T21:31:36  WARNING  Failed to update config: network error
+2026-07-12T21:31:30  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T21:21:32  WARNING  Failed to update config: network error
+2026-07-12T21:21:27  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T20:01:30  WARNING  Failed to update config: network error
+2026-07-12T20:01:24  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T19:51:30  WARNING  Failed to update config: network error
+2026-07-12T19:51:24  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T19:34:52  ERROR    Opten.GGPlus.Gateway.App.MAUI.MainActivity unhandled exception: BluetoothLE had status of Disabled
+Shiny.PermissionException: BluetoothLE had status of Disabled
+   at Shiny.BluetoothLE.BleManager.Assert(AccessState access)
+   at Shiny.BluetoothLE.BleManager.<>c.<Scan>b__23_0(AccessState x)
+   at System.Reactive.Linq.ObservableImpl.Do`1.OnNext._[[Shiny.AccessState, Shiny.Core, Version=3.3.3.1, Culture=neutral, PublicKeyToken=null]].OnNext(AccessState )
+--- End of stack trace from previous location ---
+   at System.Reactive.PlatformServices.ExceptionServicesImpl.Rethrow(Exception )
+   at System.Reactive.ExceptionHelpers.Throw(Exception )
+   at System.Reactive.Stubs.<>c.<.cctor>b__2_1(Exception ex)
+   at System.Reactive.AnonymousObserver`1[[Opten.GGPlus.Gateway.Core.Attempt`1[[Opten.GGPlus.Gateway.Common.Domain.Devices.MobileGatewayDevice, Opten.GGPlus.Gateway.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Opten.GGPlus.Gateway.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]].OnErrorCore(Exception )
+   at System.Reactive.ObserverBase`1[[Opten.GGPlus.Gateway.Core.Attempt`1[[Opten.GGPlus.Gateway.Common.Domain.Devices.MobileGatewayDevice, Opten.GGPlus.Gateway.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Opten.GGPlus.Gateway.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]].OnError(Exception )
+   at System.Reactive.Subjects.Subject`1[[Opten.GGPlus.Gateway.Core.Attempt`1[[Opten.GGPlus.Gateway.Common.Domain.Devices.MobileGatewayDevice, Opten.GGPlus.Gateway.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Opten.GGPlus.Gateway.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]].Subscribe(IObserver`1 )
+   at System.ObservableExtensions.Subscribe[Attempt`1](IObservable`1 , Action`1 )
+   at Opten.GGPlus.Gateway.App.MAUI.Views.IoTGatewayView.Connectivity_ConnectivityChanged(Object sender, ConnectivityChangedEventArgs e)
+   at System.Threading.Tasks.Task.<>c.<ThrowAsync>b__128_0(Object state)
+   at Android.App.SyncContext.<>c__DisplayClass2_0.<Post>b__0()
+   at Java.Lang.Thread.RunnableImplementor.Run()
+   at Java.Lang.IRunnableInvoker.n_Run(IntPtr jnienv, IntPtr native__this)
+   at Android.Runtime.JNINativeWrapper.Wrap_JniMarshal_PP_V(_JniMarshal_PP_V callback, IntPtr jnienv, IntPtr klazz)
+2026-07-12T19:34:51  ERROR    Opten.GGPlus.Gateway.App.MAUI.MainActivity unhandled exception: BluetoothLE had status of Disabled
+Shiny.PermissionException: BluetoothLE had status of Disabled
+   at Shiny.BluetoothLE.BleManager.Assert(AccessState access)
+   at Shiny.BluetoothLE.BleManager.<>c.<Scan>b__23_0(AccessState x)
+   at System.Reactive.Linq.ObservableImpl.Do`1.OnNext._[[Shiny.AccessState, Shiny.Core, Version=3.3.3.1, Culture=neutral, PublicKeyToken=null]].OnNext(AccessState )
+--- End of stack trace from previous location ---
+   at System.Reactive.PlatformServices.ExceptionServicesImpl.Rethrow(Exception )
+   at System.Reactive.ExceptionHelpers.Throw(Exception )
+   at System.Reactive.Stubs.<>c.<.cctor>b__2_1(Exception ex)
+   at System.Reactive.AnonymousObserver`1[[Opten.GGPlus.Gateway.Core.Attempt`1[[Opten.GGPlus.Gateway.Common.Domain.Devices.MobileGatewayDevice, Opten.GGPlus.Gateway.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Opten.GGPlus.Gateway.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]].OnErrorCore(Exception )
+   at System.Reactive.ObserverBase`1[[Opten.GGPlus.Gateway.Core.Attempt`1[[Opten.GGPlus.Gateway.Common.Domain.Devices.MobileGatewayDevice, Opten.GGPlus.Gateway.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Opten.GGPlus.Gateway.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]].OnError(Exception )
+   at System.Reactive.Subjects.Subject`1[[Opten.GGPlus.Gateway.Core.Attempt`1[[Opten.GGPlus.Gateway.Common.Domain.Devices.MobileGatewayDevice, Opten.GGPlus.Gateway.Common, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]], Opten.GGPlus.Gateway.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]].Subscribe(IObserver`1 )
+   at System.ObservableExtensions.Subscribe[Attempt`1](IObservable`1 , Action`1 )
+   at Opten.GGPlus.Gateway.App.MAUI.Views.IoTGatewayView.Connectivity_ConnectivityChanged(Object sender, ConnectivityChangedEventArgs e)
+   at System.Threading.Tasks.Task.<>c.<ThrowAsync>b__128_0(Object state)
+   at Android.App.SyncContext.<>c__DisplayClass2_0.<Post>b__0()
+   at Java.Lang.Thread.RunnableImplementor.Run()
+   at Java.Lang.IRunnableInvoker.n_Run(IntPtr jnienv, IntPtr native__this)
+   at Android.Runtime.JNINativeWrapper.Wrap_JniMarshal_PP_V(_JniMarshal_PP_V callback, IntPtr jnienv, IntPtr klazz)
+2026-07-12T19:34:51  ERROR    Opten.GGPlus.Gateway.Services.Services.DeviceObserverService Error occurred during auto-connect
+Shiny.PermissionException: BluetoothLE had status of Disabled
+   at Shiny.BluetoothLE.BleManager.Assert(AccessState access)
+   at Shiny.BluetoothLE.BleManager.<>c.<Scan>b__23_0(AccessState x)
+   at System.Reactive.Linq.ObservableImpl.Do`1.OnNext._[[Shiny.AccessState, Shiny.Core, Version=3.3.3.1, Culture=neutral, PublicKeyToken=null]].OnNext(AccessState )
+2026-07-12T19:34:51  ERROR    Opten.GGPlus.Gateway.Services.Services.BluetoothAdapterService Error during bluetooth scanning.
+Shiny.PermissionException: BluetoothLE had status of Disabled
+   at Shiny.BluetoothLE.BleManager.Assert(AccessState access)
+   at Shiny.BluetoothLE.BleManager.<>c.<Scan>b__23_0(AccessState x)
+   at System.Reactive.Linq.ObservableImpl.Do`1.OnNext._[[Shiny.AccessState, Shiny.Core, Version=3.3.3.1, Culture=neutral, PublicKeyToken=null]].OnNext(AccessState )
+2026-07-12T19:33:57  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-07-12T19:33:22  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T19:31:44  WARNING  Failed to update config: network error
+2026-07-12T19:31:36  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T19:23:12  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T19:21:44  WARNING  Failed to update config: network error
+2026-07-12T19:21:39  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T18:01:47  WARNING  Failed to update config: network error
+2026-07-12T18:01:41  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T17:51:44  WARNING  Failed to update config: network error
+2026-07-12T17:51:39  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T16:31:40  WARNING  Failed to update config: network error
+2026-07-12T16:31:35  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T16:21:43  WARNING  Failed to update config: network error
+2026-07-12T16:21:37  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T15:03:27  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T15:01:58  WARNING  Failed to update config: network error
+2026-07-12T15:01:52  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T15:00:53  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T15:00:53  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T14:51:51  WARNING  Failed to update config: network error
+2026-07-12T14:51:46  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T13:31:50  WARNING  Failed to update config: network error
+2026-07-12T13:31:43  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T13:23:07  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-07-12T13:21:47  WARNING  Failed to update config: network error
+2026-07-12T13:21:42  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T12:03:57  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T12:03:08  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T12:01:41  WARNING  Failed to update config: network error
+2026-07-12T12:01:37  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T11:53:10  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T11:51:41  WARNING  Failed to update config: network error
+2026-07-12T11:51:36  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T10:31:54  WARNING  Failed to update config: network error
+2026-07-12T10:31:49  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T10:23:33  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T10:22:00  WARNING  Failed to update config: network error
+2026-07-12T10:21:54  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T09:03:57  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.WebException: Socket closed
+ ---> Java.Net.SocketException: Socket closed
+   at Java.Interop.JniEnvironment.InstanceMethods.CallIntMethod(JniObjectReference , JniMethodInfo , JniArgumentValue* )
+   at Java.Interop.JniPeerMembers.JniInstanceMethods.InvokeVirtualInt32Method(String , IJavaPeerable , JniArgumentValue* )
+   at Java.Net.HttpURLConnection.get_ResponseCode()
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass140_0.<DoProcessRequest>b__2()
+   at System.Threading.Tasks.Task`1[[System.Net.HttpStatusCode, System.Net.Primitives, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__292_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& , Thread )
+--- End of stack trace from previous location ---
+   at Xamarin.Android.Net.AndroidMessageHandler.DoProcessRequest(HttpRequestMessage , URL , HttpURLConnection , CancellationToken , RequestRedirectionState )
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+   Exception_EndOfInnerExceptionStack
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.AccessTokenHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LoggingHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage , HttpCompletionOption , CancellationTokenSource , Boolean , CancellationTokenSource , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T09:03:21  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T09:01:51  WARNING  Failed to update config: network error
+2026-07-12T09:01:45  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T08:51:46  WARNING  Failed to update config: network error
+2026-07-12T08:51:40  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T08:50:42  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T08:50:42  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T07:35:33  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T07:34:44  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T07:33:55  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-07-12T07:33:21  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T07:31:47  WARNING  Failed to update config: network error
+2026-07-12T07:31:41  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T07:30:43  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T07:30:43  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T07:21:41  WARNING  Failed to update config: network error
+2026-07-12T07:21:36  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T06:01:36  WARNING  Failed to update config: network error
+2026-07-12T06:01:30  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T06:00:31  WARNING  Rebooting by a Push message
+2026-07-12T06:00:31  WARNING  Rebooting by a Push message
+2026-07-12T04:51:29  WARNING  Failed to update config: network error
+2026-07-12T04:51:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T04:41:28  WARNING  Failed to update config: network error
+2026-07-12T04:41:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T03:22:55  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T03:21:24  WARNING  Failed to update config: network error
+2026-07-12T03:21:20  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T03:11:26  WARNING  Failed to update config: network error
+2026-07-12T03:11:20  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T01:51:29  WARNING  Failed to update config: network error
+2026-07-12T01:51:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T01:50:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T01:41:29  WARNING  Failed to update config: network error
+2026-07-12T01:41:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T00:23:01  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T00:21:28  WARNING  Failed to update config: network error
+2026-07-12T00:21:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T00:12:59  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-12T00:11:28  WARNING  Failed to update config: network error
+2026-07-12T00:11:22  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-12T00:10:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-12T00:10:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-11T22:51:27  WARNING  Failed to update config: network error
+2026-07-11T22:51:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T22:45:24  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-11T22:44:35  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-11T22:43:46  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-11T22:42:58  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-11T22:41:26  WARNING  Failed to update config: network error
+2026-07-11T22:41:20  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T21:23:02  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-11T21:21:29  WARNING  Failed to update config: network error
+2026-07-11T21:21:24  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T21:13:00  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-11T21:11:30  WARNING  Failed to update config: network error
+2026-07-11T21:11:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T19:51:23  WARNING  Failed to update config: network error
+2026-07-11T19:51:19  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T19:41:23  WARNING  Failed to update config: network error
+2026-07-11T19:41:17  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T18:21:28  WARNING  Failed to update config: network error
+2026-07-11T18:21:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T18:20:26  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-11T18:11:29  WARNING  Failed to update config: network error
+2026-07-11T18:11:23  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-11T18:10:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-11T18:10:25  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname

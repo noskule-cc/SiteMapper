@@ -10,3 +10,9 @@ __pycache__/
 # locations). The map and script are reusable and committed; the extracted
 # people data stays local.
 sites/app-hibob-com/results/
+
+# One pathological raw log: 41 MB / 483k lines, of which only ~7k are unique —
+# a NO_DNS device repeating the same failure with full stack traces for 5 days.
+# Its diagnosis lives in the sibling 2023110600000493.md. Small per-gateway logs
+# are still committed as evidence; see results/README.md for the size guard.
+projects/gateway-audit/results/gateway-online-status.2026-07-14/logs/2023110600000493.log

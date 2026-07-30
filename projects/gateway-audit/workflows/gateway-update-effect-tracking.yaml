@@ -223,6 +223,7 @@ workflow:
     - Report three headline counts — metric1_count, metric2_count, metric3_count — each with the list of gateways behind it (Vertragspartner, Seriennummer, Version).
     - Metric 3 report distinguishes gateways WITH last-24h traffic (offline is likely a false negative / stale status) from those with none (genuinely silent) and any serial not found on the Swisscom account.
     - State the fleet totals used (totalRows, kept after exclusions) and the exclusion set applied, so the numbers are reproducible.
+    - Identifiers are written in FULL — Seriennummer, Vertragsnummer, IMSI, IMEI. Never abbreviated (no "…296"), because the report is a worklist: the serial has to be pasteable into the monitoring filter, the Swisscom search box or a ticket. The fleet's serials share a long common prefix, so a truncated one is not even unique. If a table is too wide, drop a column, not the digits of the key.
 
 # Notes
 #   - Data source is a live DOM scrape (the CSV export currently omits the

@@ -9,4 +9,5 @@ project:
     - connect-ggplus-ch
     - portal-m2m-swisscom-ch
   workflows:
-    - gateway-update-effect-tracking.yaml
+    - gateway-update-effect-tracking.yaml   # what did the firmware rollout change?
+    - gateway-online-status.yaml            # what do we DO with each gateway? (triage)

@@ -41,3 +41,24 @@ site:
     - switch-partner-to-maschinenpark.yaml
     # Cross-site workflows that also use this site live under projects/:
     #   projects/gateway-audit/workflows/gateway-update-effect-tracking.yaml
+    #   projects/gateway-audit/workflows/gateway-online-status.yaml
+
+  # Direct API access to the GG+connect BFF (https://bff.ggplus.ch), so workflows
+  # can read data without driving/scraping the browser. See scripts/README.md.
+  # Auth: real login (POST /user/api/v1/auth), credentials in the OS keyring.
+  scripts:
+    - name: ggplus_auth.py
+      description: Login + token refresh (OS keyring). Run once interactively; other scripts reuse it.
+    - name: ggplus_api.py
+      description: >
+        API client — fleet list, connect Status via the SignalR hub, Headwind logs
+        and infos, partner names. Not a CLI; imported by the scripts below.
+    - name: get_gateway_status_table.py
+      description: >
+        Full gateway fleet with each gateway assigned an action bucket
+        (gateway_online_status decision tree). Replaces the DOM scrape of
+        admin-gateway-monitoring. Outputs a summary, --json, or --csv.
+    - name: get_gateway_logs.py
+      description: >
+        Headwind (HMDM) device logs, WARNING+ERROR only, with a diagnosis of WHY the
+        gateway is unreachable. Backs the "Analyse Logs from Headwind" workflow node.
