@@ -66,7 +66,13 @@ workflow:
       description: Close the dropdown without changing the active grouping
 
   teardown:
-    # Delete the created scheme
+    # Delete the created scheme. CRITICAL: delete-row-button MUST be scoped to
+    # $grouping_name - the trash icon (aria-label "delete") is identical on every
+    # row, so an unscoped or coordinate-based click can delete a DIFFERENT,
+    # pre-existing scheme (Partner-Gruppierungen are shared company data). Deleting
+    # a row also shrinks the modal and shifts the remaining controls (Schliessen +
+    # other rows' trash icons) upward, so the Schliessen button MUST be resolved by
+    # its locator (text "Schliessen"), never by a remembered coordinate.
     - action: click
       page: maschinenpark-geraeteliste
       element: location-settings-button
@@ -75,15 +81,25 @@ workflow:
       page: maschinenpark-einstellungen
       element: tab-geraetegruppierungen
       description: Switch to the Gerätegruppierungen tab
+    - action: wait
+      description: Wait for the scheme rows to render before targeting one
     - action: click
       page: maschinenpark-einstellungen
       element: delete-row-button
       value: "$grouping_name"
-      description: Delete the test scheme row (trash icon)
+      description: Delete ONLY the test scheme row (trash icon scoped by $grouping_name)
+    - action: wait
+      description: Row removal re-renders and shrinks the modal - wait before locating Schliessen
+    - action: assert
+      page: maschinenpark-einstellungen
+      element: settings-modal
+      value: "$grouping_name"
+      expect: absent
+      description: Confirm the test scheme is gone (guards against deleting the wrong row)
     - action: click
       page: maschinenpark-einstellungen
       element: schliessen-button
-      description: Close the modal (persists the deletion)
+      description: Close the modal by its 'Schliessen' locator - NOT by coordinate (persists the deletion)
 
   verify:
     - Creating a Benutzer-Gruppierung scheme named "SiteMapper Test Gruppe" makes it appear as an option in the Gerätegruppierungen dropdown; deleting it removes it

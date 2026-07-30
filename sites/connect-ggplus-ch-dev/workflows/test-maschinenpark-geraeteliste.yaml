@@ -35,6 +35,21 @@ workflow:
     - action: wait
       description: Wait for the list to re-group
 
+    # Favorites are mutable shared data: a location may have ZERO starred devices,
+    # in which case the Favoriten section does not render at all. Star a known
+    # device so the Favoriten assertions (L1, C7) are deterministic across any
+    # partner/location; teardown un-stars it to restore the original state.
+    # (Assumes $matching_device is not already a favorite - if it were, this would
+    # un-star it; pick a matching_device that is not pre-starred.)
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: device-favorite-toggle
+      value: "$matching_device"
+      description: Star a known device so the Favoriten section is guaranteed to exist
+
+    - action: wait
+      description: Wait for the device to move into the Favoriten section
+
   steps:
     # --- L1: structural presence ---
     - action: assert
@@ -276,8 +291,27 @@ workflow:
       expect: { url_matches: "/geraete/maschinenpark/.*/geraet/.*" }
       description: L2 - the URL gained a /geraet/{id} segment (deep-linkable drawer)
 
+  teardown:
+    # Restore the original favorites state by un-starring the device starred in
+    # setup. Navigate back to the list first - the last step left the preview
+    # drawer open over the list.
+    - action: navigate
+      page: maschinenpark-geraeteliste
+      value: "/geraete/maschinenpark/$partner_id/$location_id"
+      description: Return to the device list (the last step left the preview drawer open)
+
+    - action: wait
+      description: Wait for the device list to render
+
+    - action: click
+      page: maschinenpark-geraeteliste
+      element: device-favorite-toggle
+      value: "$matching_device"
+      description: Un-star the device starred in setup (restore original favorites)
+
   verify:
-    - L1 - page loads with the location header, device filter, IOT-Geräte grouping, and all three device sections
+    - "Setup stars $matching_device so the Favoriten section is guaranteed to exist (favorites are mutable shared data and the section is absent when no device is starred); teardown un-stars it"
+    - L1 - page loads with the location header, device filter, IOT-Geräte grouping, and all three device sections (Favoriten present because setup starred a device)
     - C - every STANDARD Gerätegruppierungen option (Keine, IOT-Geräte, Status, Hersteller, Modell, Fahrzeugnummer, Fahrzeugtyp) is selectable and applies; Favoriten persists across all; the IOT-only Bestehender section disappears under another grouping and returns under IOT-Geräte. (Partner-Gruppierungen are user data - covered by a separate create/teardown test.)
     - L5 - the device filter keeps matching devices and removes non-matching ones; clearing it restores them
     - L4 - an emptied section shows the "keine Maschinen gefunden" notice (counts re-bind to the filter)

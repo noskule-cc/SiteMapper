@@ -90,7 +90,12 @@ page:
       locator:
         strategy: aria-label
         value: delete
-      description: Trash icon that deletes a grouping-scheme row (scope by the row's name via the step value)
+      description: >
+        Trash icon that deletes a grouping-scheme row. The icon is IDENTICAL on
+        every row, so you MUST scope it by the row's name via the step value -
+        an unscoped or coordinate-based click can delete a different, pre-existing
+        scheme (Partner-Gruppierungen are shared company data). Deletion takes
+        effect immediately (autosave), not only on Schliessen.
 
     # --- Footer ---
     - name: schliessen-button
@@ -113,4 +118,5 @@ page:
     - "Informations Spalten toggles map 1:1 to device-list columns: checking 'Hersteller' adds a Hersteller column; unchecking removes it. Default = all off (columns Status, Gerät, Seriennummer only)."
     - "Creating a Sortierungsgruppierung (Gruppierung Typ + Gruppensortierung Name) makes it appear in the Gerätegruppierungen dropdown - Benutzer-Gruppierung under BENUTZER-GRUPPIERUNGEN, Partner-Gruppierung under PARTNER-GRUPPIERUNGEN. These are mutable user/company data."
     - Deleting a scheme via its trash icon removes it from the dropdown after Schliessen.
+    - "DELETE-THEN-CLOSE HAZARD: deleting a grouping row shrinks the modal and shifts ALL remaining controls (the Schliessen button and other rows' trash icons) upward. A click aimed at the old Schliessen coordinate can land on a trash icon and silently delete a pre-existing scheme. Always (a) scope delete-row-button to the exact row name, and (b) locate Schliessen by its 'Schliessen' text locator after a short wait, never by a remembered coordinate. Form edits and deletions autosave ('Formular gespeichert'), so a wrong deletion persists even without clicking Schliessen."
     - "Pressing Escape while the modal/pane is focused can COLLAPSE the device pane back to the location-list view (and a stray gear click in that state navigates to the dashboard) - prefer clicking Schliessen/X to close."
