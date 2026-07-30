@@ -1,0 +1,97 @@
+page:
+  name: Mitarbeitende – Verzeichnis (Directory)
+  url_pattern: /people/org?tab=directory
+  purpose: >
+    Flat, paginated table of all employees. Best source for per-person
+    attributes (region, department, job title, email) and for enumerating the
+    whole workforce. Does NOT expose reporting lines — use the Organigramm for
+    manager -> report structure.
+  screenshot: ""
+
+  elements:
+    - name: view-toggle-verzeichnis
+      type: button
+      locator: { strategy: text, value: "Verzeichnis" }
+      description: Switches to the directory (table) view. Sets url ?tab=directory.
+      states: [selected, unselected]
+
+    - name: view-toggle-organigramm
+      type: button
+      locator: { strategy: text, value: "Organigramm" }
+      description: Switches to the org-chart view. Sets url ?tab=org-chart.
+      states: [selected, unselected]
+
+    - name: total-count
+      type: text
+      locator: { strategy: text, value: "Insgesamt:" }
+      description: 'Total headcount label (e.g. "Insgesamt: 143").'
+
+    - name: search-input
+      type: input
+      locator: { strategy: aria-label, value: "Suchen" }
+      description: Free-text search over the directory rows (name etc.).
+
+    - name: filter-button
+      type: button
+      locator: { strategy: text, value: "Filter" }
+      description: Opens a filter panel to narrow the list.
+
+    - name: categorize-by-button
+      type: button
+      locator: { strategy: text, value: "Kategorisieren nach" }
+      description: >
+        Opens a "Nach Feldern kategorisieren" popover with Primärfeld /
+        Sekundärfeld pickers to group rows. Fields are grouped under "Arbeit"
+        and "Grundlegende Daten". NOTE: there is no "Manager"/reporting field
+        here, so you cannot reconstruct the org tree from this view.
+
+    - name: column-settings-button
+      type: button
+      locator: { strategy: css, value: "button[aria-haspopup]:last-of-type" }
+      description: >
+        Grid icon at the far right of the toolbar; opens the column
+        chooser to add/remove/reorder table columns.
+
+    - name: employee-table
+      type: table
+      locator: { strategy: role, value: "table" }
+      description: >
+        Employee rows. Columns (default): avatar+name+role, Vollständiger Name,
+        Standort (location/region, e.g. "Region West", "Glattbrugg"), Abteilung
+        (department, e.g. "Kundendienst"), Stellenbezeichnung (job title, e.g.
+        "Servicetechniker"), Geschäftsmail (work email).
+
+    - name: row-select-checkbox
+      type: checkbox
+      locator: { strategy: css, value: "tbody tr input[type=checkbox]" }
+      description: Per-row selection checkbox; header checkbox selects the page.
+
+    - name: rows-per-page
+      type: select
+      locator: { strategy: text, value: "Zeilen pro Seite" }
+      description: Page size selector (default 50). Options include larger sizes.
+
+    - name: pagination
+      type: container
+      locator: { strategy: css, value: "nav[aria-label*='agina'], .pagination" }
+      description: Page number controls (bottom right). 143 people = 3 pages at 50/page.
+
+  gotchas:
+    - >
+      Verzeichnis and Organigramm are two views of the SAME data toggled by the
+      top-right segmented control; the url ?tab= param records which is active
+      and is persisted per-user (PUT /api/user/prefs/org-tab).
+    - >
+      No manager/reporting-line field is available in "Kategorisieren nach" or
+      (as of mapping) as a column, so this VIEW cannot yield the org tree — it
+      only gives flat attributes. The reporting edges DO exist in the underlying
+      data, though: GET /api/employees/essentials returns work.reportsTo per
+      person. See the Organigramm map's "FAST/RELIABLE EXTRACTION" gotcha for the
+      full API recipe to build a subtree.
+    - >
+      "Standort" holds the field-service Region for Kundendienst staff
+      (Region West / Mitte / Ost / Südost / Zürich...) but holds the office
+      ("Glattbrugg") for HQ staff — it is a location, not strictly a region.
+    - >
+      Default page size is 50; increase "Zeilen pro Seite" before scraping so
+      the whole workforce fits fewer pages.

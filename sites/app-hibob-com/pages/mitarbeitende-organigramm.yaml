@@ -1,0 +1,134 @@
+page:
+  name: Mitarbeitende – Organigramm (Org Chart)
+  url_pattern: /people/org?tab=org-chart
+  purpose: >
+    Interactive, zoomable/pannable org chart of the whole company. This is the
+    ONLY view that exposes reporting lines (manager -> direct reports), so it is
+    the authoritative source for building a subtree under a given person
+    (e.g. André Senn -> Regionalleiter -> Teamleiter -> Servicetechniker).
+
+  elements:
+    - name: view-toggle-organigramm
+      type: button
+      locator: { strategy: text, value: "Organigramm" }
+      description: Selected when in org-chart view; sibling "Verzeichnis" switches to the table.
+      states: [selected, unselected]
+
+    - name: filter-button
+      type: button
+      locator: { strategy: text, value: "Filter" }
+      description: Opens a filter panel (e.g. by department/site) applied to the chart.
+
+    - name: canvas-search-button
+      type: button
+      locator: { strategy: css, value: "main button svg[aria-label], .org-chart [data-search]" }
+      description: >
+        Magnifier icon at the top-right of the chart canvas. Opens an inline
+        "Organigramm durchsuchen" search box.
+
+    - name: canvas-search-input
+      type: input
+      locator: { strategy: aria-label, value: "Organigramm durchsuchen" }
+      description: >
+        Searches people within the chart. Shows an "Ergebnisse (n)" list;
+        clicking a result centers/focuses the chart on that person's node.
+        NOTE: use THIS search, not the global top-bar search — the global one
+        does not reliably drive the chart.
+
+    - name: back-to-default-view
+      type: button
+      locator: { strategy: text, value: "Zurück zur Standardansicht" }
+      description: >
+        Resets the chart to the default (CEO-rooted) view after you have
+        focused on a specific node/subtree.
+
+    - name: person-node
+      type: container
+      locator: { strategy: css, value: "[data-node-id], .org-chart-node" }
+      description: >
+        A person card: avatar, full name, Stellenbezeichnung (job title), and a
+        subtitle "Abteilung • Standort" (e.g. "Kundendienst • Region Ost").
+        The whole card is a clickable button (no accessible name — see gotchas).
+
+    - name: node-expand-toggle
+      type: button
+      locator: { strategy: css, value: ".org-chart-node + button, [data-expand-toggle]" }
+      description: >
+        Pill under a node showing descendant counts and a chevron. Two numbers
+        when the node has deeper levels: a people-icon count (total people in
+        the subtree) and a subteam-icon count (number of direct reports); one
+        number for a manager whose reports are all leaves. Chevron ^ = expanded,
+        v = collapsed. Click to expand/collapse that node's children.
+      states: [expanded, collapsed]
+
+    - name: reporting-line-button
+      type: button
+      locator: { strategy: css, value: "main .canvas-tools button:nth-of-type(1)" }
+      description: >
+        Branch icon on the right rail of the canvas. Best-guess: toggles the
+        direct reporting-line / lineage highlight for the focused node.
+        (Label unconfirmed — verify before relying on it.)
+      states: [capability-dependent]
+
+    - name: node-profile-button
+      type: button
+      locator: { strategy: css, value: "main .canvas-tools button:nth-of-type(2)" }
+      description: >
+        Contact-card icon on the right rail. Best-guess: opens the focused
+        person's profile/quick card. (Label unconfirmed — verify.)
+      states: [capability-dependent]
+
+    - name: zoom-controls
+      type: container
+      locator: { strategy: css, value: "main .zoom-controls, [data-zoom]" }
+      description: >
+        Bottom-left toolbar: "-" / percentage / "+" zoom, fit-to-screen and
+        center buttons, a collapse-all (double-chevron) button, and a
+        fullscreen toggle.
+
+  gotchas:
+    - >
+      The chart is a virtualized canvas: person cards and expand toggles are
+      rendered as buttons WITHOUT accessible names, and off-screen nodes are not
+      in the DOM. read_page returns opaque ref buttons, not names — read node
+      text via get_page_text / screenshots on what is currently visible, and pan
+      to bring more into view.
+    - >
+      To reach a specific person, open canvas-search and click the result to
+      focus/center on them — do not try to pan the full 143-node canvas by hand.
+      The global top-bar search does NOT drive the chart.
+    - >
+      Expand/collapse state and the active view are persisted per-user
+      (PUT /api/user/prefs/org-chart-setting-v1.0 and .../org-tab), so the chart
+      may open in whatever state the last session left it. Reset with
+      "Zurück zur Standardansicht" for a deterministic starting point.
+    - >
+      GEHRIG Kundendienst hierarchy shape (observed): André Senn (CXO,
+      Kundendienst) -> Regionalleiter (per Region) -> Teamleiter (e.g. Teamleiter
+      Zürich / Südost / Ost) -> Servicetechniker. Counts on the expand pills let
+      you verify you have captured every descendant of a node.
+    - >
+      To extract a full subtree via the UI: canvas-search the root person ->
+      focus -> expand every collapsed pill top-down -> pan and read each level.
+      Cross-check the captured count against the root node's people-icon total.
+      NOTE: the canvas is slow and the renderer intermittently freezes on
+      screenshots during expand animations (wait ~2s and retry). Prefer the
+      API method below for reliable extraction.
+    - >
+      FAST/RELIABLE EXTRACTION (data source): the whole workforce with reporting
+      edges is available as JSON in the authenticated session, no scraping needed:
+        - GET /api/employees/essentials -> array of 143 people; each has id,
+          displayName, and work.{title, department, site, reportsTo:{id,...}}.
+          Build the tree from work.reportsTo.id (BFS from the root person's id).
+        - work.title and work.department are metadata IDs; resolve them via
+          GET /api/company/metadata/lists/ -> lists.title.values and
+          lists.department.values ([{serverId, value, children[]}], recurse
+          children). work.site is already a plain string.
+      Verified 2026-07-15: André Senn's subtree = 82 people / 8 direct reports,
+      matching the org-chart pill exactly.
+      (Read these with fetch(...,{credentials:'include'}) via the javascript_tool;
+      the tool's safety filter blocks dumping raw rows containing emails, so
+      project the fields you need in-page and return only those.)
+    - >
+      The right-rail branch/profile icons and their exact behavior were not fully
+      confirmed during mapping; treat those two elements as tentative.

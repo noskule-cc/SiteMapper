@@ -1,0 +1,96 @@
+workflow:
+  name: extract-subtree
+  description: >
+    List every employee below a given person in the HiBob reporting hierarchy —
+    their full org subtree (Regionalleiter → Teamleiter → Servicetechniker, or
+    whatever sits under the chosen root), resolved to name / title / department /
+    location. Reads the live reporting edges from the HiBob API in the logged-in
+    session; no DOM scraping.
+  site: app-hibob-com
+  mode: agentic          # root resolution can be ambiguous and output is formatted → needs an LLM
+
+  parameters:
+    - name: root_person
+      type: text
+      description: >
+        The person at the top of the subtree — full name (e.g. "André Senn") or
+        exact work email (e.g. "andre.senn@gehriggroup.ch"). Name match is
+        case-insensitive and contains-based; if it matches more than one person
+        the script returns the candidate list to disambiguate.
+      required: true
+    - name: max_depth
+      type: text
+      description: >
+        Optional. Levels below the root to expand (1 = direct reports only).
+        Blank = the entire subtree. (totalDescendants is always the full count,
+        even when the displayed tree is capped.)
+      required: false
+      default: ""
+    - name: output
+      type: select
+      description: How to present / persist the result.
+      required: false
+      default: tree
+      options:
+        - tree          # nested indented tree, printed in chat
+        - flat-table    # one row per person (name, title, department, site) — easy to paste/CSV
+        - result-file   # write a dated markdown tree under results/ (like the André Senn example)
+
+  setup:
+    - action: navigate
+      page: mitarbeitende-organigramm
+      value: "https://app.hibob.com/people/org?tab=org-chart"
+      description: >
+        Put the active tab on app.hibob.com so the API calls run against the
+        logged-in session (they are cookie-authed).
+    - action: assert
+      page: mitarbeitende-organigramm
+      element: view-toggle-organigramm
+      expect: visible
+      description: >
+        Confirm the People area rendered and the session is authenticated. If a
+        login screen shows instead, STOP and ask the user to sign in — never
+        enter HiBob credentials.
+
+  steps:
+    - action: script
+      site: app-hibob-com
+      script: hibob_subtree.js
+      value: "$root_person"
+      capture: subtree
+      description: >
+        Inject hibob_subtree.js into the authenticated tab with the Chrome
+        javascript_tool (defines hibobSubtree()), then evaluate
+        `await hibobSubtree("$root_person", { maxDepth: $max_depth || Infinity })`.
+        It fetches /api/employees/essentials and /api/company/metadata/lists/,
+        resolves the root, walks work.reportsTo edges, and returns JSON:
+        { ok, root, totalDescendants, directReports, tree, flat }.
+        Keep includeEmail=false (default) — the javascript_tool safety filter
+        blocks returned payloads containing emails.
+        If ok is false: show error (and candidates, if any) and ask the user
+        which person they meant, then re-run this step with the chosen value.
+
+    - action: verify
+      description: >
+        Sanity-check subtree.totalDescendants / directReports against the
+        org-chart node's own count pill for the root ("<total> · <direct>").
+        If they differ, report the discrepancy instead of trusting the numbers.
+
+    - action: verify
+      description: >
+        Render according to $output:
+          • tree        → print subtree.tree as an indented list
+                          "Name — Title · Site" (managers in bold).
+          • flat-table  → print subtree.flat as a table
+                          | Name | Title | Department | Site | (root first).
+          • result-file → write sites/app-hibob-com/results/
+                          <root-name-slug>-worker-tree.<YYYY-MM-DD>.md: a header
+                          with source + totals, the full tree, then the data
+                          caveats (Standort ≠ reporting line; some branches skip
+                          a layer). That folder is git-ignored — the output is a
+                          list of named employees and stays local.
+
+  verify:
+    - "The output lists exactly subtree.totalDescendants people below the root (flat has that many rows besides the root)."
+    - "totalDescendants and directReports match the org-chart count pill for the chosen person."
+    - "Titles and departments are human-readable strings, not numeric metadata ids."

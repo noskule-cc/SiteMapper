@@ -1,0 +1,32 @@
+site:
+  name: HiBob (GEHRIG Group)
+  base_url: https://app.hibob.com
+  description: >
+    HiBob HRIS for the GEHRIG Group. This map covers the "Mitarbeitende"
+    (People) area, which has two toggleable views of the same 143-person
+    workforce: a Verzeichnis (directory table) and an Organigramm (org chart).
+    The org chart is the only view that exposes the reporting hierarchy
+    (manager -> report edges); the directory exposes flat per-person
+    attributes (location/region, department, job title, email).
+  auth_notes: >
+    Session-based login at app.hibob.com; the user must already be signed in
+    to the GEHRIG Group tenant in Chrome. Claude never enters credentials.
+    UI language is German (de-CH).
+  mapped_at: "2026-07-15"
+  pages:
+    - mitarbeitende-verzeichnis.yaml
+    - mitarbeitende-organigramm.yaml
+  workflows:
+    - extract-subtree.yaml
+
+  # Data access. UNLIKE the connect-ggplus-ch Python scripts (which log in headless
+  # via the OS keyring), HiBob's /api is cookie-authed against the logged-in browser
+  # session — so this script RUNS IN THE TAB (via the Chrome javascript_tool), not
+  # standalone, and handles no credentials. See scripts/README.md.
+  scripts:
+    - name: hibob_subtree.js
+      description: >
+        Extract the full reporting subtree under a given person (name or email):
+        reads /api/employees/essentials + /api/company/metadata/lists/, walks
+        work.reportsTo edges, returns { root, totalDescendants, directReports,
+        tree, flat }. Backs the extract-subtree workflow.
