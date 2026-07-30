@@ -1,0 +1,215 @@
+workflow:
+  name: test-brita-settings-propagation
+  description: >
+    Cross-site integration test: edit Karbonathärte on a Brita iQ Meter in GG+connect
+    staging and confirm the new value - and the capacity/lifetime it recalculates -
+    appear in the BRITA iQ portal. Mutating but SELF-REVERTING: teardown restores the
+    original value on both sides.
+  sites:
+    - connect-ggplus-ch-stg
+    - iq-brita-net
+  mode: agentic
+  # agentic: the pass condition is a cross-site value comparison (connect's "20.0"
+  # vs BRITA's "20 °dH") plus derived figures whose exact values depend on the
+  # cartridge - that needs judgement, not a fixed `expect`.
+
+  fixtures:
+    # GG+connect staging - iQ Meter Anzeige + Sensor 100-700 G3/4", partner "Gehrig Group AG test"
+    connect_device_id: "1eb28001-d55d-1032-8a18-0c14e0ab0000"
+    brita_geraete_id: "353141283322738"        # join key, shown on both sides
+    # BRITA iQ portal - same physical device (/flowmeters/{orgId}/{deviceId})
+    brita_org_id: "dae9a265-0efa-4616-b75b-58848d8f7b35"
+    brita_device_id: "d3e78486-13c6-436c-abe8-8996aa49113e"
+    karbonathaerte_baseline: "15"              # °dH, the device's normal value
+    karbonathaerte_test: "20"                  # °dH, must stay inside the 0...40 range
+
+  setup:
+    - action: navigate
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      value: "/geraete/geraet/$connect_device_id"
+      description: Open the device in GG+connect staging
+    - action: wait
+      description: Wait for the Brita Filter card to render
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: brita-geraete-id-tile
+      expect: { contains: "$brita_geraete_id" }
+      description: Precondition - this really is the device the BRITA fixtures point at
+
+    - action: navigate
+      site: iq-brita-net
+      page: flowmeter-detail
+      value: "/flowmeters/$brita_org_id/$brita_device_id"
+      description: Open the same device in the BRITA iQ portal
+    - action: wait
+      description: BRITA renders a blank page for ~5-10s before the title appears
+    - action: assert
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: device-id
+      expect: { contains: "$brita_geraete_id" }
+      description: Precondition - the join key matches, so both sides are the same device
+    - action: click
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: tab-water
+      description: Switch to the Water tab
+    - action: read
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: carbonate-hardness
+      capture: brita_hardness_before
+      description: Baseline carbonate hardness on the BRITA side
+    - action: read
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: capacity-remaining-stat
+      capture: brita_capacity_before
+      description: Baseline capacity remaining on the BRITA side
+    - action: read
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: lifetime-remaining-stat
+      capture: brita_lifetime_before
+      description: Baseline lifetime remaining on the BRITA side
+
+  steps:
+    # --- Write in GG+connect ---
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-edit
+      description: Open the inline editor on the Karbonathärte tile (scope to that tile - Verschnitteinstellung has an identical pencil)
+    - action: input
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-input
+      value: "$karbonathaerte_test"
+      description: Set the test carbonate hardness (clear the field first - it is prefilled)
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-speichern
+      description: Save (floppy icon)
+    - action: wait
+      description: Save takes ~10s; the page is busy and may not respond to reads meanwhile
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: erfolg-snackbar
+      expect: visible
+      description: GG+connect confirmed the write with the "Erfolg" snackbar
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-tile
+      expect: { contains: "$karbonathaerte_test" }
+      description: The tile now shows the test value (rendered with one decimal, e.g. "20.0")
+    - action: read
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: verbleibende-kapazitaet-stat
+      capture: connect_capacity_after
+      description: Capacity that GG+connect recalculated from the new hardness
+    - action: read
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: verbleibende-lebensdauer-stat
+      capture: connect_lifetime_after
+      description: Lifetime that GG+connect recalculated from the new hardness
+
+    # --- Read back in BRITA ---
+    - action: navigate
+      site: iq-brita-net
+      page: flowmeter-detail
+      value: "/flowmeters/$brita_org_id/$brita_device_id"
+      description: Reload the BRITA device page (a plain reload suffices - no cache busting)
+    - action: wait
+      description: Wait for the BRITA page to render
+    - action: click
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: tab-water
+      description: Switch to the Water tab
+    - action: assert
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: carbonate-hardness
+      expect: { contains: "$karbonathaerte_test" }
+      description: PROPAGATION - BRITA shows the new carbonate hardness (integer, e.g. "20 °dH")
+    - action: read
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: capacity-remaining-stat
+      capture: brita_capacity_after
+      description: Capacity remaining on the BRITA side after the change
+    - action: read
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: lifetime-remaining-stat
+      capture: brita_lifetime_after
+      description: Lifetime remaining on the BRITA side after the change
+    - action: verify
+      description: >
+        $brita_capacity_after must equal $connect_capacity_after and
+        $brita_lifetime_after must equal $connect_lifetime_after (compare the numbers,
+        ignoring the "Liter"/"litres" and "Wochen"/"weeks" unit words). Both must also
+        DIFFER from $brita_capacity_before / $brita_lifetime_before - if they are
+        unchanged, only the hardness field synced and the derived figures did not.
+
+  teardown:
+    # Restore the baseline on the GG+connect side; BRITA follows automatically.
+    - action: navigate
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      value: "/geraete/geraet/$connect_device_id"
+      description: Back to the GG+connect device page
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-edit
+      description: Reopen the inline editor
+    - action: input
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-input
+      value: "$karbonathaerte_baseline"
+      description: Restore the baseline carbonate hardness
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-speichern
+      description: Save
+    - action: wait
+      description: Wait out the ~10s save
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-tile
+      expect: { contains: "$karbonathaerte_baseline" }
+      description: GG+connect is back to the baseline value
+    - action: navigate
+      site: iq-brita-net
+      page: flowmeter-detail
+      value: "/flowmeters/$brita_org_id/$brita_device_id"
+      description: Reload BRITA
+    - action: click
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: tab-water
+      description: Water tab
+    - action: assert
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: carbonate-hardness
+      expect: { contains: "$karbonathaerte_baseline" }
+      description: BRITA is back to the baseline too - the revert propagated as well
+
+  verify:
+    - Both sides resolve to the same physical device via Brita-Geräte-Id 353141283322738
+    - Editing Karbonathärte in GG+connect produces an "Erfolg" snackbar and updates the tile in place, with no page reload
+    - The new carbonate hardness appears on the BRITA Water tab after a plain reload (observed 2026-07-29 - within ~20s, no manual sync step)
+    - The derived figures move together on both sides (observed 15 -> 20 °dH - lifetime 51 -> 47 weeks, capacity 8000 -> 6000 litres)
+    - The revert propagates too, leaving both systems at the baseline

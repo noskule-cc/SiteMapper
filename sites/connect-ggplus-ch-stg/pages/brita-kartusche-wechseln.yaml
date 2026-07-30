@@ -1,0 +1,257 @@
+page:
+  name: Brita Filterkartusche wechseln (Wizard)
+  url_pattern: /geraete/geraet/{deviceId}
+  purpose: >
+    4-step modal wizard for registering a new Brita filter cartridge on a Brita iQ
+    device. Opened from the "Kartusche austauschen" arrow button in the Brita Filter
+    card on the device Details tab. The URL does NOT change - the wizard is an
+    overlay on the device detail page.
+
+  elements:
+    # ---- Modal chrome ----
+    - name: wizard-modal
+      type: container
+      locator:
+        strategy: text
+        value: "Brita Filterkartusche wechseln"
+      description: >
+        The modal itself. Title is
+        '<Gerätetyp> - Brita Filterkartusche wechseln', e.g.
+        'Brita iQ Meter Anzeige + Sensor 100-700 G3/4" - Brita Filterkartusche wechseln'.
+
+    - name: wizard-close-x
+      type: button
+      locator:
+        strategy: aria-label
+        value: close
+      description: X in the modal's top-right corner - discards the wizard
+
+    - name: step-indicator
+      type: container
+      locator:
+        strategy: text
+        value: Kartuschentyp
+      description: >
+        Horizontal stepper - 1 Kartuschentyp / 2 Filtergrösse / 3 Einstellungen /
+        4 Zusammenfassung. Completed steps swap their number for a red pencil icon
+        and stay clickable to jump back.
+
+    - name: abbrechen-button
+      type: button
+      locator:
+        strategy: text
+        value: Abbrechen
+      description: Cancels the wizard without saving. Present on every step (bottom-left).
+
+    - name: zurueck-button
+      type: button
+      locator:
+        strategy: text
+        value: "Zurück"
+      description: Back to the previous step. Present on steps 2-4, absent on step 1.
+
+    - name: weiter-button
+      type: button
+      locator:
+        strategy: text
+        value: Weiter
+      description: Advance to the next step. Present on steps 1-3, replaced by Bestätigen on step 4.
+
+    - name: bestaetigen-button
+      type: button
+      locator:
+        strategy: text
+        value: "Bestätigen"
+      description: >
+        COMMITS the cartridge change. Step 4 only. Irreversible - there is no undo
+        and no teardown; it writes a new cartridge installation timestamp.
+
+    # ---- Step 1: Kartuschentyp ----
+    - name: kartuschentyp-option
+      type: button
+      locator:
+        strategy: text
+        value: Clean
+      description: >
+        (step 1) Cartridge-type card. Observed options on this device: "Quell St",
+        "Steam", "Clean", "Clean Extra". The card matching the currently installed
+        cartridge is preselected (red border + pink fill) - for PURITY_CLEAN that is
+        "Clean". Select by the card's caption text.
+
+    # ---- Step 2: Filtergrösse ----
+    - name: filtergroesse-option
+      type: button
+      locator:
+        strategy: text
+        value: "1200"
+      description: >
+        (step 2) Cartridge-size card. The set of sizes offered DEPENDS ON the type
+        chosen in step 1 (see the matrix in gotchas): Quell St and Steam offer
+        450/600/1200, Clean and Clean Extra offer 1200 only. The device's current
+        size is preselected when still available. Select by the card's caption text.
+
+    # ---- Step 3: Einstellungen (form shape is TYPE-DEPENDENT - see matrix) ----
+    - name: karbonathaerte-input
+      type: input
+      locator:
+        strategy: text
+        value: "Karbonathärte"
+      description: >
+        (step 3; Quell St / Steam / Clean) Required (marked *). Carbonate hardness in
+        °dH; prefilled with the device's current value (e.g. 15). The "°dH" suffix
+        sits to the right of the field, outside it. NOT present for Clean Extra,
+        which labels the same field "Gesammthärte" instead.
+      states: [capability-dependent]
+
+    - name: gesammthaerte-input
+      type: input
+      locator:
+        strategy: text
+        value: "Gesamthärte"
+      description: >
+        (step 3; Clean Extra ONLY) Required. Same position, unit (°dH) and prefilled
+        value as karbonathaerte-input, but labelled "Gesamthärte" (total hardness).
+        NOTE: on v2.27.2 this was misspelled "Gesammthärte" (double-m); fixed in
+        v2.27.3. A locator must match the CURRENT spelling.
+      states: [capability-dependent]
+
+    - name: verschnitteinstellung-slider
+      type: input
+      locator:
+        strategy: text
+        value: Verschnitteinstellung
+      description: >
+        (step 3; Quell St / Clean / Clean Extra) Bypass setting slider, range 0-100.
+        Tick labels differ by type (Clean/Clean Extra: 0/10/100; Quell St:
+        0/10/20/30/40/50/100). NOT present for Steam.
+      states: [capability-dependent]
+
+    - name: verschnitteinstellung-input
+      type: input
+      locator:
+        strategy: css
+        value: "input[type='number']"
+      description: >
+        (step 3; Quell St / Clean / Clean Extra) Numeric field right of the slider
+        showing the same value, suffix "%". Slider and field are two views of one
+        value - setting either updates the other.
+      states: [capability-dependent]
+
+    - name: verschnitteinstellung-radio
+      type: checkbox
+      locator:
+        strategy: text
+        value: "Verschnitteinstellung"
+      description: >
+        (step 3; Steam ONLY) For Steam, Verschnitteinstellung is NOT a percentage
+        slider but a required radio group with the four options 0 / 1 / 2 / 3
+        (0 preselected). Different control, different value domain - a percentage
+        input will not work here.
+      states: [capability-dependent]
+
+    - name: hauswasserenthaertungsanlage-option
+      type: button
+      locator:
+        strategy: text
+        value: "Enthärter installiert"
+      description: >
+        (step 3; Quell St ONLY) Required card pair under the heading
+        "Hauswasserenthärtungsanlage *": "Enthärter installiert" /
+        "Kein Enthärter installiert". Nothing is preselected, and Weiter stays
+        DISABLED until one is chosen.
+      states: [capability-dependent]
+
+    - name: dampfsystem-option
+      type: button
+      locator:
+        strategy: text
+        value: "Boiler"
+      description: >
+        (step 3; Steam ONLY) Required card pair under the heading "Dampfsystem *":
+        "Direkteinsprizer" / "Boiler" (the first is spelled without the 't' in the
+        app). Nothing is preselected, and Weiter stays DISABLED until one is chosen.
+      states: [capability-dependent]
+
+    # ---- Step 4: Zusammenfassung ----
+    - name: zusammenfassung-panel
+      type: container
+      locator:
+        strategy: text
+        value: Zusammenfassung
+      description: >
+        (step 4) Two-column Aktuell -> Neu diff with a red chevron between the
+        columns. Groups: Kartuschentyp, Kartuschengrösse, Einstellungen
+        (Karbonathärte, Verschnitteinstellung), Kapazität und Lebensdauer
+        (Verbleibende Kapazität, Verbleibende Lebensdauer).
+
+    - name: zusammenfassung-neu-column
+      type: container
+      locator:
+        strategy: text
+        value: Neu
+      description: (step 4) Right-hand column - the values that will be written
+
+    - name: zusammenfassung-aktuell-column
+      type: container
+      locator:
+        strategy: text
+        value: Aktuell
+      description: (step 4) Left-hand column - the values currently on the device
+
+  gotchas:
+    - "The wizard is an overlay rendered OUTSIDE <main>: get_page_text returns the underlying device page, not the modal. Use read_page / find / screenshots while the wizard is open."
+    - "The URL never changes while the wizard runs - do not assert on url_matches to detect wizard state; assert on the step-indicator or a step's own fields."
+    - "STEP 4 SCROLLS INDEPENDENTLY. The Zusammenfassung body has its own scrollbar and the Abbrechen/Zurück/Bestätigen footer starts below the fold. Scrolling the modal reflows it, so a coordinate captured from an earlier screenshot silently misses. Always resolve Bestätigen by its locator (ref/text), never by remembered coordinates - a coordinate click here fails SILENTLY (the modal simply stays open, no error)."
+    - "Steps 1 and 2 arrive with the device's current values PRESELECTED, so 'Weiter, Weiter, Weiter, Bestätigen' is a valid same-values run. That still commits and still writes a new installation timestamp."
+    - >
+      TYPE MATRIX (discovered 2026-07-29 on the Werkstatt iQ Meter, by walking each
+      type to step 3 and cancelling - nothing committed). Steps 2 AND 3 both reshape
+      per Kartuschentyp:
+        Quell St    | sizes 450/600/1200 | Karbonathärte* | Verschnitt slider 0-100 % | + REQUIRED Hauswasserenthärtungsanlage*: "Enthärter installiert" / "Kein Enthärter installiert"
+        Steam       | sizes 450/600/1200 | Karbonathärte* | Verschnitt RADIO 0/1/2/3  | + REQUIRED Dampfsystem*: "Direkteinsprizer" / "Boiler"
+        Clean       | size 1200 only     | Karbonathärte* | Verschnitt slider 0-100 % | -
+        Clean Extra | size 1200 only     | Gesammthärte*  | Verschnitt slider 0-100 % | -
+      Treat this matrix as a regression baseline: if it changes, the wizard changed.
+    - "STEP 3 IS NOT A FIXED FORM. Do not write a workflow that assumes 'Karbonathärte + Verschnitteinstellung %'. For Clean Extra the hardness field is labelled Gesammthärte; for Steam the Verschnitteinstellung is a 0/1/2/3 radio group, not a percentage. Resolve the step-3 fields AFTER choosing the type."
+    - "Quell St and Steam add a REQUIRED extra choice on step 3 (Hauswasserenthärtungsanlage / Dampfsystem) with nothing preselected. Weiter renders DISABLED until it is answered - so the 'Weiter, Weiter, Weiter' shortcut that works for Clean does NOT work for these two types."
+    - "All four step tabpanels exist in the DOM AT ONCE, each with its own Abbrechen / Zurück / Weiter. A locator of text 'Abbrechen' matches FOUR elements. Always scope footer buttons to the ACTIVE tabpanel (or take the nth matching the current step), or the click lands on a hidden panel's button."
+    - "The completed step chips in the stepper stay clickable (they swap their number for a red pencil), so you can jump back to any finished step without using Zurück."
+    - >
+      DEFECT - THE WIZARD WILL NOT OPEN WHILE "CLEAN EXTRA" IS THE INSTALLED CARTRIDGE.
+      Current state on v2.27.3 (2026-07-30): once PURITY_CLEAN_EXTRA is installed,
+      clicking "Kartusche austauschen" does nothing at all - verified across 7+
+      clicks, 3 page reloads and a fresh browser tab, with NO console error of any
+      kind. There is no UI route back to another cartridge type: the device is
+      TRAPPED. Do not end a test run on Clean Extra.
+      History: on v2.27.2 (2026-07-29) the same symptom appeared right after the
+      Clean Extra commit, but the console then showed
+        An error occurred while destroying the Formly component type "slider"
+        TypeError: Cannot read properties of undefined (reading 'removeEventListener')
+        at Ft.ngOnDestroy ... zt.resolveFieldTypeRef
+      and a page reload recovered it. On v2.27.3 that exception is GONE but the
+      reload workaround no longer works - the failure became silent and persistent.
+      Treat "wizard did not open" as a hard stop, not something to retry through.
+    - "The modal FADES IN over ~2-3s and clicks during the animation are silently swallowed. Wait for the modal to settle (or assert the step indicator is visible) before clicking a card or Weiter."
+    - >
+      VERSCHNITTEINSTELLUNG SLIDER ONLY ACCEPTS MULTIPLES OF 10, and per type it is
+      additionally capped (Clean Extra: max 10 %). Typing a non-multiple such as 5
+      snaps back to 0. As of v2.27.3 the constraint is DOCUMENTED IN THE UI - step 3
+      renders a helper line under the slider, e.g. "Erlaubte Werte: 0-10 % in
+      10%-Schritten". Read that line to learn the per-type allowed range instead of
+      probing for it.
+    - >
+      THE STEP-4 "Aktuell" COLUMN WAS UNRELIABLE WHEN THE TYPE CHANGES - PARTLY FIXED.
+      On v2.27.2 the hardness LABELS were inverted (Clean -> Clean Extra showed
+      "Gesammthärte" over the Aktuell column and "Karbonathärte" over Neu). Retested
+      on v2.27.3 (2026-07-30): the labels are now CORRECT - Aktuell "Karbonathärte",
+      Neu "Gesamthärte". Still UNVERIFIED on v2.27.3, because reproducing them needs
+      cartridge switches the trapped-on-Clean-Extra bug currently prevents:
+      (a) Quell St -> Steam showing a "Dampfsystem" value under Aktuell that the
+      installed Quell St cartridge does not have; (b) Clean Extra -> Clean showing
+      "Aktuell Karbonathärte 0 °dH" when the device held a different value.
+      Until those are re-checked, still prefer the "Neu" column and read the real
+      current state from the device page.
+    - "Switching type in step 1 can RESET the step-3 hardness to 0 rather than carrying the current value over (seen Clean Extra -> Clean). Always set the hardness explicitly; never rely on the prefill."
+    - "Bestätigen triggers a full page reload (blank page + red progress bar, ~5s). There is NO success toast or confirmation dialog. Wait for the device page to re-render before asserting."
+    - "OBSERVED DISCREPANCY: the step-4 summary predicted Verbleibende Lebensdauer 51 -> 52 Wochen, but after committing the device page still showed 51 Wochen; Verbleibende Kapazität (8000 L) and Volumen total (13827 L) were unchanged too. The ONLY field that reliably changed was Installationsdatum in the Installierte Kartusche tile (08:19:26 -> 11:06:27). Assert on that, not on the capacity/lifetime figures."
+    - "IRREVERSIBLE: there is no un-replace action, so a test using this wizard cannot have a teardown. It leaves a new cartridge installation record behind every run."

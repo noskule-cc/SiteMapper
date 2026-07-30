@@ -15,8 +15,12 @@ site:
   mapped_at: "2026-07-27"
   pages:
     - filters-list.yaml
+    - flowmeter-detail.yaml
   workflows:
     - itest-daily-readout.yaml
+    # Cross-site workflows that also use this site live under projects/:
+    #   projects/brita-iq-sync/workflows/test-brita-settings-propagation.yaml
+    #   projects/brita-iq-sync/workflows/kartusche-wechseln-test.yaml
   # PARKED — headless auth to the BRITA API is blocked (see scripts/README.md).
   # Kept as reference; not used by any workflow. The daily readout is browser-driven.
   scripts:

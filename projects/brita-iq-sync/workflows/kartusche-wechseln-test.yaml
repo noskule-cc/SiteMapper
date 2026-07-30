@@ -1,0 +1,482 @@
+workflow:
+  name: kartusche-wechseln-test
+  description: >
+    Biweekly regression suite for the Brita iQ filter integration on GG+connect
+    staging. Three suites: (A) inline-edit round-trip incl. validation and cancel
+    paths, (B) the Kartusche-wechseln wizard across all four Kartuschentypen,
+    (C) cross-cutting integrity checks. Every write is verified on BOTH sides -
+    GG+connect (system of record) and the BRITA iQ portal (downstream consumer).
+    Suite A is fully self-reverting. Suite B is NOT: each wizard commit writes an
+    irreversible cartridge installation record. Staging only.
+  sites:
+    - connect-ggplus-ch-stg
+    - iq-brita-net
+  mode: agentic
+  # agentic for three reasons: (1) pass conditions are cross-site value comparisons
+  # across different renderings and units ("20.0" vs "20 °dH"); (2) step 3 of the
+  # wizard is a DIFFERENT FORM per Kartuschentyp, so the field set must be resolved
+  # at run time; (3) some outcomes are DOCUMENTED rather than asserted - fields with
+  # no BRITA counterpart are reported as "not found in BRITA", and the two known
+  # defects (summary lifetime prediction, BRITA list-vs-detail) are recorded as
+  # findings, not failures.
+  #
+  # Scheduling: run manually every ~2 weeks. No cron is wired up.
+
+  fixtures:
+    # ---- The one fixture device, on both sides ----
+    connect_device_id: "1eb28001-d55d-1032-8a18-0c14e0ab0000"
+    brita_geraete_id: "353141283322738"          # join key, shown on both sides
+    brita_org_id: "dae9a265-0efa-4616-b75b-58848d8f7b35"
+    brita_device_id: "d3e78486-13c6-436c-abe8-8996aa49113e"
+
+    # ---- Baseline the device must be left in ----
+    baseline_kartuschentyp: "Clean"
+    baseline_filtergroesse: "1200"
+    baseline_haerte: "15"                        # °dH
+    baseline_verschnitt: "0"                     # %
+
+    # ---- Suite A: inline-edit values ----
+    haerte_test: "20"                            # valid, inside 1...40 °dH
+    verschnitt_test: "10"                        # slider is drag-only here; multiples of 10
+    haerte_invalid: ["0", "41", "-1", ""]        # 0/41/-1 all show an inline error (0 fixed in
+                                                 #   v2.27.3); "" is still a silent no-op
+    haerte_boundary: ["1", "40"]                 # both accepted - the documented range is 1...40
+    # Verschnitteinstellung has no invalid-value case in the inline editor: it is a
+    # slider, so out-of-range values cannot be expressed. Structurally prevented.
+
+    # ---- Suite B: the type matrix (baseline established 2026-07-29) ----
+    # Steps 2 AND 3 of the wizard reshape per type. `sizes` is the regression
+    # baseline for step 2; `haerte_field`, `verschnitt_control` and `extra_field`
+    # describe step 3's actual shape for that type.
+    type_matrix:
+      - kartuschentyp: "Quell St"
+        sizes: ["450", "600", "1200"]
+        test_size: "600"
+        haerte_field: karbonathaerte-input
+        haerte_test: "18"
+        verschnitt_control: verschnitteinstellung-input   # slider 0-100 %
+        verschnitt_test: "20"
+        extra_field: hauswasserenthaertungsanlage-option  # REQUIRED, nothing preselected
+        extra_test: "Kein Enthärter installiert"
+      - kartuschentyp: "Steam"
+        sizes: ["450", "600", "1200"]
+        test_size: "450"
+        haerte_field: karbonathaerte-input
+        haerte_test: "12"
+        verschnitt_control: verschnitteinstellung-radio   # radio 0/1/2/3, NOT a percentage
+        verschnitt_test: "2"
+        extra_field: dampfsystem-option                   # REQUIRED, nothing preselected
+        extra_test: "Boiler"
+      - kartuschentyp: "Clean"
+        sizes: ["1200"]
+        test_size: "1200"
+        haerte_field: karbonathaerte-input
+        haerte_test: "25"
+        verschnitt_control: verschnitteinstellung-input
+        verschnitt_test: "10"        # must be a MULTIPLE OF 10 - 5 snaps back to 0 silently
+        extra_field: null
+        extra_test: null
+      # !! RUN CLEAN EXTRA LAST-BUT-ONE AT THE EARLIEST, NEVER LAST !!
+      # Installing Clean Extra currently TRAPS the device: the Kartusche-wechseln
+      # wizard stops opening entirely and there is no UI route back (see
+      # pages/brita-kartusche-wechseln.yaml). Until that is fixed, either skip this
+      # entry or be prepared to restore the cartridge type out-of-band.
+      - kartuschentyp: "Clean Extra"
+        sizes: ["1200"]
+        test_size: "1200"
+        haerte_field: gesammthaerte-input                 # labelled "Gesamthärte", not Karbonathärte
+        haerte_test: "30"
+        verschnitt_control: verschnitteinstellung-input
+        verschnitt_test: "0"         # Clean Extra CAPS Verschnitteinstellung at 10 % -
+                                     #   anything above is refused by typing, arrows and drag
+        extra_field: null
+        extra_test: null
+
+    # Expected BRITA Water-tab shape per type - assert the LABELS, not just the values.
+    brita_water_rows:
+      Quell St:    ["Carbonate hardness", "Bypass percentage", "Central softener"]
+      Steam:       ["Carbonate hardness", "Bypass setting", "Steam system"]
+      Clean:       ["Carbonate hardness", "Bypass percentage"]
+      Clean Extra: ["Total hardness", "Bypass percentage"]
+
+  setup:
+    - action: navigate
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      value: "/geraete/geraet/$connect_device_id"
+      description: Open the fixture device in GG+connect staging
+    - action: wait
+      description: Wait for the Brita Filter card to render
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: brita-geraete-id-tile
+      expect: { contains: "$brita_geraete_id" }
+      description: C1 - join key present and correct, so both sides are the same device
+    - action: navigate
+      site: iq-brita-net
+      page: flowmeter-detail
+      value: "/flowmeters/$brita_org_id/$brita_device_id"
+      description: Open the same device in the BRITA iQ portal
+    - action: wait
+      description: BRITA renders blank for ~5-10s before the title appears
+    - action: assert
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: device-id
+      expect: { contains: "$brita_geraete_id" }
+      description: C1 - the BRITA side carries the same join key
+    - action: read
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: capacity-remaining-stat
+      capture: run_baseline
+      description: >
+        Record the full starting state on both sides (type, size, hardness, bypass,
+        capacity, lifetime, cartridge installation date) so the teardown can prove
+        the device was restored.
+
+  steps:
+    # =====================================================================
+    # SUITE A - inline edit round-trip (self-reverting)
+    # =====================================================================
+    # A1 Karbonathärte, A2 Verschnitteinstellung. Run this block once per
+    # editable tile: [karbonathaerte-*, $haerte_test], [verschnitteinstellung-*,
+    # $verschnitt_test].
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-edit
+      description: A1 - open the inline editor (scope to the tile; both tiles have an identical pencil)
+    - action: input
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-input
+      value: "$haerte_test"
+      description: A1 - enter the test value (field is prefilled; clear it first)
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-speichern
+      description: A1 - save
+    - action: wait
+      description: A1 - the save takes ~10s and the page goes busy; do NOT re-click
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: erfolg-snackbar
+      expect: visible
+      description: A1 - "Erfolg" snackbar confirms the write
+    - action: navigate
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      value: "/geraete/geraet/$connect_device_id"
+      description: A1 - RELOAD, so the next assert proves persistence and not just optimistic UI
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-tile
+      expect: { contains: "$haerte_test" }
+      description: A1 - value survived the reload (rendered with one decimal, e.g. "20.0")
+    - action: read
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: verbleibende-kapazitaet-stat
+      capture: a1_connect_capacity
+      description: A1 - capacity GG+connect recalculated from the new hardness
+    - action: read
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: verbleibende-lebensdauer-stat
+      capture: a1_connect_lifetime
+      description: A1 - lifetime GG+connect recalculated
+    - action: navigate
+      site: iq-brita-net
+      page: flowmeter-detail
+      value: "/flowmeters/$brita_org_id/$brita_device_id"
+      description: A1 - reload BRITA (a plain reload suffices; no cache busting)
+    - action: click
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: tab-water
+      description: A1 - Water tab
+    - action: assert
+      site: iq-brita-net
+      page: flowmeter-detail
+      element: carbonate-hardness
+      expect: { contains: "$haerte_test" }
+      description: A1 - PROPAGATION - BRITA shows the new hardness (integer, e.g. "20 °dH")
+    - action: verify
+      capture: a1_latency_seconds
+      description: >
+        C2 - record how many seconds elapsed between the "Erfolg" snackbar and the
+        value being visible in BRITA. Not pass/fail; logged as a trend so the
+        integration degrading is visible before it breaks.
+    - action: verify
+      description: >
+        A1 - $a1_connect_capacity and $a1_connect_lifetime must equal BRITA's
+        Capacity remaining / Lifetime remaining (compare numbers; ignore the
+        Liter/litres and Wochen/weeks unit words), AND both must differ from
+        $run_baseline. Karbonathärte is not an isolated field - it recalculates
+        capacity and lifetime, and both systems must agree on the result.
+
+    # A3 - validation / boundaries. Each invalid value must be REJECTED and must
+    # write nothing. Accept 0 and 40 (hardness) / 0 and 100 (bypass) as valid.
+    - action: verify
+      description: >
+        A3 - for each of $haerte_invalid on karbonathaerte-input and each of
+        $verschnitt_invalid on verschnitteinstellung-input: open the editor, enter
+        the value, attempt to save. Expected: the save is refused (or the field
+        clamps) and NO "Erfolg" snackbar appears. After each attempt, reload
+        GG+connect and confirm the tile still holds the previous valid value, then
+        reload BRITA and confirm it is unchanged. A silent accept here is a FAIL -
+        it would write an out-of-range value to a real device.
+    - action: verify
+      description: >
+        A3 - also confirm the documented bounds ARE accepted: Karbonathärte 0 and 40,
+        Verschnitteinstellung 0 and 100. Restore the previous value after each.
+
+    # A4 - cancel discards
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-edit
+      description: A4 - open the inline editor again
+    - action: input
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-input
+      value: "33"
+      description: A4 - type a value we never intend to save
+    - action: key
+      site: connect-ggplus-ch-stg
+      value: "Escape"
+      description: A4 - dismiss via the X / Escape instead of saving
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-tile
+      expect: { contains: "$haerte_test" }
+      description: A4 - the tile still holds the last SAVED value, not "33"
+    - action: verify
+      description: A4 - reload BRITA and confirm it is unchanged - a cancelled edit must not propagate
+
+    # Restore Suite A's edits before Suite B starts
+    - action: verify
+      description: >
+        A - restore Karbonathärte to $baseline_haerte and Verschnitteinstellung to
+        $baseline_verschnitt via the inline editors, and confirm BRITA follows.
+        Suite B must start from a known baseline.
+
+    # =====================================================================
+    # SUITE B - Kartusche wechseln wizard, all four Kartuschentypen
+    # =====================================================================
+    # MUTATING AND IRREVERSIBLE - each Bestätigen writes a new cartridge
+    # installation record. There is no undo, so this suite has no teardown of its
+    # own; only the configuration is restored at the end.
+    #
+    # Run the block below ONCE PER ENTRY in $type_matrix, in the listed order,
+    # finishing with Clean so the device ends near its baseline.
+    - action: read
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: installierte-kartusche-tile
+      capture: b_installationsdatum_before
+      description: B - cartridge Installationsdatum before this type's run
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: kartusche-austauschen-button
+      description: B - open the wizard
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: step-indicator
+      expect: visible
+      description: B0 - the 4-step stepper is present
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: kartuschentyp-option
+      value: "$kartuschentyp"
+      description: B1 - select this iteration's Kartuschentyp
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: weiter-button
+      description: B1 - to step 2 (scope the footer button to the ACTIVE tabpanel - all four panels are in the DOM)
+    - action: verify
+      description: >
+        B1 - MATRIX REGRESSION - the Filtergrösse cards offered for $kartuschentyp
+        must be exactly $sizes. More, fewer or different sizes = the wizard changed;
+        report it and update the type_matrix fixture.
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: filtergroesse-option
+      value: "$test_size"
+      description: B1 - select this iteration's size
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: weiter-button
+      description: B1 - to step 3
+    - action: verify
+      description: >
+        B1 - MATRIX REGRESSION - step 3 must have the shape recorded for
+        $kartuschentyp: hardness field $haerte_field, bypass control
+        $verschnitt_control, extra required field $extra_field. In particular
+        Clean Extra must show "Gesammthärte" (not Karbonathärte) and Steam must show
+        a 0/1/2/3 radio group (not a percentage). A mismatch = the wizard changed.
+    - action: input
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: "$haerte_field"
+      value: "$haerte_test"
+      description: B1 - set this type's hardness test value
+    - action: input
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: "$verschnitt_control"
+      value: "$verschnitt_test"
+      description: B1 - set this type's bypass test value (percentage or radio option, per type)
+    - action: verify
+      description: >
+        B1 - if $extra_field is set (Quell St, Steam), assert Weiter is DISABLED
+        before answering it, then select $extra_test and assert Weiter becomes
+        enabled. That gating is the point of the check - skipping it hides a
+        regression where a required field stops being required.
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: weiter-button
+      description: B1 - to step 4
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: zusammenfassung-neu-column
+      expect: { contains: "$kartuschentyp" }
+      description: B1 - the "Neu" column reflects the chosen type
+    - action: verify
+      description: >
+        B1 - the "Neu" column must also reflect $test_size, $haerte_test and
+        $verschnitt_test. Record what the summary PREDICTS for Verbleibende
+        Lebensdauer / Kapazität - a known defect is that the prediction and the
+        post-commit value disagree (observed 2026-07-29: predicted 52 Wochen,
+        actual 51). Report the delta rather than asserting equality.
+    - action: click
+      site: connect-ggplus-ch-stg
+      page: brita-kartusche-wechseln
+      element: bestaetigen-button
+      description: >
+        B1 - COMMIT. Resolve by locator, NEVER by coordinate - the step-4 body
+        scrolls independently and a coordinate click misses silently.
+    - action: wait
+      description: B1 - full page reload (~5s, blank page + red progress bar), no success toast
+    - action: read
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: installierte-kartusche-tile
+      capture: b_installationsdatum_after
+      description: B1 - cartridge Installationsdatum after the commit
+    - action: verify
+      description: >
+        B1 - $b_installationsdatum_after must be LATER than
+        $b_installationsdatum_before. Identical = the Bestätigen click never landed;
+        that is a FAIL, not a no-op.
+    - action: verify
+      description: >
+        B1 - GG+connect tiles must now show: Installierte Kartusche matching
+        $kartuschentyp, Kartuschengrösse $test_size, hardness $haerte_test,
+        Verschnitteinstellung $verschnitt_test.
+    - action: navigate
+      site: iq-brita-net
+      page: flowmeter-detail
+      value: "/flowmeters/$brita_org_id/$brita_device_id"
+      description: B1 - reload BRITA
+    - action: verify
+      description: >
+        B1 - BRITA Cartridge tab must show Cartridge type == $kartuschentyp,
+        Cartridge size == $test_size, Cartridge Installation Date == today
+        (date-only there, so this is a same-day check). BRITA Water tab must show
+        the hardness and bypass just set. Capacity remaining and Lifetime remaining
+        must equal GG+connect's.
+    - action: verify
+      description: >
+        B1 - BRITA WATER-TAB SHAPE. Assert the Water tab shows exactly the rows listed
+        for $kartuschentyp in $brita_water_rows, with the values just set. Run 1
+        (2026-07-29) established that EVERY GG+connect field has a BRITA counterpart:
+        Gesammthärte -> "Total hardness", Steam's 0-3 Verschnitteinstellung ->
+        "Bypass setting", Dampfsystem -> "Steam system",
+        Hauswasserenthärtungsanlage -> "Central softener". If a future run finds a
+        field with no counterpart, record it as "not found in BRITA" and CONTINUE -
+        that is documentation, not a failure.
+
+    # B2 - cancel paths write nothing
+    - action: verify
+      description: >
+        B2 - for each of the four steps in turn, and once more via the X
+        (Schliessen): open the wizard, advance to that step, change something, then
+        cancel. After each, assert the cartridge Installationsdatum is UNCHANGED and
+        BRITA is unchanged. Verified manually 2026-07-29 for the step-3 Abbrechen
+        path; the other four paths are unproven.
+
+    # B3 - restore configuration
+    - action: verify
+      description: >
+        B3 - run the wizard once more to $baseline_kartuschentyp /
+        $baseline_filtergroesse / $baseline_haerte / $baseline_verschnitt so the
+        device ends on its baseline configuration. The accumulated installation
+        records cannot be removed - that trail is accepted for staging.
+
+    # =====================================================================
+    # SUITE C - cross-cutting
+    # =====================================================================
+    - action: verify
+      description: >
+        C3 - open the BRITA device LIST (/purityciqs) and compare this device's row
+        against its detail page. Observed 2026-07-29: the list said 52 weeks while
+        the detail page said 51 for the same device at the same moment. Report any
+        disagreement; the detail page is authoritative.
+    - action: verify
+      description: >
+        C4 - AUDIT TRAIL - open GG+connect /logs and check whether this run's
+        Karbonathärte edit and cartridge replacements are recorded. First run
+        establishes whether they appear at all; later runs assert they do.
+    - action: verify
+      description: >
+        C5 - MAP DRIFT - anything that did not match a page map (new field, renamed
+        label, moved control) is reported as drift with the page and element name,
+        so the maps can be updated rather than the test silently rotting.
+
+  teardown:
+    - action: navigate
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      value: "/geraete/geraet/$connect_device_id"
+      description: Back to the device page
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: karbonathaerte-tile
+      expect: { contains: "$baseline_haerte" }
+      description: Device is back on the baseline hardness
+    - action: assert
+      site: connect-ggplus-ch-stg
+      page: geraet-detail
+      element: installierte-kartusche-tile
+      expect: { contains: "$baseline_kartuschentyp" }
+      description: Device is back on the baseline cartridge type
+    - action: verify
+      description: >
+        Confirm BRITA also reflects the baseline. If any restore step failed, say so
+        explicitly in the report - a half-restored fixture device silently breaks the
+        NEXT run's assertions.
+
+  verify:
+    - "Suite A: both editable fields round-trip through GG+connect and reach BRITA; invalid values are rejected without writing; cancelled edits do not propagate"
+    - "Suite B: all four Kartuschentypen complete the wizard; the size/field matrix matches the recorded baseline; every commit advances the cartridge Installationsdatum and lands on both sides"
+    - "Suite B: cancel paths (Abbrechen on each step, plus X) write nothing"
+    - "Suite C: join key intact, list-vs-detail agreement checked, audit trail checked, map drift reported"
+    - "The device is left on its baseline configuration (Clean / 1200 / 15 °dH / 0 %)"
+    - "Report written to projects/brita-iq-sync/results/kartusche-wechseln-test.<YYYY-MM-DD>.md, including the propagation-latency figure and any answers to the open questions"

@@ -1,0 +1,427 @@
+page:
+  name: Geräte Detailansicht (Staging)
+  url_pattern: /geraete/geraet/{deviceId}
+  purpose: >
+    Device detail view. On staging this template additionally renders the Brita iQ
+    filter integration (Brita Filter card) for Brita iQ Meter devices - the entry
+    point for the "Filterkartusche wechseln" wizard.
+
+  elements:
+    # ---- Header ----
+    - name: partner-breadcrumb
+      type: link
+      locator:
+        strategy: text
+        value: "Gehrig Group AG test"
+      description: Partner/location breadcrumb above the device name
+
+    - name: device-name
+      type: text
+      locator:
+        strategy: css
+        value: "h1"
+      description: 'Device model name (e.g. ''iQ Meter Anzeige + Sensor 100-700 G3/4"'')'
+
+    - name: device-status-icon
+      type: text
+      locator:
+        strategy: css
+        value: ".status-icon"
+      description: Green/red check icon left of the device name
+
+    - name: internal-name
+      type: text
+      locator:
+        strategy: text
+        value: "Interner Name:"
+      description: "Internal device name (e.g. 'QR-Code ID: G5uyU6zpre')"
+
+    - name: internal-name-edit
+      type: button
+      locator:
+        strategy: css
+        value: "[aria-label='Edit'], .edit-icon"
+      description: Pencil icon to edit the internal name
+
+    - name: internal-note
+      type: text
+      locator:
+        strategy: text
+        value: "Interne Notiz:"
+      description: Internal note; empty state is "Keine interne Notiz vorhanden."
+
+    - name: stoerung-melden-button
+      type: button
+      locator:
+        strategy: text
+        value: "Störung melden"
+      description: Red button to report a malfunction
+
+    - name: verbindungen-status
+      type: text
+      locator:
+        strategy: text
+        value: "Letzte Aktivität"
+      description: "Connection panel (right). For Brita iQ devices the label is 'Letzte Aktivität (DD.MM.YYYY HH:MM)', not 'Online'/'Offline'."
+
+    - name: technische-daten-toggle
+      type: button
+      locator:
+        strategy: text
+        value: "Technische Daten"
+      description: >
+        Collapsible section above the tabs. Expanded it shows Hersteller (Brita),
+        Gerätetyp, Artikelnummer (1057523), Seriennummer (G5UYU6ZPRE),
+        Installationsdatum (device install date - NOT the cartridge install date).
+
+    # ---- Tabs ----
+    - name: tab-details
+      type: button
+      locator:
+        strategy: text
+        value: Details
+      description: Details tab - notifications, maintenance, Brita Filter card. Present on all devices.
+
+    - name: tab-konnektivitaet
+      type: button
+      locator:
+        strategy: text
+        value: "Konnektivität"
+      description: Connectivity tab - QR code, device registration. Present on all devices.
+
+    - name: tab-stoerungsmeldungen
+      type: button
+      locator:
+        strategy: text
+        value: "Störungsmeldungen"
+      description: "(capability-dependent) Fault report log with Von/Bis + Schweregrad filters. Empty state: 'Keine Daten vorhanden'."
+      states: [capability-dependent]
+
+    # ---- Details tab ----
+    - name: benachrichtigungen-card
+      type: container
+      locator:
+        strategy: text
+        value: Benachrichtigungen
+      description: Notifications card; empty state "zurzeit gibt es keine Benachrichtigungen"
+
+    - name: wartung-und-service-card
+      type: container
+      locator:
+        strategy: text
+        value: Wartung und Service
+      description: Next/last maintenance plus GEPLANT / ABGESCHLOSSEN / ABGESCHLOSSEN VOR INSTALLATIONSDATUM lists
+
+    - name: alle-services-anzeigen-link
+      type: link
+      locator:
+        strategy: text
+        value: "alle Services anzeigen"
+      description: Link to /dienste/service
+
+    # ---- Brita Filter card (capability-dependent: Brita iQ devices only) ----
+    - name: brita-filter-card
+      type: container
+      locator:
+        strategy: text
+        value: "Brita Filter"
+      description: "(capability-dependent) Whole Brita iQ filter section on the Details tab. Absent on non-Brita devices."
+      states: [capability-dependent]
+
+    - name: kartusche-austauschen-button
+      type: button
+      locator:
+        strategy: text
+        value: "arrow_forward"
+      description: >
+        (capability-dependent) Red arrow button under the "Kartusche austauschen /
+        Eine neue Kartusche einrichten." heading. Opens the Brita Filterkartusche
+        wechseln wizard (see page brita-kartusche-wechseln). The button carries no
+        text label - only the material icon ligature "arrow_forward"; locate it
+        relative to the "Kartusche austauschen" heading.
+      states: [capability-dependent]
+
+    - name: kapazitaet-chart
+      type: container
+      locator:
+        strategy: text
+        value: "Kapazität"
+      description: "(capability-dependent) Pie chart, Verbleibende Kapazität vs Volumen total"
+      states: [capability-dependent]
+
+    - name: volumen-total-stat
+      type: text
+      locator:
+        strategy: text
+        value: "Volumen total"
+      description: "(capability-dependent) Lifetime volume through the meter (e.g. '13827 Liter')"
+      states: [capability-dependent]
+
+    - name: verbleibende-lebensdauer-stat
+      type: text
+      locator:
+        strategy: text
+        value: "Verbleibende Lebensdauer"
+      description: "(capability-dependent) Remaining cartridge life in weeks, with a traffic-light dot (e.g. '51 Wochen')"
+      states: [capability-dependent]
+
+    - name: verbleibende-kapazitaet-stat
+      type: text
+      locator:
+        strategy: text
+        value: "Verbleibende Kapazität"
+      description: "(capability-dependent) Remaining cartridge capacity in litres (e.g. '8000 Liter')"
+      states: [capability-dependent]
+
+    - name: karbonathaerte-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Karbonathärte"
+      description: "(capability-dependent) Carbonate hardness tile: value + unit 'Wasserhärte' and the valid range '0...40 Wasserhärte' (e.g. '15.0')"
+      states: [capability-dependent]
+
+    - name: karbonathaerte-edit
+      type: button
+      locator:
+        strategy: css
+        value: "[aria-label='Edit'], .edit-icon"
+      description: >
+        (capability-dependent) Pencil icon inside the Karbonathärte tile. Opens an
+        inline editor in place: a number input labelled
+        "Karbonathärte [Wasserhärte] (CarbonateHardness)" with hint "0...40 Wasserhärte",
+        plus a floppy-disk Speichern button and an X to cancel. Scope the locator to
+        the Karbonathärte tile; Verschnitteinstellung has an identical pencil.
+      states: [capability-dependent]
+
+    - name: karbonathaerte-input
+      type: input
+      locator:
+        strategy: css
+        value: "input[type='number']"
+      description: >
+        (capability-dependent, inline-edit only) The Karbonathärte number field,
+        prefilled with the current value (e.g. "15.0"). Valid range 0...40.
+        Scope to the Karbonathärte tile.
+      states: [capability-dependent, hidden]
+
+    - name: karbonathaerte-speichern
+      type: button
+      locator:
+        strategy: aria-label
+        value: Speichern
+      description: >
+        (capability-dependent, inline-edit only) Floppy-disk save button. Commits
+        the new carbonate hardness; an "Erfolg" snackbar with an "ok" button appears.
+      states: [capability-dependent, hidden]
+
+    - name: erfolg-snackbar
+      type: container
+      locator:
+        strategy: text
+        value: Erfolg
+      description: >
+        Dark snackbar at the bottom centre with an "ok" button, shown after a
+        successful inline-edit save. NOT shown by the Filterkartusche-wechseln
+        wizard, which reloads the page instead.
+      states: [hidden]
+
+    - name: verschnitteinstellung-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Verschnitteinstellung"
+      description: "(capability-dependent) Bypass/blending setting in % (e.g. '0 %')"
+      states: [capability-dependent]
+
+    - name: verschnitteinstellung-edit
+      type: button
+      locator:
+        strategy: css
+        value: "[aria-label='Edit'], .edit-icon"
+      description: "(capability-dependent) Pencil icon inside the Verschnitteinstellung tile. Scope to that tile - identical icon in Karbonathärte."
+      states: [capability-dependent]
+
+    - name: gesammthaerte-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Gesamthärte"
+      description: >
+        (capability-dependent, Clean Extra ONLY) On a Clean Extra cartridge the
+        hardness tile is relabelled from "Karbonathärte" to "Gesamthärte" - same
+        position, same 1...40 °dH range, same pencil editor. A locator on
+        "Karbonathärte" finds NOTHING on a Clean Extra device.
+        NOTE: spelled "Gesammthärte" (double-m) on v2.27.2; corrected in v2.27.3.
+      states: [capability-dependent]
+
+    - name: hauswasserenthaertungsanlage-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Hauswasserenthärtungsanlage"
+      description: >
+        (capability-dependent, Quell St ONLY) Extra read-only tile that appears after
+        a Quell St cartridge is installed. Value renders as "Kein enthörter
+        installiert" - note the app misspells the wizard's "Kein Enthärter
+        installiert". Maps to BRITA "Central softener".
+      states: [capability-dependent]
+
+    - name: dampfsystem-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Dampfsystem"
+      description: >
+        (capability-dependent, Steam ONLY) Extra read-only tile that appears after a
+        Steam cartridge is installed (e.g. "Boiler"). Maps to BRITA "Steam system".
+      states: [capability-dependent]
+
+    - name: kartuschengroesse-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Kartuschengrösse"
+      description: "(capability-dependent) Cartridge size, read-only (e.g. '1200')"
+      states: [capability-dependent]
+
+    - name: sensortyp-tile
+      type: text
+      locator:
+        strategy: text
+        value: Sensortyp
+      description: "(capability-dependent) Sensor type, read-only (e.g. '700L')"
+      states: [capability-dependent]
+
+    - name: batteriestatus-tile
+      type: text
+      locator:
+        strategy: text
+        value: Batteriestatus
+      description: "(capability-dependent) Battery status - icon only (check_circle_outline), no text value"
+      states: [capability-dependent]
+
+    - name: brita-geraete-id-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Brita-Geräte-Id"
+      description: >
+        (capability-dependent) BRITA device id (e.g. '353141283322738'). This is the
+        join key to the BRITA iQ portal (iq.brita.net) - use it to find the same
+        device there.
+      states: [capability-dependent]
+
+    - name: installierte-kartusche-tile
+      type: text
+      locator:
+        strategy: text
+        value: "Installierte Kartusche"
+      description: >
+        (capability-dependent) Currently installed cartridge type (e.g. 'PURITY_CLEAN')
+        plus a bullet line "Installationsdatum: DD.MM.YYYY HH:MM:SS" - the CARTRIDGE
+        install timestamp. This timestamp is the reliable proof that a
+        Filterkartusche-wechseln run committed.
+      states: [capability-dependent]
+
+    # ---- Konnektivität tab ----
+    - name: qr-code-card
+      type: container
+      locator:
+        strategy: text
+        value: "QR Code"
+      description: QR code card with Maschinen-Typ, Maschinen-Nr., Inbetriebnahme, Kundendienst + Reinigungsmittel hotlines
+
+    - name: qr-herunterladen-button
+      type: button
+      locator:
+        strategy: text
+        value: Herunterladen
+      description: Download the QR code
+
+    - name: registrierung-loeschen-button
+      type: button
+      locator:
+        strategy: text
+        value: "Registrierung löschen"
+      description: >
+        (state-dependent) Under "Gerät verbinden". Shown when the device IS already
+        registered. On an unregistered device this area instead shows a Code input +
+        "Registrieren" button. DESTRUCTIVE - unregisters the device.
+      states: [state-dependent]
+
+    # ---- Störungsmeldungen tab ----
+    - name: stoerungen-von
+      type: input
+      locator:
+        strategy: text
+        value: Von
+      description: Start date filter for fault reports
+
+    - name: stoerungen-bis
+      type: input
+      locator:
+        strategy: text
+        value: Bis
+      description: End date filter for fault reports
+
+    - name: schweregrad-dropdown
+      type: select
+      locator:
+        strategy: text
+        value: Schweregrad
+      description: Severity filter
+
+    - name: stoerungen-aktualisieren
+      type: button
+      locator:
+        strategy: text
+        value: Aktualisieren
+      description: Refresh the fault report list
+
+    # ---- Footer ----
+    - name: dokumente-card
+      type: container
+      locator:
+        strategy: text
+        value: Dokumente
+      description: Document attachments ("Dokument hinzufügen")
+
+    - name: medien-card
+      type: container
+      locator:
+        strategy: text
+        value: Medien
+      description: Media attachments ("Medien hinzufügen")
+
+  gotchas:
+    - "CAPABILITY VARIANT: a Brita iQ Meter shows only Details + Konnektivität + Störungsmeldungen - no Maschinenparameter / Waschgänge / Hygiene / Spülprogramme. The whole Brita Filter card is capability-dependent and absent on dishwashers/coffee machines."
+    - "Karbonathärte and Verschnitteinstellung are the only EDITABLE tiles in the Brita Filter card (pencil icon). Kartuschengrösse, Sensortyp, Batteriestatus, Brita-Geräte-Id and Installierte Kartusche are read-only. The two pencil icons are visually identical - always scope the locator to the containing tile."
+    - "Two different 'Installationsdatum' values exist on this page and they are NOT the same thing: the one under Technische Daten is the DEVICE install date (02.10.2025, date only); the one inside the Installierte Kartusche tile is the CARTRIDGE install timestamp (date + time). Only the latter changes when a cartridge is replaced."
+    - "Brita-Geräte-Id (e.g. 353141283322738) is the cross-site join key to the BRITA iQ portal at iq.brita.net. VERIFIED 2026-07-29: GG+connect is the system of record - edits here propagate to BRITA within seconds. See projects/brita-iq-sync."
+    - "CASCADE: saving Karbonathärte RECALCULATES the cartridge capacity and lifetime, it is not an isolated field. Observed 15.0 -> 20.0 °dH: Verbleibende Lebensdauer 51 -> 47 Wochen, Verbleibende Kapazität 8000 -> 6000 Liter (Volumen total unchanged). Harder water = less capacity. Reverting restores all three. Any test that edits Karbonathärte must expect the two derived tiles to move too."
+    - "The inline edit save is confirmed by an 'Erfolg' snackbar (with an 'ok' button) and updates the tiles in place - NO page reload. This differs from the Filterkartusche-wechseln wizard, which reloads the whole page and shows no toast. Saving can take ~10s, during which the page is busy and script injection may time out; wait it out rather than re-clicking. The snackbar AUTO-DISMISSES after a few seconds, so a check ~10s after the click may miss it - treat its absence as inconclusive and assert on the tile value instead."
+    - >
+      THE BRITA FILTER CARD IS CARTRIDGE-TYPE DEPENDENT (verified 2026-07-29 by
+      installing all four types):
+        Clean       -> Karbonathärte | Verschnitteinstellung (%)
+        Quell St    -> Karbonathärte | Verschnitteinstellung (%) | + Hauswasserenthärtungsanlage tile
+        Steam       -> Karbonathärte | Verschnitteinstellung (BARE 0-3, no % sign)  | + Dampfsystem tile
+        Clean Extra -> GESAMMTHÄRTE  | Verschnitteinstellung (%)
+      Resolve the hardness tile AFTER reading Installierte Kartusche - "Karbonathärte"
+      does not exist on a Clean Extra device.
+    - "The Verschnitteinstellung INLINE editor is a slider only (input[type=range], label 'Verschnitteinstellung [%] (BypassPercentage)') - there is NO number field, unlike the wizard's step 3. Set it by dragging the handle; arrow keys did not move it. The Karbonathärte inline editor is a plain number input."
+    - >
+      HARDNESS VALIDATION - FIXED IN v2.27.3. The valid range is 1...40 °dH.
+      Entering 0 now immediately shows "Der eingegebene Wert ist zu klein." in red,
+      and the field hint correctly reads "1...40 °dH Wasserhärte".
+      On v2.27.2 the hint said "0...40" while 0 was silently refused (Speichern did
+      nothing, no message at all) - that mismatch is resolved. 41 still gives
+      "Der eingegebene Wert ist zu gross."; 1 and 40 save fine.
+    - "v2.27.3 added the unit to the rendered values and hints: the tile now reads '15.0 °dH Wasserhärte' over '1...40 °dH Wasserhärte' (v2.27.2 rendered '15.0 Wasserhärte' / '0...40 Wasserhärte'), and the inline editor label is 'Karbonathärte [°dH Wasserhärte] (CarbonateHardness)'. Locators matching the old unit-less strings will miss."
+    - "An EMPTY Karbonathärte field plus Speichern closes the editor and keeps the previous value (a silent no-op, no error). Not a data risk, but do not treat 'editor closed' as 'value saved'."
+    - "The 'Kartusche austauschen' trigger is an icon-only button (material ligature 'arrow_forward') with no accessible name - it cannot be found by label. Locate it via the 'Kartusche austauschen' heading in the Brita Filter card."
+    - "The Filterkartusche-wechseln wizard opens as an overlay OUTSIDE <main>, so get_page_text does NOT return the modal contents - it keeps returning the underlying page. Use read_page / find / screenshots to work inside the modal."
+    - "Committing the wizard triggers a FULL PAGE RELOAD (blank white page with a red progress bar, ~5s). There is no success toast - the only confirmation is that the Installationsdatum inside Installierte Kartusche has changed."
+    - "Technische Daten collapses back to closed after that reload."
+    - "URL uses a UUID for the device id, not a numeric id."

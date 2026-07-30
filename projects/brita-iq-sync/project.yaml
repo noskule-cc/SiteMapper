@@ -1,0 +1,16 @@
+project:
+  name: BRITA iQ Sync
+  description: >
+    Verifies that the GG+connect <-> BRITA iQ integration actually syncs. GG+connect
+    is the system of record for a Brita iQ device's filter configuration (cartridge
+    type/size, Karbonathärte, Verschnitteinstellung); the BRITA iQ portal is the
+    downstream consumer. These workflows make a change in GG+connect staging and
+    confirm it lands on iq.brita.net.
+    Join key: GG+connect "Brita-Geräte-Id" == BRITA "Id:" under the device title
+    (e.g. 353141283322738).
+  sites:
+    - connect-ggplus-ch-stg
+    - iq-brita-net
+  workflows:
+    - test-brita-settings-propagation.yaml   # narrow: edit Karbonathärte in connect -> does BRITA see it?
+    - kartusche-wechseln-test.yaml           # full biweekly regression suite (A: inline edits, B: wizard x4 types, C: cross-cutting)

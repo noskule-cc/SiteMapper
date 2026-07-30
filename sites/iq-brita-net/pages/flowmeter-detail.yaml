@@ -1,0 +1,269 @@
+page:
+  name: iQ Meter / Flowmeter Detail
+  url_pattern: /flowmeters/{orgId}/{deviceId}
+  purpose: >
+    Per-device view for an iQ Meter. Shows live totals (volume, lifetime, capacity)
+    plus the cartridge configuration and water-quality settings that GG+connect
+    writes. This is the BRITA-side page used to verify that a change made in
+    GG+connect (cartridge replacement, Karbonathärte, Verschnitteinstellung)
+    actually reached BRITA.
+  screenshot: ""
+
+  elements:
+    - name: device-title
+      type: text
+      locator:
+        strategy: css
+        value: "h1"
+      description: >
+        Full device display name, e.g.
+        '3086769 - iQ Meter Anzeige + Sensor 100-700 G3/4" - G5UYU6ZPRE - Werkstatt'.
+        Embeds the GG+connect Seriennummer (G5UYU6ZPRE).
+
+    - name: device-id
+      type: text
+      locator:
+        strategy: text
+        value: "Id:"
+      description: >
+        BRITA device id under the title, e.g. "Id: 353141283322738". This is the
+        JOIN KEY - it equals the "Brita-Geräte-Id" tile in GG+connect.
+
+    - name: organization
+      type: link
+      locator:
+        strategy: text
+        value: "Gehrig Group"
+      description: Owning organization, left of the device id
+
+    - name: last-event
+      type: text
+      locator:
+        strategy: text
+        value: "Last event:"
+      description: 'Time of the last received event, e.g. "Last event: 08:38"'
+
+    - name: total-volume-stat
+      type: text
+      locator:
+        strategy: text
+        value: "Total volume"
+      description: >
+        Lifetime volume, one decimal (e.g. "13827.1 litres"). GG+connect shows the
+        same figure rounded ("13827 Liter").
+
+    - name: lifetime-remaining-stat
+      type: text
+      locator:
+        strategy: text
+        value: "Lifetime remaining"
+      description: >
+        Remaining cartridge life in weeks with a traffic-light dot (e.g. "51 weeks").
+        Mirrors GG+connect "Verbleibende Lebensdauer".
+
+    - name: water-consumption-stat
+      type: text
+      locator:
+        strategy: text
+        value: "Water consumption of last week"
+      description: Last week's consumption in litres. No GG+connect equivalent.
+
+    - name: capacity-remaining-stat
+      type: text
+      locator:
+        strategy: text
+        value: "Capacity remaining"
+      description: >
+        Remaining cartridge capacity in litres (e.g. "8000 litres").
+        Mirrors GG+connect "Verbleibende Kapazität".
+
+    - name: configure-button
+      type: button
+      locator:
+        strategy: text
+        value: Configure
+      description: >
+        Opens BRITA's own device configuration. NOT used by the propagation check -
+        GG+connect is the system of record for these settings; do not edit here.
+
+    # ---- Tabs ----
+    - name: tab-cartridge
+      type: button
+      locator:
+        strategy: text
+        value: Cartridge
+      description: Cartridge tab (default) - filter system, type, size, installation date
+
+    - name: tab-water
+      type: button
+      locator:
+        strategy: text
+        value: Water
+      description: Water tab - carbonate hardness and bypass percentage
+
+    - name: tab-notes
+      type: button
+      locator:
+        strategy: text
+        value: Notes
+      description: Free-text notes tab
+
+    - name: tab-system
+      type: button
+      locator:
+        strategy: text
+        value: System
+      description: System/technical info tab
+
+    # ---- Cartridge tab ----
+    - name: filter-system
+      type: text
+      locator:
+        strategy: text
+        value: "Filter system"
+      description: 'Filter family, e.g. "PURITY"'
+
+    - name: cartridge-type
+      type: text
+      locator:
+        strategy: text
+        value: "Cartridge type"
+      description: >
+        Cartridge type, e.g. "Clean". Corresponds to the step-1 choice in the
+        GG+connect Filterkartusche-wechseln wizard (GG+connect renders it as
+        "PURITY_CLEAN" in the Installierte Kartusche tile).
+
+    - name: cartridge-size
+      type: text
+      locator:
+        strategy: text
+        value: "Cartridge size"
+      description: 'Cartridge size, e.g. "1200". Mirrors GG+connect "Kartuschengrösse".'
+
+    - name: cartridge-installation-date
+      type: text
+      locator:
+        strategy: text
+        value: "Cartridge Installation Date"
+      description: >
+        DATE ONLY (DD/MM/YYYY) - no time component, unlike GG+connect's
+        "Installationsdatum: DD.MM.YYYY HH:MM:SS". Cannot distinguish two cartridge
+        replacements made on the same day; use it only for a same-day check.
+
+    # ---- Water tab ----
+    - name: carbonate-hardness
+      type: text
+      locator:
+        strategy: text
+        value: "Carbonate hardness"
+      description: >
+        (cartridge-type dependent: Quell St / Steam / Clean) Carbonate hardness in
+        °dH, INTEGER (e.g. "20 °dH"). Mirrors GG+connect "Karbonathärte", which
+        renders one decimal ("20.0 Wasserhärte") - compare numerically, not as
+        strings. For Clean Extra this row is labelled "Total hardness" instead.
+      states: [capability-dependent]
+
+    - name: total-hardness
+      type: text
+      locator:
+        strategy: text
+        value: "Total hardness"
+      description: >
+        (cartridge-type dependent: Clean Extra ONLY) Same row/position as
+        carbonate-hardness but relabelled. Mirrors GG+connect "Gesammthärte".
+        Verified 2026-07-29: setting Gesammthärte 30 in GG+connect landed here as
+        "Total hardness 30 °dH".
+      states: [capability-dependent]
+
+    - name: bypass-percentage
+      type: text
+      locator:
+        strategy: text
+        value: "Bypass percentage"
+      description: >
+        (cartridge-type dependent: Quell St / Clean / Clean Extra) Bypass/blending
+        percentage (e.g. "0 %"). Mirrors GG+connect "Verschnitteinstellung".
+        For Steam the row is labelled "Bypass setting" and carries a bare 0-3 index.
+      states: [capability-dependent]
+
+    - name: bypass-setting
+      type: text
+      locator:
+        strategy: text
+        value: "Bypass setting"
+      description: >
+        (cartridge-type dependent: Steam ONLY) Bypass as a bare index 0/1/2/3, no
+        percent sign. Mirrors GG+connect's Steam-only radio group.
+      states: [capability-dependent]
+
+    - name: central-softener
+      type: text
+      locator:
+        strategy: text
+        value: "Central softener"
+      description: >
+        (cartridge-type dependent: Quell St ONLY) Third Water-tab row. Mirrors
+        GG+connect "Hauswasserenthärtungsanlage". Values seen: "No softener installed"
+        (= "Kein Enthärter installiert").
+      states: [capability-dependent]
+
+    - name: steam-system
+      type: text
+      locator:
+        strategy: text
+        value: "Steam system"
+      description: >
+        (cartridge-type dependent: Steam ONLY) Third Water-tab row. Mirrors
+        GG+connect "Dampfsystem". Values seen: "Boiler" (the other option is
+        "Direkteinsprizer" / direct injection).
+      states: [capability-dependent]
+
+    # ---- System tab ----
+    - name: system-last-event
+      type: text
+      locator:
+        strategy: text
+        value: "Last event"
+      description: "(System tab) Full timestamp, e.g. \"29/07/2026, 08:38\""
+
+    - name: system-sensor-type
+      type: text
+      locator:
+        strategy: text
+        value: "Sensor type"
+      description: '(System tab) e.g. "700L". Mirrors GG+connect "Sensortyp".'
+
+    - name: system-resource-id
+      type: text
+      locator:
+        strategy: text
+        value: "Resource ID"
+      description: "(System tab) The UUID that appears as {deviceId} in this page's URL"
+
+  gotchas:
+    - "Two device-detail URL shapes exist: /flowmeters/{orgId}/{deviceId} for iQ Meters and /purityciqs/{orgId}/{deviceId} for PURITY C iQ filters. Both ids are UUIDs and are NOT the BRITA device id shown on the page - reach the page by clicking the row's name link in /purityciqs, or pin the URL as a fixture."
+    - "JOIN KEY to GG+connect is the numeric BRITA device id under the title ('Id: 353141283322738') == GG+connect's 'Brita-Geräte-Id' tile. The GG+connect Seriennummer (G5UYU6ZPRE) also appears inside the display name, but only by naming convention - do not rely on it."
+    - "Carbonate hardness is shown WITHOUT decimals here and WITH one decimal in GG+connect (20 vs 20.0). Compare numerically."
+    - >
+      THE WATER TAB IS CARTRIDGE-TYPE DEPENDENT - both its row COUNT and its row
+      LABELS change (verified end-to-end 2026-07-29):
+        Clean       -> Carbonate hardness | Bypass percentage (%)
+        Quell St    -> Carbonate hardness | Bypass percentage (%) | Central softener
+        Steam       -> Carbonate hardness | Bypass SETTING (bare 0-3) | Steam system
+        Clean Extra -> TOTAL hardness     | Bypass percentage (%)
+      Never assume "Carbonate hardness" is present: on Clean Extra that row is
+      "Total hardness". Never assume the bypass row carries a % sign: on Steam it is
+      a bare index. Resolve the Water-tab rows AFTER reading the cartridge type.
+    - "Every GG+connect Brita field has a BRITA counterpart - none of Gesammthärte, Dampfsystem or Hauswasserenthärtungsanlage is GG+connect-only. All four cartridge types round-tripped fully on 2026-07-29."
+    - >
+      TAB SWITCHING IS FLAKY FOR AUTOMATION. Clicking the Water/Notes/System tabs by
+      accessibility ref frequently does NOT switch the panel; coordinate clicks work
+      but the tab bar's y-position moves with scroll (seen at y=420, 463, 527, 530).
+      Reliable recipe: take a screenshot, read the tab bar's actual y, then click that
+      coordinate - and be prepared to click twice. The first interaction after the tab
+      has been backgrounded only refocuses it.
+    - "Cartridge Installation Date has no time component here; GG+connect has full HH:MM:SS. For a same-day replacement the two cannot be compared exactly."
+    - "VERIFIED 2026-07-29: writes from GG+connect propagate here in seconds, no manual sync. Editing Karbonathärte 15 -> 20 in GG+connect changed this page to 20 °dH within ~20s, and the derived stats moved with it (Lifetime remaining 51 -> 47 weeks, Capacity remaining 8000 -> 6000 litres). Reverting 20 -> 15 restored all three. A plain page reload is enough - no cache-busting needed."
+    - "INTERNAL INCONSISTENCY: the /purityciqs list and this detail page can disagree on Lifetime remaining (list showed 52 weeks while this page showed 51 for the same device at the same moment). Read the DETAIL page for propagation checks, not the list."
+    - "Do NOT use the 'Configure' button to change these values - GG+connect is the system of record. This page is read-only for verification purposes."
+    - "Requires an authenticated session (Azure AD B2C). Page loads with a blank white screen for ~5-10s before rendering - wait for the device title before reading."

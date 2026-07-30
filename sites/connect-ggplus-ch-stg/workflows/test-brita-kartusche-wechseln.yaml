@@ -1,0 +1,142 @@
+workflow:
+  name: test-brita-kartusche-wechseln
+  description: >
+    UI test for the Brita Filterkartusche wechseln wizard on a Brita iQ Meter -
+    walks all four steps and confirms the commit landed by checking that the
+    cartridge Installationsdatum advanced. MUTATING and IRREVERSIBLE: there is no
+    un-replace action, so this workflow has no teardown and leaves a new cartridge
+    installation record behind on every run. Staging only.
+  site: connect-ggplus-ch-stg
+  mode: agentic
+  # agentic, not deterministic: the outcome is "the installation timestamp CHANGED",
+  # a before/after comparison. schema/workflow.yaml's `expect` vocabulary has no
+  # not-equals, so the final check needs judgement. Every other step is mechanical.
+
+  fixtures:
+    device_id: "1eb28001-d55d-1032-8a18-0c14e0ab0000"   # iQ Meter Anzeige + Sensor 100-700 G3/4", partner "Gehrig Group AG test"
+    cartridge_type: "Clean"        # matches installed PURITY_CLEAN - smallest blast radius
+    cartridge_size: "1200"         # only size offered for Clean on this device
+    karbonathaerte: "15"           # °dH, the device's current value
+    verschnitteinstellung: "0"     # %, the device's current value
+
+  setup:
+    - action: navigate
+      page: geraet-detail
+      value: "/geraete/geraet/$device_id"
+      description: Open the Brita iQ Meter detail page
+    - action: wait
+      description: Wait for the Details tab and the Brita Filter card to render
+    - action: assert
+      page: geraet-detail
+      element: brita-filter-card
+      expect: visible
+      description: Precondition - this device really is a Brita iQ device
+    - action: read
+      page: geraet-detail
+      element: installierte-kartusche-tile
+      capture: installationsdatum_before
+      description: Record the cartridge Installationsdatum before the change
+
+  steps:
+    - action: click
+      page: geraet-detail
+      element: kartusche-austauschen-button
+      description: Open the wizard (red arrow under "Kartusche austauschen")
+    - action: assert
+      page: brita-kartusche-wechseln
+      element: wizard-modal
+      expect: visible
+      description: The Filterkartusche-wechseln modal opened
+
+    # Step 1 - Kartuschentyp
+    - action: click
+      page: brita-kartusche-wechseln
+      element: kartuschentyp-option
+      value: "$cartridge_type"
+      description: Select the cartridge type
+    - action: click
+      page: brita-kartusche-wechseln
+      element: weiter-button
+      description: Continue to Filtergrösse
+
+    # Step 2 - Filtergrösse
+    - action: assert
+      page: brita-kartusche-wechseln
+      element: filtergroesse-option
+      value: "$cartridge_size"
+      expect: visible
+      description: The size offered for this type includes the fixture size
+    - action: click
+      page: brita-kartusche-wechseln
+      element: filtergroesse-option
+      value: "$cartridge_size"
+      description: Select the cartridge size
+    - action: click
+      page: brita-kartusche-wechseln
+      element: weiter-button
+      description: Continue to Einstellungen
+
+    # Step 3 - Einstellungen
+    - action: input
+      page: brita-kartusche-wechseln
+      element: karbonathaerte-input
+      value: "$karbonathaerte"
+      description: Set Karbonathärte (°dH)
+    - action: input
+      page: brita-kartusche-wechseln
+      element: verschnitteinstellung-input
+      value: "$verschnitteinstellung"
+      description: Set Verschnitteinstellung (%)
+    - action: click
+      page: brita-kartusche-wechseln
+      element: weiter-button
+      description: Continue to Zusammenfassung
+
+    # Step 4 - Zusammenfassung
+    - action: assert
+      page: brita-kartusche-wechseln
+      element: zusammenfassung-neu-column
+      expect: { contains: "$cartridge_type" }
+      description: The "Neu" column reflects the chosen type
+    - action: assert
+      page: brita-kartusche-wechseln
+      element: zusammenfassung-neu-column
+      expect: { contains: "$cartridge_size" }
+      description: The "Neu" column reflects the chosen size
+    - action: click
+      page: brita-kartusche-wechseln
+      element: bestaetigen-button
+      description: >
+        COMMIT. Resolve this button by its locator, never by coordinate - the step-4
+        body scrolls independently and the footer starts below the fold, so a
+        coordinate click misses silently and leaves the modal open.
+    - action: wait
+      description: Bestätigen triggers a full page reload (~5s, blank page + red progress bar) with no success toast
+
+    # Post-condition
+    - action: assert
+      page: geraet-detail
+      element: brita-filter-card
+      expect: visible
+      description: The device page re-rendered after the reload
+    - action: read
+      page: geraet-detail
+      element: installierte-kartusche-tile
+      capture: installationsdatum_after
+      description: Record the cartridge Installationsdatum after the change
+    - action: verify
+      description: >
+        $installationsdatum_after must be LATER than $installationsdatum_before. If
+        they are identical the Bestätigen click never landed (the usual cause is a
+        coordinate click that missed the scrolled-away footer) - that is a FAIL, not
+        a no-op.
+
+  # No teardown: replacing a cartridge is irreversible in the UI. Each run leaves a
+  # new cartridge installation record on the fixture device. That is accepted for
+  # staging; do NOT point this workflow at production.
+
+  verify:
+    - The wizard opens from the Brita Filter card and shows all four steps (Kartuschentyp, Filtergrösse, Einstellungen, Zusammenfassung)
+    - Step 4 shows an Aktuell -> Neu diff whose "Neu" column matches the fixture selections
+    - After Bestätigen the cartridge Installationsdatum in the "Installierte Kartusche" tile is later than it was before the run
+    - "Known: Verbleibende Lebensdauer / Verbleibende Kapazität / Volumen total do NOT change on commit even though the step-4 summary predicts a lifetime increase - do not assert on them"

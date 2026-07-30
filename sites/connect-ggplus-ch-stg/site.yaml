@@ -1,0 +1,25 @@
+site:
+  name: GG+connect IoT Portal (Staging)
+  base_url: https://stg-connect.ggplus.ch
+  description: >
+    Staging environment of the GG+connect IoT portal. Mapped separately from dev
+    and prod because the environments do not carry the same feature set - staging
+    exposes the Brita iQ filter integration (Brita Filter card + Filterkartusche
+    wechseln wizard) that the other environments do not.
+  auth_notes: SSO login; user Benjamin Behringer has admin access. Session already authenticated in browser.
+  mapped_at: "2026-07-29"
+  settings:
+    policy:
+      environment: stg
+      safe_to_submit_forms: true   # staging - forms may be filled and submitted
+  pages:
+    - geraet-detail.yaml
+    - brita-kartusche-wechseln.yaml
+  workflows:
+    - test-brita-kartusche-wechseln.yaml
+    # Cross-site workflows that also use this site live under projects/:
+    #   projects/brita-iq-sync/workflows/test-brita-settings-propagation.yaml
+
+  # Sibling environments, mapped as their own sites:
+  #   sites/connect-ggplus-ch-dev   -> https://dev-connect.ggplus.ch
+  #   sites/connect-ggplus-ch       -> https://connect.ggplus.ch (prod)
