@@ -17,6 +17,8 @@
 | Configuring contact/behavior/defaults   | `schema/settings.yaml`, `config.yaml`   |
 | Understanding the project               | `PRD.md`                                |
 | Writing or updating documentation       | `docs/INFORMATION_MINIMALISM.md`        |
+| Deciding **where** a fact belongs       | `docs/KNOWLEDGE_PLACEMENT.md`           |
+| About to save something to agent memory | `docs/KNOWLEDGE_PLACEMENT.md` **first** |
 | Validating YAML before commit           | `scripts/lint.py`                       |
 
 ## Available Skills
@@ -36,3 +38,4 @@
 - **Schemas** in `schema/` define the YAML format for pages, sites, workflows, projects, and settings.
 - **Settings** are layered (`config.yaml` global → `site.yaml` → page YAML), merged most-specific-wins; `policy.safe_to_submit_forms` gates form submission.
 - **Claude Code orchestrates** via file system access + Chrome MCP browser tools.
+- **The repo is the source of truth; agent memory is a staging area.** Project-true facts live in the repo (page `gotchas`, `scripts/README.md`, `settings:`, `CLAUDE.md`); machine- or person-specific facts live in memory. Never both — when they disagree, the repo wins. See `docs/KNOWLEDGE_PLACEMENT.md`.

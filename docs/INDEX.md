@@ -36,6 +36,7 @@
 ## Guidelines
 
 - [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — when and what to document
+- [KNOWLEDGE_PLACEMENT.md](KNOWLEDGE_PLACEMENT.md) — where a fact belongs: repo vs. agent memory
 
 ## Proposals
 

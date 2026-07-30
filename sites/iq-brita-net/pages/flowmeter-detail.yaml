@@ -86,7 +86,20 @@ page:
         Opens BRITA's own device configuration. NOT used by the propagation check -
         GG+connect is the system of record for these settings; do not edit here.
 
-    # ---- Tabs ----
+    - name: enable-new-design-toggle
+      type: checkbox
+      locator:
+        strategy: text
+        value: Enable new design
+      description: >
+        Per-user layout switch, present on device DETAIL pages only (never on the
+        /purityciqs list). ON = the tabbed layout this map describes
+        (Cartridge / Water / Notes / System + an Activity side panel). OFF = the old
+        layout: inline sections (Firmware, Filtrate Carbonate Hardness, Central
+        softener) with no tabs at all. Set it explicitly at the start of any
+        detail-page workflow instead of inheriting whatever the last session left.
+
+    # ---- Tabs (new design only — see enable-new-design-toggle) ----
     - name: tab-cartridge
       type: button
       locator:
@@ -241,6 +254,17 @@ page:
       description: "(System tab) The UUID that appears as {deviceId} in this page's URL"
 
   gotchas:
+    - >
+      THIS MAP DESCRIBES THE NEW (TABBED) DESIGN. Detail pages carry an
+      "Enable new design" toggle; with it OFF the page renders the old inline layout
+      (Firmware, Filtrate Carbonate Hardness, Central softener) and NONE of the tabs
+      mapped here exist - so every tab-scoped element below is missing and a workflow
+      fails with "element not found" for a reason that has nothing to do with drift.
+      The toggle is per-user and STICKY across sessions, so it can be left OFF by a
+      previous session or by a human. Assert it (or set it) in setup rather than
+      assuming. Prefer the new design: it has the cleaner semantic structure (aria tab
+      roles, labelled fields). The /purityciqs LIST page has no such toggle and is
+      single-design - see filters-list.yaml.
     - "Two device-detail URL shapes exist: /flowmeters/{orgId}/{deviceId} for iQ Meters and /purityciqs/{orgId}/{deviceId} for PURITY C iQ filters. Both ids are UUIDs and are NOT the BRITA device id shown on the page - reach the page by clicking the row's name link in /purityciqs, or pin the URL as a fixture."
     - "JOIN KEY to GG+connect is the numeric BRITA device id under the title ('Id: 353141283322738') == GG+connect's 'Brita-Geräte-Id' tile. The GG+connect Seriennummer (G5UYU6ZPRE) also appears inside the display name, but only by naming convention - do not rely on it."
     - "Carbonate hardness is shown WITHOUT decimals here and WITH one decimal in GG+connect (20 vs 20.0). Compare numerically."

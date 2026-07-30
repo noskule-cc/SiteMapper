@@ -2,6 +2,22 @@
 
 Before starting any task, read `docs/AGENTS.md` for situational guidance on which docs and skills to use.
 
+## Where knowledge goes
+
+**The repo is the source of truth. Agent memory is a staging area, never a second
+source.** Full rules in `docs/KNOWLEDGE_PLACEMENT.md`; the parts that bind every
+session:
+
+- A fact that is true of the **project** goes in the repo — page `gotchas`, a
+  `scripts/README.md`, the layered `settings:` block, a workflow's `.md`, or this
+  file. A fact true only of **one machine or person** (install paths, local auth
+  state, "where we left off") goes in memory. Never both.
+- **Read the repo before answering from memory.** A recalled memory reflects what was
+  true when written; verify any file, flag, or element it names still exists.
+- **When the repo and a memory disagree, the repo wins** — then fix the memory.
+- Before saving a memory, check the placement table. If a repo home fits, write it
+  there and don't also save the memory.
+
 ## Azure DevOps (`ado` MCP) access guardrails
 
 The `ado` MCP server authenticates as the user (full identity), so these limits are a

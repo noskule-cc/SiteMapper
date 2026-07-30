@@ -33,7 +33,13 @@ For each page the user wants to map:
    - Key interactive elements (buttons, inputs, links, selects) with semantic locators
    - Preferred locator strategy (data-testid > aria-label > text > role > css)
 3. **Present suggestions** to the user and ask them to confirm, correct, or remove each one.
-4. **Ask about gotchas** — non-obvious behavior, edge cases, things that might trip up automation.
+4. **Ask about gotchas** — non-obvious behavior, edge cases, things that might trip up
+   automation. Anything the user tells you here that is true of the *page* goes into
+   this YAML's `gotchas`, not into agent memory — see `docs/KNOWLEDGE_PLACEMENT.md`.
+   Watch in particular for **per-user sticky UI state** (a layout toggle, a grouping, a
+   saved filter): it survives across sessions, so a later run inherits whatever the last
+   one left, and elements that only exist in one state will simply be missing. Record the
+   state *and* which elements depend on it.
 5. **Write the page YAML** to `sites/<site>/pages/<page-name>.yaml` following the schema.
 6. **Ask**: "Navigate to the next page you want to map, or say 'done' to finish."
 
@@ -57,3 +63,4 @@ For each page the user wants to map:
 - Group page files by section (dienste-, kontakt-, shop-, admin-, einstellungen-) for clarity.
 - Document the URL pattern as actually observed (may differ from sidebar label).
 - Screenshots are optional — skip unless the user specifically requests them or visual drift detection is needed.
+- Everything you learn during discovery belongs in the map, not in agent memory. If you catch yourself about to remember a page's behavior, write it as a gotcha instead — that is what makes it survive for the next session and the next person (`docs/KNOWLEDGE_PLACEMENT.md`).
