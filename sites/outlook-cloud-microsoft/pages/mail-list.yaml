@@ -1,0 +1,226 @@
+page:
+  name: Mail list (Inbox)
+  url_pattern: /mail/{folder}
+  purpose: >
+    The message list for a folder (mapped against Inbox). For template verification this
+    is the LOCATOR surface - find the templated message by subject or sender, read its
+    per-row metadata, then open it to assert the body. Row data is enough to check a
+    Betreff; the body needs mail-message.
+  screenshot: ""
+
+  elements:
+    - name: message-list
+      type: container
+      locator:
+        strategy: aria-label
+        value: Message list
+      description: >
+        The list container, role=listbox. Each message/conversation is a direct
+        role=option child. This is the ONLY reliable bulk-read surface for subjects -
+        get_page_text does NOT return it (see gotchas).
+
+    - name: message-row
+      type: container
+      locator:
+        strategy: role
+        value: option
+      description: >
+        One conversation row inside message-list. Scope to a specific message by passing
+        its subject (or a distinctive fragment) as the step value. Its accessible NAME is
+        a concatenation of state flags + subject + sender + short time - do not parse it;
+        read the child nodes below instead.
+
+    - name: row-subject
+      type: text
+      locator:
+        strategy: css
+        value: "[role='option'] [class*='subject'], [role='option'] > div > div > div:nth-of-type(4)"
+      description: >
+        The subject as its own node inside the row. TRUNCATED to the column width with an
+        ellipsis - adequate for FINDING a message, never for asserting a Betreff. For the
+        exact subject use mail-message.message-subject.
+
+    - name: row-sender-email
+      type: text
+      locator:
+        strategy: text
+        value: "@"
+      description: >
+        Sender's full SMTP address (e.g. helpdesk@gehriggroup.ch) as a separate node in
+        the row - even though the list visually shows only a display name ("Helpdesk").
+        Use this to identify which system sent a templated mail.
+
+    - name: row-timestamp
+      type: text
+      locator:
+        strategy: css
+        value: "[role='option'] [title*='/'], [role='option'] [aria-label*='/']"
+      description: >
+        FULL timestamp, e.g. "Thu 30/07/2026 08:13", present in the DOM even though the
+        UI renders a relative short form ("08:13", "Wed 16:15", "Fri 24/07"). Use this,
+        not the visible text, when a template assertion depends on send time.
+
+    - name: row-expand-conversation
+      type: button
+      locator:
+        strategy: aria-label
+        value: Expand conversation
+      description: >
+        Present only on rows whose accessible name starts with "Collapsed" - i.e. threads
+        holding more than one message. A templated mail that arrived into an existing
+        thread is HIDDEN until expanded.
+      states: [capability-dependent]
+
+    - name: row-select-checkbox
+      type: checkbox
+      locator:
+        strategy: aria-label
+        value: Select a conversation
+      description: >
+        Multi-select checkbox. It WRAPS the sender avatar, so a click aimed at the avatar
+        selects the conversation instead of opening it. Not needed for verification.
+
+    - name: row-flag-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: Flag this message
+      description: Per-row flag toggle. Mutates state - not used for verification.
+
+    - name: row-mark-unread-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: Mark as unread
+      description: >
+        Per-row read/unread toggle. Useful as a DELIBERATE teardown - if a workflow had to
+        open an unread templated mail, this restores the unread state it consumed.
+
+    - name: row-delete-button
+      type: button
+      locator:
+        strategy: text
+        value: Delete
+      description: >
+        DESTRUCTIVE. A per-row delete that lives in the same hover-revealed action strip
+        as the flag and pin buttons, identical on every row. Never click it, and never
+        reach any row action by coordinate (see gotchas).
+
+    - name: date-group-header
+      type: text
+      locator:
+        strategy: text
+        value: Today
+      description: >
+        Relative date-group separators inside the list - "Today", "Yesterday",
+        "This week", "Last week", then month names. They are LIST ITEMS in the same
+        container as messages, so a naive "read all options" pass must skip them. They
+        also shift as time passes: the same message moves Today -> Yesterday -> This week.
+
+    - name: search-box
+      type: input
+      locator:
+        strategy: aria-label
+        value: Search or ask Copilot
+      description: >
+        Global search, role=combobox. The primary way to locate a templated mail
+        deterministically (search the invariant part of the expected subject). Note it is
+        a combined search + Copilot prompt box - typing a question may invoke Copilot
+        rather than filtering. Prefer a plain keyword or a `subject:` query.
+
+    - name: filter-button
+      type: button
+      locator:
+        strategy: text
+        value: Filter
+      description: >
+        Filters the list (Unread, Flagged, To me, Has attachments, Mentions). Sticky -
+        reset it in setup, or an inherited filter silently hides the message under test.
+
+    - name: sort-button
+      type: button
+      locator:
+        strategy: text
+        value: "Sorted: By Date"
+      description: >
+        Sort control; the label states the current sort ("Sorted: By Date"). Also sticky
+        per user. Assert or set it before relying on row order.
+
+    - name: folder-inbox
+      type: link
+      locator:
+        strategy: text
+        value: Inbox
+      description: >
+        Inbox in the left folder tree. The tree holds ~20 folders including
+        German-named work folders (WiCHTIG, Stammdaten, GG+Support,
+        "GG+Connect - Formulare", Archiv, RSS-Abonnemente) and an expandable Projekte.
+        Only Inbox is in scope for this map; the folder link is generic enough to target
+        another folder by name if scope widens.
+
+    - name: reading-pane-empty-state
+      type: text
+      locator:
+        strategy: text
+        value: Select an item to read
+      description: >
+        Shown in the reading pane while nothing is selected. Useful as a precondition
+        assertion in setup - it proves no message is open and no stale body is on screen.
+
+  gotchas:
+    - >
+      get_page_text DOES NOT RETURN THE MESSAGE LIST. It resolves to the reading pane and
+      returns only the currently open message's text (verified 2026-07-30 - "Source
+      element" was the reading-pane div and not one list row appeared). The two halves of
+      a template check therefore use different tools: read_page on message-list for
+      subjects in bulk, get_page_text / the scoped body node for one message's content.
+      This is the OPPOSITE of iq-brita-net filters-list, where get_page_text returns every
+      row - do not carry that habit over.
+    - >
+      A ROW'S ACCESSIBLE NAME IS NOT ITS SUBJECT. It is state flags + subject + sender +
+      short time, in that order, e.g.
+      "Collapsed Flagged Replied Anleitungen anpassen 23.07.26 Rahm Markus Wed 15:39" or
+      "Collapsed Has attachments Replied Mentioned GatewayTool auf Notebook installieren ...".
+      Observed prefixes: Collapsed, Replied, Flagged, Has attachments, Mentioned,
+      "Meeting start time <when>". Parsing the name as a Betreff silently prepends flag
+      words, and the flag set VARIES per row - so the same template compares differently
+      depending on whether someone happened to flag it. Read the child nodes instead.
+    - >
+      The first row's accessible name can have the listbox's own status text appended
+      ("... 14:24 No conversations selected"). Another reason to read children, not names.
+    - >
+      Row subjects are TRUNCATED to the column width. Never assert a Betreff against the
+      list - open the message and use mail-message.message-subject, which carries the full
+      string.
+    - >
+      HOVER-REVEALED ACTION STRIP, IDENTICAL ON EVERY ROW: Mark as unread / Expand /
+      Flag / Pin / Delete / Customise Actions all live in the same per-row strip and are
+      present in the accessibility tree even when not visible. A coordinate-based click
+      can land on Delete on the WRONG row. Always resolve a row action by scoping the row
+      first (subject or sender), then targeting the named button by its aria-label -
+      never by remembered coordinates.
+    - >
+      Date-group headers (Today / Yesterday / This week / Last week / month names) are
+      children of the same list container as messages and are RELATIVE - a message drifts
+      between groups as days pass. Never anchor a message by its group.
+    - >
+      Filter and sort are STICKY per user across sessions. An inherited "Unread" filter
+      makes an already-read templated mail invisible and the check reports "template not
+      produced" when it was. Reset both in setup.
+    - >
+      Opening a row marks an UNREAD message as read - a real mutation of the mailbox. The
+      Inbox had zero unread on 2026-07-30 so nothing was at risk, but a workflow that must
+      open an unread message should restore it via row-mark-unread-button in teardown.
+    - >
+      Threads: a row whose name starts with "Collapsed" hides sibling messages. A newly
+      arrived templated mail that Outlook threads into an existing conversation will not
+      appear as its own row until row-expand-conversation is clicked.
+    - >
+      Messages are deep-linkable at /mail/inbox/id/{messageId} (URL-encoded id). Capture
+      the URL after opening a message so a later run can return to the exact same one
+      instead of re-searching.
+    - >
+      No data-testid anywhere in this app. Every locator here is an ARIA role or label, or
+      structural CSS - the two CSS locators above are the brittlest part of this map and
+      should be re-derived with read_page if a run cannot find the subject or timestamp
+      node.

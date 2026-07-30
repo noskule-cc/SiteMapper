@@ -1,0 +1,33 @@
+site:
+  name: Outlook on the web (GEHRIG Group / Microsoft 365)
+  base_url: https://outlook.cloud.microsoft
+  description: >
+    Microsoft 365 mailbox of benjamin.behringer@gehriggroup.ch, mapped for ONE purpose:
+    verifying that system-generated ("templated") emails render correctly - the right
+    Betreff and the right body, with every placeholder substituted. The mailbox is the
+    downstream observation point for templates owned by other systems (GG+connect
+    notifications, the Kundendienst ticket autoreply, registration mails). This map is
+    read-oriented; composing or sending mail is out of scope.
+  auth_notes: >
+    Microsoft 365 / Entra session. The user must already be signed in to the GEHRIG
+    tenant in Chrome - Claude never enters credentials. UI language is English (en-GB:
+    "Favourites", "Customise Actions", dates DD/MM/YYYY) while folder names and most
+    message content are German. Expect DE/FR/IT inside a single templated body.
+  mapped_at: "2026-07-30"
+  pages:
+    - mail-list.yaml
+    - mail-message.yaml
+  workflows: []
+
+  # Production mailbox. Explicit rather than inherited, because on this site a "form
+  # submission" means SENDING AN EMAIL to a third party - an irreversible outward-facing
+  # action. Reply / Reply all / Forward are mapped only so a workflow can avoid them.
+  settings:
+    policy:
+      environment: production
+      safe_to_submit_forms: false
+
+  # Run outputs (extracted subjects and bodies) are third-party correspondence -
+  # personal data that must not enter git history. sites/outlook-cloud-microsoft/results/
+  # is git-ignored; keep assertions in the workflow and evidence local. Same rule as
+  # sites/app-hibob-com/results/. See docs/KNOWLEDGE_PLACEMENT.md.

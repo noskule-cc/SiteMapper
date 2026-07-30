@@ -11,6 +11,10 @@ __pycache__/
 # people data stays local.
 sites/app-hibob-com/results/
 
+# Outlook run outputs are extracted subjects and bodies — third-party
+# correspondence. The map is reusable and committed; the mail content stays local.
+sites/outlook-cloud-microsoft/results/
+
 # One pathological raw log: 41 MB / 483k lines, of which only ~7k are unique —
 # a NO_DNS device repeating the same failure with full stack traces for 5 days.
 # Its diagnosis lives in the sibling 2023110600000493.md. Small per-gateway logs

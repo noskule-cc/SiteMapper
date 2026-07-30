@@ -1,0 +1,167 @@
+page:
+  name: Mail message (reading pane)
+  url_pattern: /mail/{folder}/id/{messageId}
+  purpose: >
+    A single opened message. This is the ASSERTION surface for template verification: the
+    exact Betreff and the exact body, both authoritative here (the list truncates the
+    subject and does not expose the body at all). Read-only - GG+connect and the ticket
+    system own these templates; this page only observes what they produced.
+  screenshot: ""
+
+  elements:
+    - name: reading-pane
+      type: container
+      locator:
+        strategy: aria-label
+        value: Reading Pane
+      description: >
+        Wrapper region for the opened message. Contains the header, the Copilot strip, the
+        action buttons AND the body - so it is too coarse to extract from. Scope to
+        message-body instead.
+
+    - name: message-subject
+      type: text
+      locator:
+        strategy: css
+        value: "[aria-label='Reading Pane'] [role='heading'][aria-level='3']"
+      description: >
+        THE AUTHORITATIVE BETREFF - full, untruncated, exactly as sent. Assert template
+        subjects against this node, never against the list row.
+        DISAMBIGUATION REQUIRED: this selector matches FIVE nodes (see gotchas) - the
+        subject is the FIRST match in document order. There is no aria-level=1 heading and
+        no h1 in this app; verified 2026-07-30.
+
+    - name: message-from
+      type: button
+      locator:
+        strategy: text
+        value: "From:"
+      description: >
+        Sender chip, accessible name "From: <display name>" (e.g. "From: Customer
+        Service"). Identifies WHICH system emitted the template. Clicking opens a contact
+        card - not needed; read the name.
+
+    - name: message-to
+      type: button
+      locator:
+        strategy: css
+        value: "[aria-label='Reading Pane'] [role='button'][class*='recipient']"
+      description: >
+        Recipient chip(s) under the header. For a template check, useful to assert the
+        mail actually addressed the intended recipient.
+
+    - name: message-date
+      type: text
+      locator:
+        strategy: css
+        value: "[aria-label='Reading Pane'] [role='heading'][aria-level='3']"
+      description: >
+        Full send timestamp, e.g. "Thu 30/07/2026 14:24" (en-GB DD/MM/YYYY). Same
+        ambiguous selector as message-subject - identify it as the match whose text fits
+        /^\w{3} \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/ rather than by position.
+
+    - name: message-body
+      type: container
+      locator:
+        strategy: aria-label
+        value: Message body
+      description: >
+        THE EXTRACTION TARGET - role=document, aria-label "Message body". Verified
+        2026-07-30: its innerText contains the message content and NONE of the surrounding
+        chrome (no "Summary by Copilot", no Reply/Reply all/Forward, no recipient chips),
+        whereas the enclosing reading-pane and get_page_text DO include all of that. Scope
+        every body assertion to this node.
+
+    - name: copilot-summary-strip
+      type: text
+      locator:
+        strategy: text
+        value: Summary by Copilot
+      description: >
+        Copilot affordance injected directly beneath the subject, INSIDE the reading pane
+        but OUTSIDE message-body. Pure chrome for our purposes - excluded automatically by
+        scoping to message-body. Its presence may vary by licence/rollout, so never assert
+        on its absence.
+      states: [capability-dependent]
+
+    - name: reply-button
+      type: button
+      locator:
+        strategy: text
+        value: Reply
+      description: >
+        DO NOT CLICK. Mapped only so workflows can recognise and avoid it. Composing or
+        sending mail is out of scope for this site (site.yaml sets
+        safe_to_submit_forms: false) - sending is an irreversible outward-facing action to
+        a third party.
+
+    - name: reply-all-button
+      type: button
+      locator:
+        strategy: text
+        value: Reply all
+      description: DO NOT CLICK - see reply-button.
+
+    - name: forward-button
+      type: button
+      locator:
+        strategy: text
+        value: Forward
+      description: DO NOT CLICK - see reply-button.
+
+  gotchas:
+    - >
+      INVISIBLE CHARACTERS BREAK NAIVE STRING COMPARISON. Verified by code on 2026-07-30:
+      the reading pane contains U+200B ZERO WIDTH SPACE (x2, after the "To:" label and
+      after the recipient name) and U+00A0 NO-BREAK SPACE (x13, throughout). A template
+      assertion that compares extracted text to an expected string WILL fail on
+      byte-identical content unless it first normalises: replace U+00A0 with a normal
+      space, strip U+200B / U+FEFF / other zero-width marks, then collapse runs of
+      whitespace. Do this on BOTH sides of the comparison.
+    - >
+      Body text carries runs of consecutive newlines from the HTML mail's block structure
+      (the test body had 5 in a row after the salutation). Collapse blank lines before
+      comparing; do not treat them as content.
+    - >
+      SCOPE TO message-body, NOT get_page_text. get_page_text returns the whole reading
+      pane, which interleaves UI chrome into the text stream - "Summary by Copilot", the
+      sender initials avatar ("CS"), "Reply", "Reply all", "Forward", "To:" - so a body
+      assertion would compare against text the sender never wrote. Verified: scoping to
+      the role=document "Message body" node yields the content with zero chrome.
+    - >
+      ONE TEMPLATE CAN CONTAIN SEVERAL LANGUAGES. The Kundendienst ticket autoreply sends
+      DE + FR + IT in a single body, each a full copy of the same message. Assert
+      per-language section rather than on the body as a whole, otherwise a missing or
+      mis-substituted FR block passes because the DE block matched. Swiss templates should
+      be expected to do this.
+    - >
+      Bodies end with signature/footer boilerplate (company name, address) and often a
+      machine reference - the test mail closed with "74892:3106956", a ticket:message id
+      pair. That reference is a useful assertion target for "did the template substitute
+      the ticket number", but it also means the body is NOT byte-stable between two
+      otherwise identical sends. Assert on the invariant text and on the SHAPE of the
+      variable parts (e.g. a digits:digits pattern), not on the whole body.
+    - >
+      FIVE HEADINGS, ALL aria-level=3, NONE level 1. Verified by code 2026-07-30 the
+      reading-pane header exposes, in document order:
+        1. subject          (div[role=heading][aria-level=3])
+        2. an EMPTY span    (span[role=heading][aria-level=3], text "")
+        3. sender name      ("Customer Service")
+        4. recipient line   ("To:<U+200B> Behringer Benjamin<U+200B>")
+        5. send timestamp   ("Thu 30/07/2026 14:24")
+      So heading level cannot identify anything here, and `h1` / `[aria-level='1']` match
+      NOTHING - an obvious-looking subject locator silently returns empty and the check
+      reports a missing template. Take the subject as the FIRST match and the date by its
+      timestamp pattern. Note item 2 is an empty heading: any "read all headings and take
+      the second" logic breaks. Re-derive with read_page if the header ever changes.
+    - >
+      The subject is authoritative HERE only. mail-list truncates it to the column width,
+      and the row's accessible name prefixes state flags onto it - see mail-list gotchas.
+    - >
+      Reaching this page: navigate from mail-list by clicking the row (the URL then gains
+      /id/{messageId}, URL-encoded), or deep-link a captured id. The id is opaque - treat
+      it as runtime data captured per run, never as map identity.
+    - >
+      The pane renders progressively - the header appears before the body is populated.
+      Wait for message-body to be non-empty before extracting, or an assertion reads an
+      empty string and reports a missing template.
