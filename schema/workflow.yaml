@@ -2,6 +2,11 @@
 # Each workflow defines a named, repeatable sequence of actions on mapped sites.
 # Workflows can span a single site or multiple sites (cross-site workflows).
 #
+# Companion doc: every workflow YAML gets a sibling <workflow>.md in the same
+# folder — a short human-readable summary with a Mermaid `flowchart` of the steps.
+# The YAML is the source of truth; the .md is the at-a-glance view. See USAGE.md
+# ("Companion doc") and the example projects/gateway-audit/workflows/*.md.
+#
 # A workflow is a callable unit: it takes inputs (parameters/fixtures), runs steps
 # against the mapped site(s), and emits a neutral `result` object (see
 # schema/result.yaml). The host that calls the workflow (an LLM agent or a Python
@@ -50,14 +55,22 @@ workflow:
     - action: ""
 
   steps:
-    - action: ""              # navigate | click | input | read | assert | verify | wait | key
+    - action: ""              # navigate | click | input | read | assert | verify | wait | key | script
                               #   key: press a keyboard key (value = the key, e.g. "Escape",
                               #   "Enter") - e.g. to dismiss a dropdown without changing state
+                              #   script: run a site script instead of driving the browser
+                              #   (see `script` below). Prefer this whenever the data is
+                              #   reachable from the site's API - it is faster, headless and
+                              #   does not break when the UI changes.
       site: ""                # Which site this step runs on (required for cross-site workflows)
       page: ""                # Page name (references a page YAML file)
       element: ""             # Element name from the page map
-      value: ""               # Value to input, a URL to navigate to, or a reference
-                              #   like "$param", "$fixture", or "$captured_var"
+      script: ""              # For action: script — a script in sites/<site>/scripts/
+                              #   (declared in that site's site.yaml `scripts:` list).
+                              #   `value` carries its CLI arguments; `capture` stores its
+                              #   parsed stdout (JSON when the script is run with --json).
+      value: ""               # Value to input, a URL to navigate to, CLI args for a script,
+                              #   or a reference like "$param", "$fixture", "$captured_var"
       capture: ""             # Store step output in a named variable (e.g., "offline_devices")
       expect: null            # For action: assert — the expected condition (see below)
       description: ""         # Human-readable step description

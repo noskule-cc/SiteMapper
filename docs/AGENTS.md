@@ -12,7 +12,7 @@
 | Running a workflow                      | `docs/skills/run-workflow.md`           |
 | Listing available workflows             | `docs/skills/list-workflows.md`         |
 | Checking a map for drift                | `docs/skills/verify-map.md`             |
-| Writing a new workflow YAML             | `schema/workflow.yaml`                  |
+| Writing a new workflow YAML             | `schema/workflow.yaml` (+ a sibling `<workflow>.md` with a Mermaid flowchart — see `USAGE.md`) |
 | Creating a cross-site project           | `schema/project.yaml`                   |
 | Configuring contact/behavior/defaults   | `schema/settings.yaml`, `config.yaml`   |
 | Understanding the project               | `PRD.md`                                |
@@ -31,7 +31,7 @@
 ## Key Concepts
 
 - **Site maps** are YAML files in `sites/<site-name>/pages/` describing page elements and gotchas.
-- **Workflows** are YAML files in `sites/<site-name>/workflows/` defining step sequences.
+- **Workflows** are YAML files in `sites/<site-name>/workflows/` defining step sequences, each with a sibling `<workflow>.md` — a short human-readable summary with a Mermaid flowchart.
 - **Cross-site workflows** live in `projects/<project>/workflows/` and span multiple sites using capture variables.
 - **Schemas** in `schema/` define the YAML format for pages, sites, workflows, projects, and settings.
 - **Settings** are layered (`config.yaml` global → `site.yaml` → page YAML), merged most-specific-wins; `policy.safe_to_submit_forms` gates form submission.

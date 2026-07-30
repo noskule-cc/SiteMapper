@@ -9,12 +9,12 @@ SiteMapper requires two things running side by side:
 
 You type commands in Claude Code. Claude controls the browser through the MCP extension. The site maps live on your file system, not in the browser.
 
-Open your target site in Chrome, then use Claude Code to start mapping.
+To begin, tell Claude to open a Chrome browser session (it creates its own tab via the MCP extension) and navigate to your target URL — you don't open the tab by hand. Make sure Chrome and the Claude-in-Chrome extension are running first, and that you're logged in to the target site if it requires auth (Claude won't enter credentials for you).
 
 ## Mapping a Site
 
-1. Open the target site in Chrome.
-2. In Claude Code, run `/map-site <site-name>` (e.g., `/map-site sitemapper-demo`).
+1. In Claude Code, run `/map-site <site-name>` (e.g., `/map-site sitemapper-demo`).
+2. Tell Claude to open a Chrome browser session and navigate to the target URL (Claude opens its own tab through the MCP extension — you don't open it by hand).
 3. The discovery agent reads the page, suggests elements, and asks you to confirm or correct.
 4. Walk through each page — the agent writes YAML maps as you go.
 5. When done, the agent updates `sites/<site>/site.yaml` with the full page list.
@@ -113,6 +113,36 @@ workflow:
 ```
 
 The `capture` field stores a step's output in a named variable. Later steps reference it with `$variable_name`.
+
+### Companion doc (`<workflow>.md`)
+
+Every workflow YAML gets a sibling `<workflow>.md` in the same folder — a short,
+human-readable summary so anyone can grasp the flow without reading the YAML. The
+YAML stays the source of truth; the `.md` is the at-a-glance view. Keep it tight:
+
+- **Title** (the workflow name) and a one-line purpose.
+- **At a glance** — site(s), mode, key inputs (parameters/fixtures) → outputs (captures).
+- **Flow** — a **Mermaid `flowchart`** of the steps (setup → steps → report). Group
+  by site with `subgraph` for cross-site workflows; show loops and branches.
+- **See also** — relative links to the `.yaml` and the latest result file.
+
+Example: [`projects/gateway-audit/workflows/gateway-update-effect-tracking.md`](projects/gateway-audit/workflows/gateway-update-effect-tracking.md).
+
+Skeleton (outer fence shown with `~~~` so the inner Mermaid fence is literal):
+
+~~~markdown
+# my-workflow
+
+One-line purpose.
+
+**At a glance** — Site: my-site · Mode: deterministic · In: $param → Out: capture_x
+
+## Flow
+```mermaid
+flowchart TD
+  A["Open page"] --> B["Do the thing"] --> C["Assert result"]
+```
+~~~
 
 ## Running Workflows
 

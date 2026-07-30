@@ -4,16 +4,24 @@ Start a discovery session to map a web application. Reads the current page in Ch
 
 ## Setup
 
-1. Create the site directory if it doesn't exist:
+1. Open a Chrome browser session and navigate to the target URL:
+   - Call `mcp__claude-in-chrome__tabs_context_mcp` (with `createIfEmpty: true`) to
+     get or create the MCP tab group — Claude opens its own tab, the user does not
+     open it by hand.
+   - Navigate that tab to the start URL the user gives you.
+   - If the site needs auth, confirm the user is logged in first; never enter
+     credentials yourself.
+
+2. Create the site directory if it doesn't exist:
    - `sites/<site>/pages/`
    - `sites/<site>/workflows/`
    - `sites/<site>/screenshots/`
 
-2. Read the schema files for reference:
+3. Read the schema files for reference:
    - `schema/page.yaml` — page map format
    - `schema/site.yaml` — site config format
 
-3. Check if `sites/<site>/site.yaml` already exists. If not, create one.
+4. Check if `sites/<site>/site.yaml` already exists. If not, create one.
 
 ## Discovery Loop
 

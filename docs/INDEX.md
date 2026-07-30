@@ -36,3 +36,7 @@
 ## Guidelines
 
 - [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — when and what to document
+
+## Proposals
+
+- [proposals/workflow-session-context-separation.md](proposals/workflow-session-context-separation.md) — draft: split persona/session, tenant-context, and workflow "work" into three layers

@@ -2,3 +2,11 @@
 .claude/settings.local.json
 __pycache__/
 *.pyc
+
+# draw.io editor backups (.$<name>.drawio.bkp)
+.$*.bkp
+
+# HiBob run outputs contain named-employee data (reporting lines, titles,
+# locations). The map and script are reusable and committed; the extracted
+# people data stays local.
+sites/app-hibob-com/results/
