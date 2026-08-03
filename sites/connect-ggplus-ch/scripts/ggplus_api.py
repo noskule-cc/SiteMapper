@@ -105,8 +105,8 @@ def get_connection_states(
     gateways: Iterable[dict],
     bearer: str,
     env: str = "prod",
-    timeout: float = 90.0,
-    idle_timeout: float = 10.0,
+    timeout: float = 420.0,
+    idle_timeout: float = 60.0,
 ) -> dict[str, str]:
     """deviceId -> 'Connected' | 'Disconnected' | 'Unconfigured'.
 
@@ -114,6 +114,17 @@ def get_connection_states(
       negotiate -> websocket -> JSON handshake
       -> invoke AddDeviceWatcher(deviceId, classification) per device
       -> server pushes ConnectionState { deviceId, deviceIotConnectionStatus, ... }
+
+    BE PATIENT. The server answers ~380 watchers over roughly FIVE MINUTES, in
+    bursts with long gaps between them. The old defaults (90s total / 10s idle)
+    bailed out after the first gap with about FOUR states in hand, and because the
+    caller used to fall back to the REST placeholder the run still looked complete
+    (2026-08-03: 356/360 gateways silently bucketed from `connectionState:
+    "Unconfigured"`, giving OK=0). Do not lower these without re-checking how many
+    states actually arrive: a partial answer here mis-buckets the entire fleet.
+
+    The returned dict may still be short of the fleet — callers MUST treat a
+    missing deviceId as "no state received", never as a status.
     """
     devices = [g for g in gateways if g.get("id")]
     if not devices:

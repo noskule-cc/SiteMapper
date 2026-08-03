@@ -1,0 +1,406 @@
+# 2023110600000173 — Headwind log
+# window: last 5.0d (2026-07-30T06:00:34 .. 2026-08-03T15:17:42)
+# severity: WARNING+ERROR | rows: 43 of 43 on server
+
+2026-08-03T15:17:42  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-03T15:16:53  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.WebException: Socket closed
+ ---> Java.Net.SocketException: Socket closed
+   at Java.Interop.JniEnvironment.InstanceMethods.CallIntMethod(JniObjectReference , JniMethodInfo , JniArgumentValue* )
+   at Java.Interop.JniPeerMembers.JniInstanceMethods.InvokeVirtualInt32Method(String , IJavaPeerable , JniArgumentValue* )
+   at Java.Net.HttpURLConnection.get_ResponseCode()
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass140_0.<DoProcessRequest>b__2()
+   at System.Threading.Tasks.Task`1[[System.Net.HttpStatusCode, System.Net.Primitives, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__292_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& , Thread )
+--- End of stack trace from previous location ---
+   at Xamarin.Android.Net.AndroidMessageHandler.DoProcessRequest(HttpRequestMessage , URL , HttpURLConnection , CancellationToken , RequestRedirectionState )
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+   Exception_EndOfInnerExceptionStack
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.AccessTokenHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LoggingHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage , HttpCompletionOption , CancellationTokenSource , Boolean , CancellationTokenSource , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-03T15:16:19  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 503, Service Temporarily Unavailable
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.NegotiateAsync(Uri url, HttpClient httpClient, ILogger logger, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.GetNegotiationResponseAsync(Uri uri, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-03T15:16:19  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 503, Service Temporarily Unavailable
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.NegotiateAsync(Uri url, HttpClient httpClient, ILogger logger, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.GetNegotiationResponseAsync(Uri uri, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-03T06:04:12  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-03T06:03:23  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-03T06:01:28  WARNING  Failed to update config: network error
+2026-08-03T06:01:17  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-08-03T06:00:13  WARNING  Rebooting by a Push message
+2026-08-02T06:05:09  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-08-02T06:04:35  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-02T06:03:46  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-08-02T06:03:11  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.WebException: Socket closed
+ ---> Java.Net.SocketException: Socket closed
+   at Java.Interop.JniEnvironment.InstanceMethods.CallIntMethod(JniObjectReference , JniMethodInfo , JniArgumentValue* )
+   at Java.Interop.JniPeerMembers.JniInstanceMethods.InvokeVirtualInt32Method(String , IJavaPeerable , JniArgumentValue* )
+   at Java.Net.HttpURLConnection.get_ResponseCode()
+   at Xamarin.Android.Net.AndroidMessageHandler.<>c__DisplayClass140_0.<DoProcessRequest>b__2()
+   at System.Threading.Tasks.Task`1[[System.Net.HttpStatusCode, System.Net.Primitives, Version=9.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a]].InnerInvoke()
+   at System.Threading.Tasks.Task.<>c.<.cctor>b__292_0(Object obj)
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+--- End of stack trace from previous location ---
+   at System.Threading.ExecutionContext.RunFromThreadPoolDispatchLoop(Thread , ExecutionContext , ContextCallback , Object )
+   at System.Threading.Tasks.Task.ExecuteWithThreadLocal(Task& , Thread )
+--- End of stack trace from previous location ---
+   at Xamarin.Android.Net.AndroidMessageHandler.DoProcessRequest(HttpRequestMessage , URL , HttpURLConnection , CancellationToken , RequestRedirectionState )
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+  --- End of managed Java.Net.SocketException stack trace ---
+java.net.SocketException: Socket closed
+	at java.net.SocketInputStream.read(SocketInputStream.java:209)
+	at java.net.SocketInputStream.read(SocketInputStream.java:144)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readFromSocket(ConscryptEngineSocket.java:936)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.processDataFromSocket(ConscryptEngineSocket.java:900)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.readUntilDataAvailable(ConscryptEngineSocket.java:815)
+	at com.android.org.conscrypt.ConscryptEngineSocket$SSLInputStream.read(ConscryptEngineSocket.java:788)
+	at com.android.okhttp.okio.Okio$2.read(Okio.java:138)
+	at com.android.okhttp.okio.AsyncTimeout$2.read(AsyncTimeout.java:213)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:307)
+	at com.android.okhttp.okio.RealBufferedSource.indexOf(RealBufferedSource.java:301)
+	at com.android.okhttp.okio.RealBufferedSource.readUtf8LineStrict(RealBufferedSource.java:197)
+	at com.android.okhttp.internal.http.Http1xStream.readResponse(Http1xStream.java:188)
+	at com.android.okhttp.internal.http.Http1xStream.readResponseHeaders(Http1xStream.java:129)
+	at com.android.okhttp.internal.http.HttpEngine.readNetworkResponse(HttpEngine.java:750)
+	at com.android.okhttp.internal.http.HttpEngine.readResponse(HttpEngine.java:622)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.execute(HttpURLConnectionImpl.java:475)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponse(HttpURLConnectionImpl.java:411)
+	at com.android.okhttp.internal.huc.HttpURLConnectionImpl.getResponseCode(HttpURLConnectionImpl.java:542)
+	at com.android.okhttp.internal.huc.DelegatingHttpsURLConnection.getResponseCode(DelegatingHttpsURLConnection.java:106)
+	at com.android.okhttp.internal.huc.HttpsURLConnectionImpl.getResponseCode(HttpsURLConnectionImpl.java:30)
+
+   Exception_EndOfInnerExceptionStack
+   at Xamarin.Android.Net.AndroidMessageHandler.DoSendAsync(HttpRequestMessage , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.AccessTokenHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LoggingHttpMessageHandler.SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+   at System.Net.Http.HttpClient.<SendAsync>g__Core|83_0(HttpRequestMessage , HttpCompletionOption , CancellationTokenSource , Boolean , CancellationTokenSource , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.Poll(Uri pollUrl, CancellationToken cancellationToken)
+   at System.IO.Pipelines.Pipe.GetReadResult(ReadResult& )
+   at System.IO.Pipelines.Pipe.GetReadAsyncResult()
+   at System.IO.Pipelines.Pipe.DefaultPipeReader.GetResult(Int16 )
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-02T06:01:34  WARNING  Failed to update config: network error
+2026-08-02T06:01:28  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-08-02T06:00:26  WARNING  Rebooting by a Push message
+2026-08-02T06:00:26  WARNING  Rebooting by a Push message
+2026-08-01T06:03:53  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.AggregateException: Unable to connect to the server with any of the available transports. (WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101) (ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found) (LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found)
+ ---> Microsoft.AspNetCore.Http.Connections.Client.TransportFailedException: WebSockets failed: net_WebSockets_ConnectStatusExpected, 404, 101
+ ---> System.Net.WebSockets.WebSocketException (0x80004005): net_WebSockets_ConnectStatusExpected, 404, 101
+   at System.Net.WebSockets.WebSocketHandle.ValidateResponse(HttpResponseMessage , String )
+   at System.Net.WebSockets.WebSocketHandle.ConnectAsync(Uri , HttpMessageInvoker , CancellationToken , ClientWebSocketOptions )
+   at System.Net.WebSockets.ClientWebSocket.ConnectAsyncCore(Uri , HttpMessageInvoker , CancellationToken )
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.DefaultWebSocketFactory(WebSocketConnectionContext context, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.WebSocketsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack
+   Exception_EndOfInnerExceptionStack
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: ServerSentEvents failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.ServerSentEventsTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+
+ ---> AggregateException_InnerExceptionMicrosoft.AspNetCore.Http.Connections.Client.TransportFailedException: LongPolling failed: net_http_message_not_success_statuscode_reason, 404, Not Found
+ ---> System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 404, Not Found
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.Internal.LongPollingTransport.StartAsync(Uri url, TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartTransport(Uri connectUrl, HttpTransportType transportType, TransferFormat transferFormat, CancellationToken cancellationToken, Boolean useStatefulReconnect)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   Exception_EndOfInnerExceptionStack<---
+2026-08-01T06:03:18  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.IO.IOException: The server disconnected before the handshake could be started.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-08-01T06:01:31  WARNING  Failed to update config: network error
+2026-08-01T06:01:21  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-08-01T06:00:20  WARNING  Rebooting by a Push message
+2026-07-31T06:01:21  WARNING  Failed to update config: network error
+2026-07-31T06:01:16  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-31T06:00:14  WARNING  Rebooting by a Push message
+2026-07-31T04:43:12  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+Microsoft.AspNetCore.SignalR.HubException: Unable to complete handshake with the server due to an error: Handshake was canceled.
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.HandshakeAsync(ConnectionState startingConnectionState, Int32 protocolVersion, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-31T04:42:22  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 503, Service Temporarily Unavailable
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.NegotiateAsync(Uri url, HttpClient httpClient, ILogger logger, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.GetNegotiationResponseAsync(Uri uri, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-31T00:06:39  ERROR    AKT.Data.BluetoothAdapter.Telegrams.BluetoothAdapterTelegramController 29579-359: ERROR (Controller) DictionaryTelegramReplies: Can't Remove Telegram Response - TelegramCode: RD_PAR 0x0A
+2026-07-31T00:06:39  ERROR    AKT.Data.BluetoothAdapter.Telegrams.BluetoothAdapterTelegramController ------359: ERROR (Controller) TryGetTelegramReplyTelegram: can't get Reply Telegram - TelegramCode: RD_PAR  0x0A)
+2026-07-30T18:56:33  WARNING  Failed to update config: network error
+2026-07-30T18:56:24  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-30T18:55:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-30T18:55:27  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-30T18:42:18  WARNING  Failed to update config: network error
+2026-07-30T18:42:13  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-30T18:41:15  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-30T18:41:15  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Unable to resolve host "bff.ggplus.ch": No address associated with hostname
+2026-07-30T18:22:45  ERROR    Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient [GatewayHub] connection encountered an error.
+System.Net.Http.HttpRequestException: net_http_message_not_success_statuscode_reason, 503, Service Temporarily Unavailable
+   at System.Net.Http.HttpResponseMessage.EnsureSuccessStatusCode()
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.NegotiateAsync(Uri url, HttpClient httpClient, ILogger logger, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.GetNegotiationResponseAsync(Uri uri, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.SelectAndStartTransport(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsyncCore(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnection.StartAsync(TransferFormat transferFormat, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.Http.Connections.Client.HttpConnectionFactory.ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncCore(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsyncInner(CancellationToken cancellationToken)
+   at Microsoft.AspNetCore.SignalR.Client.HubConnection.StartAsync(CancellationToken cancellationToken)
+   at Opten.GGPlus.Gateway.App.MAUI.Services.GatewayHubClient.StartAsync()
+2026-07-30T18:21:50  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Failed to connect to bff.ggplus.ch/20.126.185.121:443
+2026-07-30T18:21:50  WARNING  Failed to query push notifications from https://bff.ggplus.ch : Failed to connect to bff.ggplus.ch/20.126.185.121:443
+2026-07-30T06:01:48  WARNING  Failed to update config: network error
+2026-07-30T06:01:38  WARNING  Failed to setup password reset token, password reset requests will fail
+2026-07-30T06:00:34  WARNING  Rebooting by a Push message

@@ -226,6 +226,26 @@ def load_table(path: str | Path) -> dict:
     return data
 
 
+def _warn_if_states_missing(data: dict) -> None:
+    """Shout on stderr when the SignalR sweep came back short.
+
+    The connect Status decides nodes 2 and 8 of the tree, so a partial hub answer
+    mis-buckets the fleet while still emitting perfectly valid JSON. Anything above
+    a couple of percent means the run should be repeated, not reported.
+    """
+    missing = len(data.get("no_state_received") or [])
+    if not missing:
+        return
+    kept = data.get("fleet_kept") or 1
+    pct = 100.0 * missing / kept
+    print(f"WARNING: no connect Status received for {missing}/{kept} gateways "
+          f"({pct:.1f}%) — they are bucketed as if offline.", file=sys.stderr)
+    if pct > 5.0:
+        print("  This sweep is NOT trustworthy: the connect Status drives nodes 2 and 8 "
+              "of the tree. Re-run the sweep before building a worklist from it.",
+          file=sys.stderr)
+
+
 def build_table(env: str = "prod", threshold: str = VERSION_THRESHOLD) -> dict:
     s = session(env)
     bearer = s.headers["Authorization"].removeprefix("Bearer ")
@@ -249,7 +269,12 @@ def build_table(env: str = "prod", threshold: str = VERSION_THRESHOLD) -> dict:
                 "partnerId": pid,
                 "partnerName": partners.get(pid, ""),
                 "internalName": g.get("internalName") or "",
-                "status": states.get(g.get("id")) or g.get("connectionState"),
+                # NO fallback to g["connectionState"] — that field is a placeholder
+                # ("Unconfigured" for every gateway). Falling back to it turned a hub
+                # that answered for 4 of 360 devices into a full-looking triage with
+                # no_state_received: 0 (2026-08-03). A missing state must stay None so
+                # it is reported instead of silently bucketed as offline.
+                "status": states.get(g.get("id")),
                 "mdm": g.get("hmdmState"),
                 "version": displayed_version(g),
                 "firmwareVersion": g.get("firmwareVersion"),
@@ -363,6 +388,23 @@ def main() -> int:
     if args.lte_results:
         with open(args.lte_results, encoding="utf-8") as f:
             lte_results = json.load(f)
+        # Must be a FLAT serial -> {outcome, ...} map. A wrapped shape (e.g.
+        # {"results": [...]}) parses fine, matches nothing, and quietly files every
+        # LTE candidate as PENDING_LTE — a worklist that looks finished but has the
+        # whole Swisscom leg missing. Fail loudly instead.
+        if not isinstance(lte_results, dict):
+            raise SystemExit(f"{args.lte_results}: expected a JSON object mapping serial -> result")
+        serials = {g["serialNumber"] for g in data["gateways"]}
+        matched = serials & lte_results.keys()
+        if not matched:
+            raise SystemExit(
+                f"{args.lte_results}: no key matches any gateway serial — expected a flat "
+                f'{{"<serial>": {{"outcome": ...}}}} map, got keys like '
+                f"{sorted(lte_results)[:3]}")
+        no_outcome = [s for s in matched if not (lte_results[s] or {}).get("outcome")]
+        if no_outcome:
+            print(f"WARNING: {len(no_outcome)} LTE results carry no 'outcome' and stay PENDING_LTE: "
+                  f"{no_outcome[:5]}", file=sys.stderr)
 
     if args.worklist or args.out:
         wl = build_worklist(data, lte_results)
@@ -397,6 +439,10 @@ def main() -> int:
     if args.json:
         json.dump(data, sys.stdout, indent=2, ensure_ascii=False)
         print()
+        # A sweep that lost most of the hub's answers still produces well-formed JSON;
+        # only this warning distinguishes it from a good one. Loud, on stderr, so it
+        # survives `--json > triage.json`.
+        _warn_if_states_missing(data)
         return 0
 
     if args.csv:

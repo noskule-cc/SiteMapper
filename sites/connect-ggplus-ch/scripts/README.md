@@ -67,6 +67,19 @@ the **SignalR hub** `/gateway/device-connection`: connect, then invoke
 script cannot answer "is this gateway online?" — this is the whole reason the module
 speaks websockets.
 
+> **The hub is slow, and a partial answer is worse than no answer.** It replies for
+> ~380 watchers over roughly **five minutes**, in bursts with long gaps between them —
+> a full sweep takes about **8 minutes** end to end. Be patient: the defaults are 420 s
+> overall / 60 s idle and must not be lowered.
+>
+> On 2026-08-03 the old defaults (90 s / 10 s) ended the read after the first gap with
+> **4 states out of 360**. The caller fell back to the REST placeholder above, so every
+> unanswered gateway silently became "Unconfigured" → `OK: 0`, `ANALYZE_LOGS: 84`, and
+> `no_state_received: 0` — perfectly valid JSON describing a fleet that does not exist.
+> Both halves are now fixed (no placeholder fallback; `_warn_if_states_missing()` shouts
+> on stderr and calls the sweep untrustworthy above 5 %), but the shape of the failure is
+> worth remembering: **check `no_state_received` and the OK count before trusting a sweep.**
+
 **3. The "Version" column is a hybrid field**, not one property:
 
 ```python

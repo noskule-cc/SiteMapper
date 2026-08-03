@@ -1,0 +1,452 @@
+{
+  "2023110600000108": {
+    "serial": "2023110600000108",
+    "imsi": "228017005568631",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000239": {
+    "serial": "2023110600000239",
+    "imsi": "228017005096932",
+    "sim_status": "Aktiv",
+    "monthly": "2.45 kB",
+    "up": "120.00 Bytes",
+    "down": "360.00 Bytes",
+    "has_traffic": true,
+    "outcome": "VOR_ORT_SIGNAL_FLASH"
+  },
+  "2023110600000254": {
+    "serial": "2023110600000254",
+    "imsi": "228017005096925",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000353": {
+    "serial": "2023110600000353",
+    "imsi": "228017005096889",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000436": {
+    "serial": "2023110600000436",
+    "imsi": "228017005096824",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000175": {
+    "serial": "2023110600000175",
+    "imsi": "228017005096801",
+    "sim_status": "Deaktiviert",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "PENDING_SIM_ACTIVATION"
+  },
+  "2023110600000330": {
+    "serial": "2023110600000330",
+    "imsi": "228017003424470",
+    "sim_status": "Deaktiviert",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "PENDING_SIM_ACTIVATION"
+  },
+  "2023110600000122": {
+    "serial": "2023110600000122",
+    "imsi": "228017005096826",
+    "sim_status": "Deaktiviert",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "PENDING_SIM_ACTIVATION"
+  },
+  "2023110600000007": {
+    "serial": "2023110600000007",
+    "imsi": "228017005096990",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000083": {
+    "serial": "2023110600000083",
+    "imsi": "228017005096936",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000117": {
+    "serial": "2023110600000117",
+    "imsi": "228017005568625",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000048": {
+    "serial": "2023110600000048",
+    "imsi": "228017003424445",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000049": {
+    "serial": "2023110600000049",
+    "imsi": "228017003424434",
+    "sim_status": "Deaktiviert",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "PENDING_SIM_ACTIVATION"
+  },
+  "2023110600000279": {
+    "serial": "2023110600000279",
+    "imsi": "228017005096937",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000152": {
+    "serial": "2023110600000152",
+    "imsi": "228017005096803",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000411": {
+    "serial": "2023110600000411",
+    "imsi": "228017005096830",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000413": {
+    "serial": "2023110600000413",
+    "imsi": "228017005096822",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000160": {
+    "serial": "2023110600000160",
+    "imsi": "228017003424392",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000012": {
+    "serial": "2023110600000012",
+    "imsi": "228017005096838",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000164": {
+    "serial": "2023110600000164",
+    "imsi": "228017005096959",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000421": {
+    "serial": "2023110600000421",
+    "imsi": "228017005096820",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000400": {
+    "serial": "2023110600000400",
+    "imsi": "228017005096970",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000398": {
+    "serial": "2023110600000398",
+    "imsi": "228017005096976",
+    "sim_status": "Deaktiviert",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "PENDING_SIM_ACTIVATION"
+  },
+  "2023110600000344": {
+    "serial": "2023110600000344",
+    "imsi": "228017005096828",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000489": {
+    "serial": "2023110600000489",
+    "imsi": "228017005096957",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000427": {
+    "serial": "2023110600000427",
+    "imsi": "228017005096958",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000136": {
+    "serial": "2023110600000136",
+    "imsi": "228017005096809",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000548": {
+    "serial": "2023110600000548",
+    "imsi": "228017005096806",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000504": {
+    "serial": "2023110600000504",
+    "imsi": "228017005096849",
+    "sim_status": "Aktiv",
+    "monthly": "1.23 kB",
+    "up": "328.00 Bytes",
+    "down": "614.00 Bytes",
+    "has_traffic": true,
+    "outcome": "VOR_ORT_SIGNAL_FLASH"
+  },
+  "2023110600000296": {
+    "serial": "2023110600000296",
+    "imsi": "228017003424400",
+    "sim_status": "Deaktiviert",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "PENDING_SIM_ACTIVATION"
+  },
+  "2023110600000306": {
+    "serial": "2023110600000306",
+    "imsi": "228017003424464",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000147": {
+    "serial": "2023110600000147",
+    "imsi": "228017003424447",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000370": {
+    "serial": "2023110600000370",
+    "imsi": "228017005096939",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000448": {
+    "serial": "2023110600000448",
+    "imsi": "228017003424415",
+    "sim_status": "Deaktiviert",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "PENDING_SIM_ACTIVATION"
+  },
+  "2023110600000375": {
+    "serial": "2023110600000375",
+    "imsi": "228017005096955",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000498": {
+    "serial": "2023110600000498",
+    "imsi": "228017005096871",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000420": {
+    "serial": "2023110600000420",
+    "imsi": "228017005096818",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000092": {
+    "serial": "2023110600000092",
+    "imsi": "228017003424423",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000141": {
+    "serial": "2023110600000141",
+    "imsi": "228017005096836",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000087": {
+    "serial": "2023110600000087",
+    "imsi": "228017005096835",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000132": {
+    "serial": "2023110600000132",
+    "imsi": "228017005096954",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000386": {
+    "serial": "2023110600000386",
+    "imsi": "228017005096825",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000395": {
+    "serial": "2023110600000395",
+    "imsi": "228017005096967",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000399": {
+    "serial": "2023110600000399",
+    "imsi": "228017005096896",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  },
+  "2023110600000387": {
+    "serial": "2023110600000387",
+    "imsi": "228017005096892",
+    "sim_status": "Aktiv",
+    "monthly": "0.00 Bytes",
+    "up": "0.00 Bytes",
+    "down": "0.00 Bytes",
+    "has_traffic": false,
+    "outcome": "VOR_ORT_RESET_FLASH"
+  }
+}
