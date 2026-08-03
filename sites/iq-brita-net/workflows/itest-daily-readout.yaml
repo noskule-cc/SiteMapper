@@ -47,27 +47,52 @@ workflow:
       page: filters-list
       element: device-count
       expect: { contains: "Devices" }
-      description: The "N Devices" count is present — the list finished loading.
+      description: >
+        The "N Devices" count is present on the unfiltered list — the page loaded and
+        the session is live. This is a liveness check ONLY: the count is the server-side
+        total and does not match the rows in the DOM (the grid is virtualized).
+
+    - action: navigate
+      page: filters-list
+      value: https://iq.brita.net/purityciqs?resource-any-contains=$werkstatt.list_name_contains
+      description: >
+        Isolate the Werkstatt device via the URL-backed search filter. REQUIRED — the
+        grid is virtualized and an unfiltered read silently omits whichever rows are
+        not currently mounted (see filters-list gotchas).
+    - action: wait
+      value: "3"
+      description: Let the filtered grid render.
 
     - action: read
       page: filters-list
       element: device-table
       capture: werkstatt_reading
       value: >
-        In the row whose Name contains "$werkstatt.list_name_contains", read
+        Exactly one row must be present; assert its Name contains
+        "$werkstatt.list_name_contains", then read
         { capacity_remaining: Capacity-remaining cell as an integer (strip " litres"),
           last_activity: Last-activity cell verbatim ("DD/MM/YYYY, HH:MM") }.
         If the cells show "-", capture null (device offline / no reading), not 0.
+        Zero rows, or more than one, is an error — never read a partial match.
       description: Read the Werkstatt (3086769) device row.
+
+    - action: navigate
+      page: filters-list
+      value: https://iq.brita.net/purityciqs?resource-any-contains=$pausenraum.list_name_contains
+      description: Isolate the Pausenraum device via the same URL filter.
+    - action: wait
+      value: "3"
+      description: Let the filtered grid render.
 
     - action: read
       page: filters-list
       element: device-table
       capture: pausenraum_reading
       value: >
-        In the row whose Name contains "$pausenraum.list_name_contains", read
+        Exactly one row must be present; assert its Name contains
+        "$pausenraum.list_name_contains", then read
         { capacity_remaining: integer (strip " litres"), last_activity: verbatim }.
-        "-" cells capture as null, not 0.
+        "-" cells capture as null, not 0. Zero or multiple rows is an error.
       description: Read the Pausenraum (10000) device row.
 
     - action: read
@@ -90,8 +115,13 @@ workflow:
 # Notes
 #   - Extraction: the /purityciqs grid has no stable per-cell ids; anchor each row by the
 #     device-name link (its text contains the list_name_contains fragment) and read the
-#     sibling Capacity-remaining / Last-activity cells positionally. get_page_text returns
-#     all rows at once (no scroll/pagination). See sites/iq-brita-net/pages/filters-list.yaml.
+#     sibling Capacity-remaining / Last-activity cells positionally.
+#   - The grid is VIRTUALIZED: only ~16 of 18 rows are in the DOM at a time, so scanning
+#     the full list can silently miss a target device (confirmed 2026-08-03 — the run that
+#     day found both devices only because they happened to be mounted). Always isolate one
+#     device at a time with ?resource-any-contains=<fragment>. Do NOT assert on the
+#     "N Devices" label while a filter is active — it is not rendered then.
+#     See sites/iq-brita-net/pages/filters-list.yaml.
 #   - Wiki page path: the URL slug hides the real path. Full path is
 #     /Testing/Brita/2026-07-11 iQ-Meter Test - laufend (id 2599); resolve/etag via the
 #     ado MCP before updating so the page is UPDATED, not duplicated.

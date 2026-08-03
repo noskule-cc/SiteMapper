@@ -17,11 +17,15 @@ flowchart TD
     A[navigate: /purityciqs] --> B[wait for grid / N Devices]
     B --> C{list loaded?}
     C -- no --> X[setup error: run cannot start]
-    C -- yes --> D[read Werkstatt row 3086769<br/>capacity + last activity]
-    D --> E[read Pausenraum row 10000<br/>capacity + last activity]
+    C -- yes --> D[navigate: ?resource-any-contains=3086769<br/>read the single Werkstatt row]
+    D --> E[navigate: ?resource-any-contains=10000<br/>read the single Pausenraum row]
     E --> F[emit result: werkstatt + pausenraum readings]
     F --> G[[HOST: append dated row to each<br/>wiki table on page 2599 via ado MCP<br/>GGplus WIKI ONLY]]
 ```
+
+**Why one device per page load:** the grid is virtualized — only ~16 of the 18 rows are
+in the DOM at any moment, so scanning the whole list can silently skip a target device.
+The `?resource-any-contains=` filter leaves exactly one row and removes the guesswork.
 
 **Not modelled here:** the wiki append (`G`) is deliberately outside the workflow —
 SiteMapper is sink-agnostic. See `itest-daily-readout.yaml` for extraction details and the

@@ -21,14 +21,21 @@ page:
         strategy: text
         value: "Devices"
       description: >
-        Total device count, e.g. "18 Devices". Use to confirm all rows were read.
+        Total device count, e.g. "18 Devices". Rendered only on the UNFILTERED list.
+        It is the server-side total and does NOT match the number of rows present in
+        the DOM (the grid is virtualized — see gotchas). Use it as a "list loaded /
+        session alive" signal only, never to confirm all rows were read.
 
     - name: search-input
       type: input
       locator:
         strategy: aria-label
         value: Search
-      description: Free-text filter over the device list (filters by name).
+      description: >
+        Free-text filter over the device list (filters by name). URL-backed: typing
+        sets ?resource-any-contains=<text>, and navigating straight to that URL
+        pre-fills the box and applies the filter. This is the reliable way to isolate
+        a single device — see gotchas.
 
     - name: filter-purity-c-iq
       type: button
@@ -123,10 +130,24 @@ page:
       order listed under device-table. Anchor a row by its device-name link
       (text/href), then read the sibling cells positionally.
     - >
-      get_page_text returns ALL rows at once (all 18) in table order with fields
-      per device as: name / cartridge-model / lifetime / capacity / water-consumption
-      / organization / last-activity. This is the most reliable extraction path for
-      the daily readout — no scrolling or pagination needed; the whole list is in the DOM.
+      The grid is VIRTUALIZED — a MUI TableContainer (.MuiTableContainer-root) with
+      its own inner scroller. Only ~16 of the 18 rows are mounted at any moment, and
+      WHICH ones depends on the inner scroll position and re-render timing. Rows that
+      scroll out are unmounted: they disappear from the DOM, from get_page_text and
+      from the accessibility tree alike. Never treat a whole-list read as complete.
+      Confirmed 2026-08-03: the two most recently active devices were absent from the
+      DOM while the header still read "18 Devices", and resetting scrollTop to 0 did
+      not bring them back.
+    - >
+      To read ONE device reliably, filter instead of scanning: navigate to
+      /purityciqs?resource-any-contains=<fragment> (e.g. 3086769). The param survives
+      a full page load, pre-fills the Search box, and leaves exactly one matching row
+      in the DOM — no virtualization window to fight. Caveat: with a filter active the
+      "N Devices" count label is NOT rendered, so never assert on it in a filtered view.
+    - >
+      Row fields, in order, per mounted row: name / cartridge-model / lifetime /
+      capacity / water-consumption / organization / last-activity (the leading cell is
+      an empty device-type icon cell).
     - >
       Values carry unit text: capacity is "1859 litres" (parse the leading number),
       lifetime is "-1 weeks"/"45 weeks". Never-initialized devices show "-" /
