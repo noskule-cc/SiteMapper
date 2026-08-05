@@ -40,4 +40,5 @@
 
 ## Proposals
 
-- [proposals/workflow-session-context-separation.md](proposals/workflow-session-context-separation.md) — draft: split persona/session, tenant-context, and workflow "work" into three layers
+Proposals and open decisions live in **GitHub Issues**, not in this repo — see
+[issue-tracker.md](issue-tracker.md) for the conventions.

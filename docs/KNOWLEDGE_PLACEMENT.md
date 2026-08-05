@@ -26,7 +26,7 @@ cloning this repo tomorrow?*
 | What a workflow does and why its branches differ | the workflow's sibling `<workflow>.md` |
 | The shape of a YAML file | the relevant `schema/*.yaml`, as comments |
 | A standing rule every session must follow | `CLAUDE.md` |
-| A decision not yet made | `docs/proposals/` |
+| A decision not yet made | a **GitHub issue** — see `issue-tracker.md` |
 | What a run found | `results/<workflow>.<YYYY-MM-DD>.md` |
 
 **No → memory** (`~/.claude/.../memory/`, outside the repo). That means:
