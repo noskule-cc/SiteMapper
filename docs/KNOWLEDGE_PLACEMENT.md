@@ -7,7 +7,8 @@ disagreeing with itself.
 The rule is one line:
 
 > **A fact that is true of the project belongs in the repo. A fact that is true of
-> one machine or one person belongs in agent memory. Nothing belongs in both.**
+> one machine or one person belongs in the agent's own memory store. Nothing
+> belongs in both.**
 
 ## The decision
 
@@ -25,24 +26,29 @@ cloning this repo tomorrow?*
 | Contact data, environment, form-submission authorization | layered `settings:` — `config.yaml` → `site.yaml` → page |
 | What a workflow does and why its branches differ | the workflow's sibling `<workflow>.md` |
 | The shape of a YAML file | the relevant `schema/*.yaml`, as comments |
-| A standing rule every session must follow | `CLAUDE.md` |
+| A standing rule every session must follow | `docs/guardrails.md` |
 | A decision not yet made | a **GitHub issue** — see `issue-tracker.md` |
 | What a run found | `results/<workflow>.<YYYY-MM-DD>.md` |
 
-**No → memory** (`~/.claude/.../memory/`, outside the repo). That means:
-install paths, local auth state, OS quirks of *your* setup, and "where we left off".
+**No → the host agent's private memory store**, outside the repo (Claude Code
+keeps one under `~/.claude/…/memory/`; other hosts have their own). That means:
+install paths, local auth state, OS quirks of *your* setup, and "where we left
+off".
 
 **Unsure → repo.** A fact in the repo is reviewable and gets corrected. A fact in
 memory is invisible to everyone else and rots quietly.
 
 ## Why memory is the weaker home
 
-- **It is not shared.** Memory is keyed to the machine and the launch directory. A
-  teammate — or you from a different directory — never sees it.
-- **It cannot be pointed at the repo.** `autoMemoryDirectory` is deliberately
-  **ignored** in a checked-in `.claude/settings.json`, because memory auto-loads into
-  context and a repo that could redirect it could plant standing instructions in any
-  agent that clones it. Committing a memory folder does not make it load for anyone.
+- **It is not shared.** Memory is keyed to the machine, the launch directory and
+  the specific agent. A teammate — or you from a different directory, or the same
+  work under a different agent — never sees it.
+- **It cannot be pointed at the repo.** Hosts deliberately refuse to let a
+  checked-in config redirect the memory directory (Claude Code ignores
+  `autoMemoryDirectory` in `.claude/settings.json`), because memory auto-loads
+  into context and a repo that could redirect it could plant standing
+  instructions in any agent that clones it. Committing a memory folder does not
+  make it load for anyone.
 - **It is not reviewed.** No diff, no PR, no lint.
 - **It duplicates silently.** Every fact promoted here started as a memory that had
   already drifted from the repo copy.
@@ -66,11 +72,13 @@ of the project, promote it and delete the memory — do not leave both.
 |---|---|---|
 | BRITA detail pages have an "Enable new design" toggle; with it off, the mapped tabs do not exist | `pages/flowmeter-detail.yaml` gotcha | Breaks any workflow, for anyone |
 | Headless BRITA auth is blocked three ways; readout runs browser-driven | `sites/iq-brita-net/scripts/README.md` | Project-wide constraint + a parked-code rationale |
-| The `ado` MCP may touch GGplus wiki only | `CLAUDE.md` | A standing rule for every session |
 | Dev forms may be submitted with the standard contact | `settings.policy.safe_to_submit_forms` | Machine-readable beats prose |
 | `ado` is installed at user scope with `--authentication azcli`; `az` must be on the Machine PATH | memory | True of this machine only |
+| The `ado` MCP may touch the GGplus wiki only | `docs/guardrails.md` | A standing rule for every session, on every host |
 
 ## See also
 
 - [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — whether to document at all
 - [AGENTS.md](AGENTS.md) — entry point and situational references
+- [guardrails.md](guardrails.md) — standing safety rules
+- [issue-tracker.md](issue-tracker.md) — open decisions live as issues

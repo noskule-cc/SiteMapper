@@ -46,6 +46,36 @@ Whether a host needs an LLM at run time depends on the workflow's `mode`:
 
 UI test workflows should be `deterministic` so they run headless and feed a host (e.g. a DevOps test run) without an agent.
 
+## Bindings
+
+The three verbs are the contract. **How** a host exposes and executes them is a
+binding, and bindings are replaceable.
+
+| Layer | Neutral (every host) | Claude Code binding |
+|---|---|---|
+| Skills | `docs/skills/<name>.md` | `.claude/skills/<name>/SKILL.md` — frontmatter + a pointer |
+| Sub-agents | `docs/subagents/<name>.md` | `.claude/agents/<name>.md` — frontmatter + a pointer |
+| Capabilities | named in the skill docs (navigate, click, …) | mapped to tools in [HOST_BINDINGS.md](HOST_BINDINGS.md) |
+| Entry point | `docs/AGENTS.md` | `CLAUDE.md` points at it (as do `CODEX.md`, `.cursorrules`, `.github/copilot-instructions.md`) |
+
+**A binding contains no instructions.** It carries registration metadata and a
+pointer to the neutral doc. The moment instructions live in a binding, that
+host's behaviour diverges from every other host's — silently, because it still
+works on the machine where it was written.
+
+### Sub-agents are an execution strategy, never part of the contract
+
+A sub-agent is one way to *carry out* `run_workflow`. It is not one of the verbs.
+Every workflow must produce an identical `result` on a host with no sub-agent
+concept at all — fan-out buys speed and context isolation, never behaviour.
+
+If a workflow's outcome depends on parallelism, that is a defect in the workflow.
+Where the work is mechanical, prefer a **script** (`action: script`): it is
+faster than fan-out *and* runs on every host.
+
+Neutral means **portable, not minimal**. A host with more capability should use
+it fully; the neutral layer is never written down to the weakest host.
+
 ## Out of scope
 
 Routing results into Azure DevOps / Jira / a page / a database, and any cross-system orchestration, are the **host's** responsibility — not SiteMapper's. SiteMapper's job ends at returning a valid `result`.

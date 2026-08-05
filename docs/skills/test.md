@@ -28,12 +28,18 @@ of just performing a task, it evaluates `assert` steps and reports PASS/FAIL.
    inherits whatever state a previous session left.
 
 5. **Execute steps in order.** For each step, load the referenced
-   `sites/<site>/pages/<page>.yaml`, find the element's locator, and:
-   - `navigate` → `mcp__claude-in-chrome__navigate` (prefix relative `value`
+   `sites/<site>/pages/<page>.yaml`, find the element's locator, and use the
+   host's capabilities (`docs/HOST_BINDINGS.md` maps each to a concrete tool):
+   - `navigate` → **navigate** (prefix relative `value`
      paths with the site `base_url`; substitute `$` references first)
-   - `click` → `mcp__claude-in-chrome__find` + `computer` click
-   - `input` → `mcp__claude-in-chrome__form_input`
-   - `read` → `read_page` / `get_page_text`; store under the step's `capture`
+   - `click` → **find** + **click**
+   - `input` → **type**
+   - `read` → **read page** / **read text**; store under the step's `capture`
+   - `key` → **press key** (`value` is the key, e.g. `Escape`) — dismisses a
+     dropdown without changing state
+   - `script` → **run script** from `sites/<site>/scripts/`, `value` carrying its
+     CLI arguments and `capture` storing its parsed stdout. Preferred over
+     driving the browser wherever the data is reachable from the site's API
    - `assert` → locate the element and evaluate `expect` (see below). Record one
      entry in `result.assertions` with `{ id, page, element, expect, actual,
      pass }`. **Do not abort on a failed assertion** — continue so the run
@@ -75,6 +81,14 @@ of just performing a task, it evaluates `assert` steps and reports PASS/FAIL.
 8. **Return the result** as JSON and print a short PASS/FAIL summary. Do **not**
    send it anywhere — routing the result (e.g. to a DevOps page) is the calling
    host's job, not this skill's.
+
+9. **Record a reference run.** For a run worth keeping as history, write it to
+   `results/<workflow>.<YYYY-MM-DD>.md` beside the workflow: run metadata, a
+   per-assertion PASS/FAIL table, the machine-readable `result` JSON, and any
+   findings. Routine runs need not be committed. Per-run evidence (datasets,
+   logs) goes in a sibling `<workflow>.<YYYY-MM-DD>/` folder referenced from the
+   result's `evidence` list. See the `results/README.md` files, and
+   `docs/guardrails.md` before committing anything containing customer data.
 
 ## Safety
 

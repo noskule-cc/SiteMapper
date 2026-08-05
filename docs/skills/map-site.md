@@ -4,11 +4,11 @@ Start a discovery session to map a web application. Reads the current page in Ch
 
 ## Setup
 
-1. Open a Chrome browser session and navigate to the target URL:
-   - Call `mcp__claude-in-chrome__tabs_context_mcp` (with `createIfEmpty: true`) to
-     get or create the MCP tab group — Claude opens its own tab, the user does not
-     open it by hand.
-   - Navigate that tab to the start URL the user gives you.
+1. Open a browser session and navigate to the target URL
+   (`docs/HOST_BINDINGS.md` maps these capabilities to concrete tools):
+   - **open session** to get or create the agent's own tab — the agent opens its
+     own tab, the user does not open it by hand.
+   - **navigate** that tab to the start URL the user gives you.
    - If the site needs auth, confirm the user is logged in first; never enter
      credentials yourself.
 
@@ -27,7 +27,7 @@ Start a discovery session to map a web application. Reads the current page in Ch
 
 For each page the user wants to map:
 
-1. **Read the current page** using `mcp__claude-in-chrome__read_page` to get the DOM structure.
+1. **read page** to get the DOM structure of the current page.
 2. **Analyze the page** and suggest:
    - Page name and purpose
    - Key interactive elements (buttons, inputs, links, selects) with semantic locators
@@ -41,6 +41,9 @@ For each page the user wants to map:
    one left, and elements that only exist in one state will simply be missing. Record the
    state *and* which elements depend on it.
 5. **Write the page YAML** to `sites/<site>/pages/<page-name>.yaml` following the schema.
+5b. **Capture a reference screenshot** to `sites/<site>/screenshots/<page-name>.png`
+   and record it in the page's `screenshot:` field. It gives `/verify-map` a
+   baseline for visual drift that element-existence checks cannot detect.
 6. **Ask**: "Navigate to the next page you want to map, or say 'done' to finish."
 
 ## When Done
@@ -62,5 +65,4 @@ For each page the user wants to map:
 - Use `children` property on nav elements to document submenu items inline.
 - Group page files by section (dienste-, kontakt-, shop-, admin-, einstellungen-) for clarity.
 - Document the URL pattern as actually observed (may differ from sidebar label).
-- Screenshots are optional — skip unless the user specifically requests them or visual drift detection is needed.
 - Everything you learn during discovery belongs in the map, not in agent memory. If you catch yourself about to remember a page's behavior, write it as a gotcha instead — that is what makes it survive for the next session and the next person (`docs/KNOWLEDGE_PLACEMENT.md`).
