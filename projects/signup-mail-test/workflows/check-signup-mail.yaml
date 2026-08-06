@@ -1,0 +1,181 @@
+workflow:
+  name: check-signup-mail
+  description: >
+    Find ONE signup/registration mail in the Sunrise mailbox and prove it is the right one:
+    delivered to the address that was registered, with the expected Betreff, a body with no
+    unsubstituted placeholders, and a confirmation link. Runs standalone after any of the
+    three registration paths - the registering half is a human/browser step, this is the
+    verification half. Read-only: it mutates nothing except the read flag, which teardown
+    restores.
+  sites:
+    - appsuite-sunrise-ch
+  mode: agentic
+  # agentic: deciding "is this the mail we triggered" (address + arrival time + sender),
+  # and "are all placeholders substituted", is judgement, not a fixed `expect`.
+
+  parameters:
+    - name: recipient_address
+      type: text
+      description: The e-mail address that was entered in the registration form.
+      required: true
+    - name: search_term
+      type: text
+      description: >
+        Invariant fragment of the expected Betreff to search for (e.g. "Registrierung").
+        Keep it short and template-independent - the exact subject is what we are testing.
+      required: true
+      default: "Registrierung"
+    - name: submitted_at
+      type: text
+      description: >
+        Local time the registration was submitted, HH:MM. Anything older than this is a mail
+        from an earlier run, not this one.
+      required: true
+
+  setup:
+    - action: navigate
+      site: appsuite-sunrise-ch
+      page: mail-list
+      value: "/appsuite/#!!&app=io.ox/mail&folder=default0/INBOX"
+      description: Open the mailbox at the Inbox
+    - action: wait
+      description: OX App Suite boots for ~5-8s behind a blank page with three dots
+    - action: assert
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: mein-konto-button
+      expect: visible
+      description: >
+        Precondition - a session exists. Open it to confirm the identity is the expected
+        mailbox before trusting any "mail not found" result.
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: ansicht-button
+      description: >
+        Reset sticky UI state. Layout MUST be Vertikal (Liste/Kompakt hide the detail
+        column) and "Datum und Uhrzeit" ON, so arrival times are readable. Escape when done.
+    - action: key
+      value: Escape
+      description: Close the Ansicht menu without changing anything else
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: search-clear
+      description: Clear any inherited search so the folder view is the starting point
+
+  steps:
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: refresh-button
+      description: >
+        Force a mail fetch. The automatic interval is 5 MINUTES - without this the mail is
+        invisible for minutes after the signup and the run reports a false negative.
+    - action: wait
+      description: Give the fetch a few seconds; repeat refresh + wait before declaring absence
+    - action: input
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: search-input
+      value: "$search_term"
+      description: >
+        Type the term, then pick "<term> in subject" from the suggestion dropdown. Do NOT
+        press Enter - Enter reloads the whole app and discards the query.
+    - action: read
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: message-row
+      capture: candidate_rows
+      description: >
+        Read the matching rows (sender address from .from's title, subject, date). If empty,
+        widen search-scope-dropdown via "Weitere…" to cover Spam before concluding anything.
+    - action: verify
+      description: >
+        Pick the row that is newer than $submitted_at. If several match, take the newest. If
+        NONE match, the outcome is FAIL - "mail not delivered" - but only after a second
+        refresh and a Spam-scoped search.
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: message-row
+      description: Open the chosen message (note whether it was unread - teardown restores it)
+    - action: read
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: message-subject
+      capture: actual_subject
+      description: The exact, untruncated Betreff - the list row's copy is truncated
+    - action: read
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: recipient-link
+      capture: header_to
+      description: The "An" address as the sender wrote it
+    - action: read
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: message-date
+      capture: arrival_time
+      description: Full send timestamp, to confirm it postdates $submitted_at
+    - action: read
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: message-body-frame
+      capture: body_text
+      description: >
+        Body text AND links. The body is in an iframe and is invisible to get_page_text and
+        find - read it with javascript_tool against iframe.mail-detail-frame.contentDocument
+        (innerText, plus querySelectorAll('a') for the hrefs). See the page gotchas.
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: quelldaten-anzeigen
+      description: Open the raw-MIME modal
+    - action: read
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: quelldaten-textarea
+      capture: raw_source
+      description: >
+        Read the textarea's VALUE with javascript_tool (it is not in the a11y tree), then
+        regex /^Delivered-To:.*$/mi and /^Subject:.*$/mi.
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: quelldaten-schliessen
+      description: Close the modal - it blocks the list behind it
+    - action: verify
+      description: >
+        PASS requires all of:
+          1. Delivered-To (from $raw_source) == $recipient_address. This is the ground
+             truth; $header_to is only what the sender wrote and differs for plus-aliases,
+             catch-alls and forwards - report both when they disagree.
+          2. $arrival_time is after $submitted_at.
+          3. $actual_subject is a complete sentence with no unsubstituted placeholder
+             ({{...}}, %NAME%, "null", "undefined", a bare template key).
+          4. $body_text likewise - and it names the registered person/company, not another
+             record's data.
+          5. The body contains exactly one plausible confirmation/activation link on a
+             ggplus.ch host. Record its URL. DO NOT FOLLOW IT in this workflow - following
+             it activates the account and is a separate, deliberate step.
+
+  teardown:
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-message
+      element: als-ungelesen-markieren
+      description: >
+        Only if the message was unread before this run - opening it consumed the unread flag
+        in a private mailbox.
+    - action: click
+      site: appsuite-sunrise-ch
+      page: mail-list
+      element: search-clear
+      description: Clear the search so the next session starts from the plain folder view
+
+  verify:
+    - The mail exists, arrived after the signup, and Delivered-To matches the registered address
+    - Betreff and body are fully substituted - no template placeholders, no foreign record's data
+    - A confirmation link is present and recorded (not followed)
+    - The mailbox is left as found - search cleared, unread state restored

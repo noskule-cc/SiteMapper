@@ -15,6 +15,15 @@ sites/app-hibob-com/results/
 # correspondence. The map is reusable and committed; the mail content stays local.
 sites/outlook-cloud-microsoft/results/
 
+# Same for the Sunrise mailbox: signup-mail runs extract real subjects, senders
+# and bodies. Map and workflow are reusable and committed; mail content stays local.
+sites/appsuite-sunrise-ch/results/
+projects/signup-mail-test/results/
+
+# Sunrise webmail run outputs are extracted subjects, bodies and raw MIME from a
+# PRIVATE mailbox. The map is reusable and committed; the mail content stays local.
+sites/appsuite-sunrise-ch/results/
+
 # One pathological raw log: 41 MB / 483k lines, of which only ~7k are unique —
 # a NO_DNS device repeating the same failure with full stack traces for 5 days.
 # Its diagnosis lives in the sibling 2023110600000493.md. Small per-gateway logs

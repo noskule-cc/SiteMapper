@@ -1,0 +1,385 @@
+page:
+  name: Shop Registrierung (JA / NEIN branches)
+  url_pattern: /de/shop/registrierung/
+  purpose: >
+    Public registration entry for the Gehrig webshop / Partnerbereich / GG+connect. An
+    entry card asks whether the company is already a GEHRIG GROUP customer and slides in
+    ONE of two different forms on the SAME url:
+      JA   (#formcontainer-1) - existing customer: creates an ACCOUNT (Kundennummer +
+            password + "Registrieren für" incl. GG+connect).
+      NEIN (#formcontainer-2) - prospect: sends a REQUEST (Anfrage) with company address,
+            no password, no GG+connect option.
+    Both branches are mapped here because both are expected to produce mail.
+  screenshot: ""
+
+  settings:
+    form_defaults:
+      salutation: "Herr"
+      firstname: "SiteMapper"
+      lastname: "Test"
+      telephone: "+41764497275"
+
+  elements:
+    # --- Entry cards (both branches) ---
+    - name: karte-ja-weiter
+      type: link
+      locator:
+        strategy: css
+        value: "a[href='#formcontainer-1']"
+      description: >
+        WEITER on the "JA - Unsere Firma ist bereits Kunde der GEHRIG GROUP." card (left).
+        Slides in the existing-customer form. Visible label is "Weiter" on BOTH cards, so
+        the href is the only unambiguous locator.
+
+    - name: karte-nein-weiter
+      type: link
+      locator:
+        strategy: css
+        value: "a[href='#formcontainer-2']"
+      description: >
+        WEITER on the "NEIN - Unsere Firma ist noch kein Kunde der GEHRIG GROUP." card
+        (right). Slides in the prospect form.
+
+    - name: zurueck-button
+      type: button
+      locator:
+        strategy: text
+        value: Zurück
+      description: >
+        Returns from either form to the two cards. One instance per slide, so scope it to
+        the active #formcontainer-N.
+
+    - name: sprache-links
+      type: link
+      locator:
+        strategy: text
+        value: FR
+      description: >
+        DE | FR | IT in the top bar. The path CHANGES per language -
+        /de/shop/registrierung/, /fr/shop/inscription/, /it/shop/registrazione/ - so a
+        language switch is a different URL, not a query flag.
+
+    - name: dein-konto-menu
+      type: link
+      locator:
+        strategy: text
+        value: Dein Konto
+      description: >
+        Top-right account menu, present ONLY while a shop session exists. Contains the
+        signed-in address, Dein Profil, Deine Bestellungen and ABMELDEN. Its presence is
+        the precondition check for this page - see gotchas.
+      states: [logged-in-only]
+      children:
+        - Dein Profil
+        - Deine Bestellungen
+        - ABMELDEN
+
+    - name: login-button
+      type: link
+      locator:
+        strategy: text
+        value: Login
+      description: >
+        Red Login button in the same top-right slot when LOGGED OUT. Its presence is the
+        precondition that makes the registration forms render.
+      states: [logged-out-only]
+
+    # --- JA branch: existing customer (#formcontainer-1) ---
+    - name: ja-kundennummer
+      type: input
+      locator:
+        strategy: css
+        value: "#contractualPartner"
+      description: "(JA, required) Kundennummer. name=contractualPartner, type=number - digits only."
+      states: [branch-ja]
+
+    - name: ja-unternehmen
+      type: input
+      locator:
+        strategy: css
+        value: "#company"
+      description: "(JA, required) Unternehmen. name=company."
+      states: [branch-ja]
+
+    - name: ja-anrede
+      type: select
+      locator:
+        strategy: css
+        value: "#salutationId"
+      description: >
+        (JA, required) Anrede. Native <select>; option VALUES are numeric -
+        "null" (blank, preselected), "1" = Herr, "2" = Frau. Set the value, not the label.
+      states: [branch-ja]
+
+    - name: ja-vorname
+      type: input
+      locator:
+        strategy: css
+        value: "#firstName"
+      description: "(JA, required) Vorname. name=firstName."
+      states: [branch-ja]
+
+    - name: ja-nachname
+      type: input
+      locator:
+        strategy: css
+        value: "#lastName"
+      description: "(JA, required) Nachname. name=lastName."
+      states: [branch-ja]
+
+    - name: ja-email
+      type: input
+      locator:
+        strategy: css
+        value: "#email"
+      description: >
+        (JA, required) E-Mail, name=email. The field the multi-address test varies. Chrome
+        autofill pre-fills it - clear it first (see gotchas).
+      states: [branch-ja]
+
+    - name: ja-telefon
+      type: input
+      locator:
+        strategy: css
+        value: "#telephone"
+      description: >
+        (JA, required) Telefonnummer, name=telephone. Format-validated - a bare number can
+        trip "Bitte eine korrekte Telefonnummer angeben."
+      states: [branch-ja]
+
+    - name: ja-mobile
+      type: input
+      locator:
+        strategy: css
+        value: "#mobile"
+      description: "(JA, optional - the only optional text field) Mobile. name=mobile."
+      states: [branch-ja]
+
+    - name: ja-passwort
+      type: input
+      locator:
+        strategy: css
+        value: "#new-password"
+      description: >
+        (JA, required) Passwort. NOTE the id is "new-password" while the name is "password".
+        Chrome autofill pre-fills it. Each password field has an eye toggle
+        (button.js-toggle-password-visiblity - the class carries the typo "visiblity").
+      states: [branch-ja]
+
+    - name: ja-passwort-wiederholen
+      type: input
+      locator:
+        strategy: css
+        value: "#repeat-password"
+      description: "(JA, required) Passwort wiederholen. Must equal ja-passwort."
+      states: [branch-ja]
+
+    - name: ja-registrieren-fuer
+      type: checkbox
+      locator:
+        strategy: css
+        value: "#formcontainer-1 input[name='accessfor']"
+      description: >
+        (JA, required - the heading reads "Registrieren für*") Three checkboxes sharing
+        name=accessfor:
+          #accessCustomerArea  value="Website:CustomerArea"  label Partnerbereich
+          #accessWebshop       value="Website:Shop"          label Webshop
+          #accessGGConnect     value="GG:Connect"            label GG+connect
+        GG+connect is offered ONLY on this branch - this is the path by which a shop
+        registration also asks for a GG+connect account.
+      states: [branch-ja]
+
+    - name: ja-registrieren-submit
+      type: link
+      locator:
+        strategy: css
+        value: "a.js-shop-sign-up__submit"
+      description: >
+        (JA) Submit. It is an <a href="#" data-event-fn="submit()">, NOT a button - pressing
+        Enter in a field will not submit, and there is no type=submit anywhere. It carries
+        the modifier class "--disabled" while the form is invalid; absence of that class is
+        the readiness signal.
+      states: [branch-ja, --disabled]
+
+    # --- NEIN branch: prospect (#formcontainer-2) ---
+    - name: nein-anrede
+      type: select
+      locator:
+        strategy: css
+        value: "#unknownSalutationId"
+      description: '(NEIN, required) Anrede. Same numeric values: "null" / "1" Herr / "2" Frau.'
+      states: [branch-nein]
+
+    - name: nein-vorname
+      type: input
+      locator:
+        strategy: css
+        value: "#unknownFirstName"
+      description: "(NEIN, required) Vorname."
+      states: [branch-nein]
+
+    - name: nein-nachname
+      type: input
+      locator:
+        strategy: css
+        value: "#unknownLastName"
+      description: "(NEIN, required) Nachname."
+      states: [branch-nein]
+
+    - name: nein-email
+      type: input
+      locator:
+        strategy: css
+        value: "#unknownEmail"
+      description: "(NEIN, required) E-Mail - the address the Anfrage confirmation should reach."
+      states: [branch-nein]
+
+    - name: nein-telefon
+      type: input
+      locator:
+        strategy: css
+        value: "#unkownTelephone"
+      description: >
+        (NEIN, required) Telefonnummer. MIND THE TYPO - the id and name are "unkownTelephone"
+        (missing the second n), unlike every other field on this branch.
+      states: [branch-nein]
+
+    - name: nein-mobile
+      type: input
+      locator:
+        strategy: css
+        value: "#unknownMobile"
+      description: "(NEIN, optional) Mobile."
+      states: [branch-nein]
+
+    - name: nein-unternehmen
+      type: input
+      locator:
+        strategy: css
+        value: "#unknownCompanyName"
+      description: '(NEIN, required) Unternehmen - first field under the "Firmen Angaben" heading.'
+      states: [branch-nein]
+
+    - name: nein-strasse
+      type: input
+      locator:
+        strategy: css
+        value: "#unkownStreet"
+      description: '(NEIN, required) Strasse. TYPO in the id/name again: "unkownStreet".'
+      states: [branch-nein]
+
+    - name: nein-plz
+      type: input
+      locator:
+        strategy: css
+        value: "#unkownZip"
+      description: '(NEIN, required) PLZ. TYPO in the id/name: "unkownZip".'
+      states: [branch-nein]
+
+    - name: nein-stadt
+      type: input
+      locator:
+        strategy: css
+        value: "#unknownLocation"
+      description: "(NEIN, required) Stadt. name=unknownLocation."
+      states: [branch-nein]
+
+    - name: nein-anfrage-fuer
+      type: checkbox
+      locator:
+        strategy: css
+        value: "#formcontainer-2 input[name='unknownAccessfor']"
+      description: >
+        (NEIN, NOT required) Two checkboxes under the heading "Anfrage für", sharing
+        name=unknownAccessfor:
+          #unknownAccessCustomerArea  value="customerArea"  label Partnerbereich
+          #unknownAccessWebshop       value="webshop"       label Webshop
+        No GG+connect option on this branch, and the values are lowercase - a different
+        vocabulary from the JA branch's "Website:Shop" / "GG:Connect".
+      states: [branch-nein]
+
+    - name: nein-registrieren-submit
+      type: link
+      locator:
+        strategy: css
+        value: "a.js-shop-sign-up-new__submit"
+      description: >
+        (NEIN) Submit - again an <a>, with its own class (…sign-up-NEW…) and the same
+        "--disabled" modifier while invalid. Renders visibly pale/greyed while disabled.
+      states: [branch-nein, --disabled]
+
+    # --- Shared ---
+    - name: field-validation-error
+      type: text
+      locator:
+        strategy: css
+        value: ".field-validation-error"
+      description: >
+        Per-field red message under an invalid field ("Bitte füllen Sie das Feld X aus.").
+        Present and VISIBLE from the moment a form slides in, before any typing - see
+        gotchas.
+
+    - name: cookie-widget
+      type: button
+      locator:
+        strategy: aria-label
+        value: Widget für Cookie-Einstellungen öffnen
+      description: >
+        Cookiebot consent widget, bottom-left. Consent was already stored in this profile;
+        no banner blocked the page during mapping. Do not accept or change consent on the
+        user's behalf.
+
+  gotchas:
+    - >
+      THE FORMS ARE INVISIBLE WHILE A SHOP SESSION EXISTS. Logged in, the two JA/NEIN cards
+      still render and the WEITER links still slide - but the slide comes up EMPTY: every
+      field is in the DOM with offsetParent === null and height 0, so a script "finds" all
+      13 fields and fills nothing a user could see. Precondition: assert the top bar shows
+      the red "Login" button, not "Dein Konto"; if it shows Dein Konto, log out via
+      Dein Konto → ABMELDEN and RELOAD the page (after logout the old slide re-renders only
+      partially - one field - until a reload). Observed 2026-08-05.
+    - >
+      ALL VALIDATION ERRORS ARE ON SCREEN BEFORE ANY INPUT. Sliding a form in immediately
+      paints "Bitte füllen Sie das Feld Kundennummer aus.", "Bitte eine gültige Anrede
+      angeben." etc. under every required field. Red text on this page is therefore NOT
+      evidence of a rejected submit - only the disappearance of a message, or the
+      "--disabled" class dropping off the submit link, tells you a field is accepted.
+    - >
+      BUG WORTH REPORTING (JA branch only): the Vorname/Nachname messages nest one message
+      inside another - "Bitte füllen Sie das Feld Bitte einen gültigen Vornamen angeben.
+      aus." The NEIN branch renders the same fields correctly ("Bitte füllen Sie das Feld
+      Vorname aus."), so the JA template passes a full sentence where a field label is
+      expected.
+    - >
+      CHROME AUTOFILL POISONS THE JA FORM exactly as on dev-connect.ggplus.ch/signup: E-Mail
+      arrives pre-filled with benjamin.behringer@gehriggroup.ch and Passwort with a saved
+      password (both autofill-blue). Clear both explicitly before typing, or the run
+      registers the wrong address.
+    - >
+      BOTH BRANCHES LIVE AT ONE URL. They are Swiper slides (.js-context-slider →
+      .js-slides > #formcontainer-1 / #formcontainer-2) inside the same document, reached by
+      an in-page anchor. The URL never changes, so a branch cannot be deep-linked and a
+      reload always returns to the cards. Scope every locator to the active
+      #formcontainer-N: the two forms have identical labels (Anrede, Vorname, E-Mail …), so
+      an unscoped label locator matches twice and can fill the hidden branch.
+    - >
+      The two branches are DIFFERENT TRANSACTIONS, not a styling variant: JA creates an
+      account (password, Kundennummer, "Registrieren für" incl. GG+connect); NEIN files an
+      Anfrage (company address, no password, "Anfrage für" without GG+connect). Expect
+      different mail from each.
+    - >
+      THE <form> ELEMENT'S id IS A RANDOM UUID REGENERATED ON EVERY PAGE LOAD (e.g.
+      "e467989e-4061-46ef-3299-3b835214027b", different on the next load) and its method is
+      GET back to the same URL - the real submit runs through JS (data-event-fn="submit()").
+      Never use the form id as a locator, and never expect a normal form POST/navigation.
+    - >
+      NEIN-branch ids carry typos - unkownTelephone, unkownStreet, unkownZip (missing "n") -
+      while their siblings use the correct "unknown" prefix. Copy them verbatim; a
+      "corrected" selector silently matches nothing.
+    - >
+      The FR and IT versions are separate paths (/fr/shop/inscription/,
+      /it/shop/registrazione/), and every text locator here is German.
+    - >
+      NOT YET VERIFIED (no submit performed during mapping, 2026-08-05): the success state
+      of either branch, the password policy, whether a duplicate e-mail is rejected, and the
+      subject/sender of the resulting mail. Fill these in on the first end-to-end run.

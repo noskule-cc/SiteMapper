@@ -1,0 +1,207 @@
+page:
+  name: Mail message (detail)
+  url_pattern: /appsuite/#!!&app=io.ox/mail&folder={folderId}
+  purpose: >
+    The opened message, rendered in the right-hand detail column of the SAME route as the
+    list (no per-message URL). This is the ASSERTION surface of a signup test: which
+    address actually received it (An / Delivered-To), the exact Betreff, the body text, and
+    the confirmation link to follow.
+  screenshot: ""
+
+  elements:
+    - name: message-subject
+      type: text
+      locator:
+        strategy: css
+        value: "h1.subject"
+      description: >
+        The exact, untruncated Betreff, as the detail column's heading above the sender
+        block. This - not the list row - is what a Betreff assertion compares against.
+
+    - name: sender-link
+      type: link
+      locator:
+        strategy: css
+        value: ".detail-view-header .from a.halo-link"
+      description: >
+        The "Von:" line. Its text concatenates display name and address
+        ("Von:Galaxus<noreply@galaxus.ch>"); the bare address is in the child span.address
+        ("<noreply@galaxus.ch>"). Identifies the sending system of a templated mail. It is
+        a halo link - clicking opens a contact popup, so read it, don't click it.
+
+    - name: recipient-link
+      type: link
+      locator:
+        strategy: css
+        value: ".detail-view-header .recipients a.person-to"
+      description: >
+        The "An" line. Both its text and its TITLE attribute are the recipient address
+        (benjamin.behringer@sunrise.ch); read_page exposes it as a button whose label is
+        that address. For a multi-address signup test this is the field that shows which
+        address the mail was addressed to - but it is only the header the sender wrote, so
+        for plus-aliases, catch-alls and forwards cross-check Delivered-To in
+        quelldaten-textarea. Also a halo link - read it, don't click it.
+
+    - name: message-date
+      type: text
+      locator:
+        strategy: css
+        value: ".detail-view-header .date"
+      description: >
+        Full send timestamp "DD.MM.YYYY HH:MM" at the right of the header. Unlike the list
+        row, the detail always shows the clock time - use it to prove a mail arrived after
+        the signup was submitted.
+
+    - name: bilder-anzeigen-button
+      type: button
+      locator:
+        strategy: text
+        value: Bilder anzeigen
+      description: >
+        External images are blocked by default ("Externe Bilder wurden gesperrt, um Sie vor
+        potentiellem Spam zu schützen"). Click only if a test asserts on images; text and
+        links render fine without it.
+
+    - name: message-body-frame
+      type: container
+      locator:
+        strategy: css
+        value: "iframe.mail-detail-frame"
+      description: >
+        The HTML body renders inside this iframe. It is SAME-ORIGIN and scriptable -
+        contentDocument.body.innerText gives the body text and
+        contentDocument.querySelectorAll('a') gives every link (12 on the sample mail).
+        This is how a workflow extracts a confirmation URL. The iframe content is invisible
+        to read_page, find and get_page_text (see gotchas).
+
+    - name: antworten-button
+      type: button
+      locator:
+        strategy: text
+        value: Antworten
+      description: >
+        Reply. OUTWARD-FACING - mapped so a workflow can avoid it. Sits immediately left of
+        the other header actions.
+
+    - name: allen-antworten-button
+      type: button
+      locator:
+        strategy: text
+        value: Allen antworten
+      description: Reply-all. Outward-facing - avoid.
+
+    - name: weiterleiten-button
+      type: button
+      locator:
+        strategy: text
+        value: Weiterleiten
+      description: Forward. Outward-facing - avoid.
+
+    - name: loeschen-button
+      type: button
+      locator:
+        strategy: text
+        value: Löschen
+      description: >
+        DESTRUCTIVE. Moves the open message to Papierkorb. It is the FOURTH item in the
+        header action row, directly after Weiterleiten - never click header actions by
+        remembered coordinates.
+
+    - name: weitere-aktionen-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: Weitere Aktionen
+      description: >
+        Hamburger (≡) at the end of the header action row. Menu - Als Spam markieren |
+        Neue E-Mail senden, Zu Termin einladen, Als Verteilerliste speichern | Verschieben,
+        Kopieren, Archivieren | Drucken, Als Datei speichern, Quelldaten anzeigen |
+        Filterregel erstellen | Erinnerung, Zum Portal hinzufügen | Absender zu
+        Blockierliste hinzufügen.
+      children:
+        - Als Spam markieren
+        - Verschieben
+        - Kopieren
+        - Archivieren
+        - Drucken
+        - Als Datei speichern
+        - Quelldaten anzeigen
+        - Filterregel erstellen
+
+    - name: quelldaten-anzeigen
+      type: link
+      locator:
+        strategy: text
+        value: Quelldaten anzeigen
+      description: >
+        Opens the raw-MIME modal (see quelldaten-textarea). The single most useful action
+        on this page for signup verification - it exposes Delivered-To, To, Subject and the
+        untouched body with every link.
+
+    - name: quelldaten-textarea
+      type: text
+      locator:
+        strategy: css
+        value: ".modal.in textarea"
+      description: >
+        Read-only textarea inside the "E-Mail-Quelldaten: <Betreff>" modal, holding the
+        complete raw message (77k chars on the sample mail): Return-Path, Delivered-To,
+        Received, Authentication-Results (spf/dkim/dmarc), Subject, and the
+        quoted-printable body. Its VALUE is not in the accessibility tree and not returned
+        by get_page_text - read it with javascript_tool.
+
+    - name: quelldaten-schliessen
+      type: button
+      locator:
+        strategy: text
+        value: Schließen
+      description: Closes the Quelldaten modal. Always close it - it blocks the list behind.
+
+    - name: als-ungelesen-markieren
+      type: button
+      locator:
+        strategy: aria-label
+        value: Als ungelesen markieren
+      description: >
+        Restores the unread state that opening the message consumed. Use it in teardown
+        whenever a test had to open an unread message in this private mailbox.
+
+  gotchas:
+    - >
+      THE BODY IS IN AN IFRAME AND IS INVISIBLE TO THE READING TOOLS. get_page_text returns
+      only the header block (Von / date / An / action labels) and find reports body text as
+      "not in the accessibility tree" even while it is plainly on screen (both verified
+      2026-08-05). Read the body with javascript_tool against
+      iframe.mail-detail-frame.contentDocument - or fall back to a screenshot. Never
+      conclude a template is empty because get_page_text returned no body.
+    - >
+      Extracting a confirmation link: javascript_tool →
+      [...document.querySelector('iframe.mail-detail-frame').contentDocument
+      .querySelectorAll('a')].map(a => a.href). The iframe is same-origin, so this works
+      without any permission dance.
+    - >
+      Extracting headers / raw body: open Quelldaten anzeigen, then javascript_tool →
+      document.querySelector('.modal.in textarea').value, and regex it
+      (/^Delivered-To:.*$/mi, /^Subject:.*$/mi). Delivered-To is the ground truth for WHICH
+      address the mail was actually delivered to - the visible "An" line is only the header
+      the sender wrote, which differs for plus-aliases, catch-alls and forwards.
+    - >
+      NO PER-MESSAGE URL. Selecting a message leaves the hash unchanged
+      (#!!&app=io.ox/mail&folder=default0/INBOX), so a message cannot be deep-linked or
+      reopened by URL - a later step must re-find it in the list. This is the opposite of
+      outlook-cloud-microsoft, where /mail/inbox/id/{messageId} is stable.
+    - >
+      The detail column only exists in the Vertikal and Horizontal layouts. In Liste or
+      Kompakt (both sticky, both reachable via mail-list.ansicht-button) the message opens
+      elsewhere or not at all - assert the layout before relying on this map.
+    - >
+      Antworten / Allen antworten / Weiterleiten SEND MAIL from a private mailbox, and
+      Löschen sits in the same four-button row. Resolve every header action by its label,
+      never by coordinates, and treat all four as forbidden in read-only runs.
+    - >
+      Rendering the message is a mutation when it was unread: it clears the unread flag and
+      decrements the folder counter. Restore via als-ungelesen-markieren.
+    - >
+      Screenshots of this page can time out ("Page.captureScreenshot timed out after
+      30000ms") while the app is re-rendering - retry once before treating the tab as
+      broken. Seen three times during mapping on 2026-08-05.

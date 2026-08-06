@@ -1,0 +1,38 @@
+project:
+  name: Signup Mail Test
+  description: >
+    Registers a new user on a GG+ front end with a controlled e-mail address and proves the
+    resulting mail actually arrives - at the right address, with the right Betreff, a body
+    whose placeholders are all substituted, and a confirmation link that works.
+
+    THREE REGISTRATION PATHS, three different transactions, expected to produce different
+    mail:
+      1. GG+connect portal      dev-connect.ggplus.ch/signup            - creates a portal user
+      2. Shop, existing customer dev-api.ggplus.ch .../registrierung JA  - creates an account
+                                                                          (can also request GG+connect)
+      3. Shop, prospect          dev-api.ggplus.ch .../registrierung NEIN - files an Anfrage,
+                                                                          no account, no password
+
+    The mailbox is the shared observation point for all three
+    (benjamin.behringer@sunrise.ch, mapped as appsuite-sunrise-ch).
+
+    ⛔ ACCOUNT CREATION IS A HUMAN STEP. Paths 1 and 2 create real accounts. The workflows
+    fill and validate the form and take over again at the mailbox; a person presses the
+    final Registrieren. Path 3 creates no account but does file a real Anfrage on the dev
+    host.
+
+    OPEN QUESTIONS - none of these can be answered without one end-to-end run; resolve them
+    first, then freeze the per-path workflows (see the "NOT YET VERIFIED" gotchas in the
+    page maps):
+      - Does either front end accept a plus-addressed e-mail (x+tag@sunrise.ch), and does
+        Sunrise deliver it? This decides whether "different e-mails" is free or needs real
+        mailboxes.
+      - What Kundennummer is valid on dev? Required by path 1 and path 2, server-validated.
+      - Sender, Betreff and confirmation-link shape of each of the three mails.
+      - Is a duplicate e-mail rejected, and how?
+  sites:
+    - connect-ggplus-ch-dev     # path 1 - portal self-signup
+    - api-ggplus-ch-dev         # paths 2 and 3 - shop registration, JA / NEIN branches
+    - appsuite-sunrise-ch       # the mailbox all three are verified in
+  workflows:
+    - check-signup-mail.yaml    # standalone: find and assert ONE signup mail for a given address

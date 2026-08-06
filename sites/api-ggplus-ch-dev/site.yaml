@@ -1,0 +1,21 @@
+site:
+  name: Gehrig Group Website & Webshop (Dev)
+  base_url: https://dev-api.ggplus.ch
+  description: >
+    Dev instance of the public gehriggroup.ch website incl. the webshop. Mapped for the
+    signup-mail test project - the shop registration is the second front end (next to
+    GG+connect /signup) from which a new user can be registered, and it is the one that can
+    also request a GG+connect account.
+  auth_notes: >
+    Public site; the registration page requires NO login - and in fact only works while
+    LOGGED OUT (see the shop-registrierung gotchas). A shop session is shown as
+    "Dein Konto" in the top bar and ends via Dein Konto → ABMELDEN; logged out the same
+    slot shows a red "Login" button.
+  mapped_at: "2026-08-05"
+  settings:
+    policy:
+      environment: dev
+      safe_to_submit_forms: true   # dev host - forms may be filled and submitted
+  pages:
+    - shop-registrierung.yaml
+  workflows: []

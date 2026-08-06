@@ -1,0 +1,286 @@
+page:
+  name: Mail list (Posteingang)
+  url_pattern: /appsuite/#!!&app=io.ox/mail&folder={folderId}
+  purpose: >
+    Folder message list, mapped against Posteingang (folder id default0/INBOX). This is the
+    LOCATING surface for a signup test: refresh, search for the expected Betreff or sender,
+    read the row metadata, then open the message (mail-message) to assert body and links.
+  screenshot: ""
+
+  elements:
+    - name: message-list
+      type: container
+      locator:
+        strategy: aria-label
+        value: Listenansicht
+      description: >
+        The list container, role=listbox. Each message (or conversation) is a direct
+        role=option child. Only ~10 rows are in the DOM at a time - the list virtualises,
+        so scroll before concluding a message is absent.
+
+    - name: message-row
+      type: container
+      locator:
+        strategy: role
+        value: option
+      description: >
+        One message/conversation row. Its accessible name is well-formed here -
+        "<Sender>, <Subject>, <DD.MM.YYYY>." (e.g. "Galaxus, Dein Produkt ist auf dem Weg
+        zu dir, 04.08.2026.") - so unlike Outlook it CAN be matched against, though the
+        child nodes below are still the exact values.
+
+    - name: row-sender-email
+      type: text
+      locator:
+        strategy: css
+        value: "[role='option'] .from"
+      description: >
+        Sender cell. The full SMTP address lives in its TITLE attribute
+        (<div class="from" title="noreply@galaxus.ch">) while the visible text is only the
+        display name, in a nested span.person ("Galaxus"). read_page surfaces the address
+        as the node's accessible name. Use it to identify which system sent a mail.
+
+    - name: row-subject
+      type: text
+      locator:
+        strategy: css
+        value: "[role='option'] .subject"
+      description: >
+        The subject as its own node. Visually truncated to the column width; the node's
+        text is the full subject, but for an exact Betreff assertion prefer
+        mail-message.message-subject.
+
+    - name: row-date
+      type: text
+      locator:
+        strategy: css
+        value: "[role='option'] .date"
+      description: >
+        RELATIVE date label - "Gestern" for yesterday, "DD.MM.YYYY" for older. The exact
+        date lives in the row's accessible name; a clock TIME is only rendered when the
+        Ansicht option "Datum und Uhrzeit" is enabled (it is OFF by default here). Turn it
+        on when a test has to prove a mail arrived minutes ago.
+
+    - name: row-preview
+      type: text
+      locator:
+        strategy: css
+        value: "[role='option'] .text-preview"
+      description: >
+        First ~100 chars of the body, shown when the Ansicht option "Textvorschau" is on
+        (it is). Enough to spot a template placeholder that failed to substitute without
+        opening the message.
+
+    - name: search-input
+      type: input
+      locator:
+        strategy: text
+        value: Suchen...
+      description: >
+        Top-left search box (type="search"). Typing opens a suggestion dropdown offering
+        the bare term plus scoped variants - "<term> in subject", "<term> in mail text",
+        "<term> in attachment file names" - and matching contacts. Picking one turns it
+        into a removable token chip in the box. This is the deterministic way to find a
+        registration mail.
+
+    - name: search-scope-dropdown
+      type: select
+      locator:
+        strategy: text
+        value: Posteingang
+      description: >
+        Folder scope for the search, to the RIGHT of the search box; appears only while a
+        search is active. Defaults to the current folder (Posteingang) - a mail that landed
+        in Spam is NOT found until the scope is changed via "Weitere…".
+
+    - name: search-clear
+      type: button
+      locator:
+        strategy: aria-label
+        value: Suche abbrechen
+      description: >
+        Clears the whole query (the round × at the right end of the search box) and returns
+        the list to the plain folder view.
+
+    - name: search-empty-state
+      type: text
+      locator:
+        strategy: text
+        value: Keine passenden Objekte gefunden.
+      description: >
+        Shown in the list column when a search matched nothing. The detail column then
+        reads "Keine Nachricht markiert". Together they are the clean "mail did not arrive"
+        assertion.
+
+    - name: refresh-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: Aktualisieren
+      description: >
+        Manual mail fetch (circular-arrows icon, top right). The automatic interval is
+        5 MINUTES, so a freshly triggered registration mail will not show up on its own -
+        always click this (and re-check) before declaring a mail missing.
+
+    - name: folder-posteingang
+      type: link
+      locator:
+        strategy: text
+        value: Posteingang
+      description: >
+        Inbox in the left folder tree (folder id default0/INBOX). The tree node's
+        accessible name carries the live counts - "Posteingang, 1 ungelesen, 150 gesamt" -
+        which is a cheap before/after signal that a new mail arrived.
+
+    - name: folder-spam
+      type: link
+      locator:
+        strategy: text
+        value: Spam
+      description: >
+        Junk folder. NOTE there are TWO folders named Spam in the tree - one under the
+        personal folders and one under the external "sunrise.ch" account subtree. A
+        transactional signup mail that fails SPF/DKIM lands in one of them; check both
+        before reporting a mail as never delivered.
+      states: [capability-dependent]
+
+    - name: folder-papierkorb
+      type: link
+      locator:
+        strategy: text
+        value: Papierkorb
+      description: Trash. Deleted mail is recoverable from here - it is not a hard delete.
+
+    - name: sortieren-button
+      type: button
+      locator:
+        strategy: text
+        value: Sortieren
+      description: >
+        Sort menu above the list - Datum / Von / Ungelesen / Größe / Betreff / Farbe, plus
+        Aufsteigend / Absteigend and a "Konversationen" checkbox that toggles threading.
+        All of it is STICKY per user (see gotchas).
+
+    - name: alle-button
+      type: button
+      locator:
+        strategy: text
+        value: Alle
+      description: >
+        Bulk actions for the whole folder - "Alle Nachrichten als gelesen markieren",
+        "Alle Nachrichten verschieben", "Alte Nachrichten archivieren", "Alle Nachrichten
+        löschen". DESTRUCTIVE, no workflow should ever open this menu.
+
+    - name: ansicht-button
+      type: button
+      locator:
+        strategy: text
+        value: Ansicht
+      description: >
+        View menu (top right). Layout - Vertikal (current) / Kompakt / Horizontal / Liste.
+        Optionen - Ordneransicht ✓, Kontrollfelder ✓, Textvorschau ✓, Kontaktbilder,
+        Datum und Uhrzeit, Nachrichtengröße. Also holds Abwesenheitsbenachrichtigung and
+        Statistiken. Every setting here is sticky per user.
+      children:
+        - Vertikal
+        - Kompakt
+        - Horizontal
+        - Liste
+        - Ordneransicht
+        - Kontrollfelder
+        - Textvorschau
+        - Kontaktbilder
+        - Datum und Uhrzeit
+        - Nachrichtengröße
+
+    - name: verfassen-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: Neue E-Mail verfassen
+      description: >
+        Opens the compose window. Mapped ONLY so a workflow can recognise and avoid it -
+        sending mail from this private mailbox is out of scope (site policy
+        safe_to_submit_forms: false).
+
+    - name: toolbar-loeschen
+      type: button
+      locator:
+        strategy: aria-label
+        value: Löschen
+      description: >
+        Deletes the selected message(s) (moves to Papierkorb). Sits in the same top toolbar
+        as the harmless actions - never reach it by remembered coordinates.
+
+    - name: mein-konto-button
+      type: button
+      locator:
+        strategy: aria-label
+        value: Mein Konto
+      description: >
+        Avatar menu, top right. Its menu shows the signed-in identity (name +
+        benjamin.behringer@sunrise.ch) - use it to assert the run is against the expected
+        mailbox before trusting a "mail not found" result.
+
+    - name: abwesenheit-alert
+      type: text
+      locator:
+        strategy: text
+        value: Ihre Abwesenheitsbenachrichtigung ist aktiv
+      description: >
+        Standing banner above the list - an out-of-office AUTO-REPLY is switched on for
+        this mailbox (observed 2026-08-05).
+
+    - name: weiterleitung-alert
+      type: text
+      locator:
+        strategy: text
+        value: Automatische Weiterleitung ist aktiv
+      description: >
+        Standing banner - AUTO-FORWARDING is switched on for this mailbox (observed
+        2026-08-05). Relevant to any test that treats this inbox as the only recipient.
+
+  gotchas:
+    - >
+      NEW MAIL DOES NOT APPEAR BY ITSELF FOR UP TO 5 MINUTES. The client's auto-refresh
+      interval is 5 minutes (stated on the Aktualisieren tooltip). Every "did the signup
+      mail arrive?" check must click refresh-button and poll, or it will report a false
+      negative seconds after the signup.
+    - >
+      get_page_text DOES NOT RETURN THE MESSAGE LIST. It anchors on the <article> element
+      and returns only the currently open message's HEADER block (sender, date, An, action
+      labels) - not one list row, and not the body. Use read_page on message-list for rows.
+    - >
+      SEARCH IS NOT IN THE URL. Running a search leaves the hash at
+      #!!&app=io.ox/mail&folder=default0/INBOX, so a query cannot be deep-linked or
+      restored after a reload - it must be re-entered by driving the search box.
+    - >
+      Pressing Enter in the search box RELOADED THE WHOLE APP and discarded the typed query
+      (observed 2026-08-05, ~8s to boot again). Type the term, then click one of the
+      suggestion entries in the dropdown (e.g. "<term> in subject") instead of pressing
+      Enter.
+    - >
+      Search scope defaults to the CURRENT FOLDER, not the whole mailbox. Widen it via
+      search-scope-dropdown → "Weitere…" before concluding a mail was never delivered -
+      transactional mail from a dev host is a plausible Spam candidate.
+    - >
+      Layout, sort order, threading ("Konversationen") and the Ansicht options are STICKY
+      per user across sessions. A run inherits whatever the last session left: in the
+      Liste/Kompakt layouts the detail column is not on screen at all, and with
+      Konversationen on, a new mail can be folded into an existing thread instead of
+      getting its own row. Assert the layout in setup.
+    - >
+      Opening a row marks an UNREAD message as read - a real mutation of a private mailbox.
+      Restore it with mail-message.als-ungelesen-markieren in teardown when the test had to
+      open an unread mail.
+    - >
+      The list VIRTUALISES: roughly 10 rows exist in the DOM regardless of the 150 messages
+      in the folder. "Not in read_page output" only means "not in the rendered window" -
+      search, or scroll the list, before reporting absence.
+    - >
+      Two folders are named "Spam" (personal + the "sunrise.ch" account subtree) and the
+      row-level counters live in the tree item's accessible name, not in a separate node.
+    - >
+      No data-testid anywhere in this app (OX App Suite). Locators are ARIA names, visible
+      text, or OX's own CSS classes (.subject, .date, .text-preview) - re-derive the CSS
+      ones with read_page if a run cannot find them.

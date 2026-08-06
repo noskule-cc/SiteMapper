@@ -1,0 +1,32 @@
+site:
+  name: Sunrise Mail (OX App Suite)
+  base_url: https://appsuite.sunrise.ch/appsuite/
+  description: >
+    Webmail (Open-Xchange App Suite) for the private mailbox benjamin.behringer@sunrise.ch,
+    mapped as the RECEIVING END of signup tests: register on a GG+ front end with a given
+    address, then come here to prove the registration / confirmation mail arrived, at the
+    right address, with the right Betreff, body and confirmation link. Read-oriented -
+    composing, replying and forwarding are mapped only so a workflow can stay away from them.
+  auth_notes: >
+    Sunrise webmail session; the user must already be signed in in Chrome - Claude never
+    enters credentials. UI language is German (Posteingang, Entwürfe, Papierkorb) while a
+    few folder names are English (Sent, Spam). Signed-in identity is shown under
+    "Mein Konto".
+  mapped_at: "2026-08-05"
+  pages:
+    - mail-list.yaml
+    - mail-message.yaml
+  workflows: []
+
+  # Private production mailbox. On this site "submitting a form" means SENDING MAIL to a
+  # third party - irreversible and outward-facing. Verfassen / Antworten / Weiterleiten
+  # are mapped only to be avoided; deleting and marking-as-spam mutate the mailbox too.
+  settings:
+    policy:
+      environment: production
+      safe_to_submit_forms: false
+
+  # Run outputs (extracted subjects, bodies, raw MIME) are private correspondence and must
+  # not enter git history. sites/appsuite-sunrise-ch/results/ is git-ignored; keep the
+  # assertions in the workflow and the evidence local. Same rule as
+  # sites/outlook-cloud-microsoft/results/. See docs/KNOWLEDGE_PLACEMENT.md.
