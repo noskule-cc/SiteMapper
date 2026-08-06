@@ -3,6 +3,9 @@ workflow:
   description: "Ask what the issue is about, search for similar existing issues, present matches or create a new one"
   site: "sitemapper-demo"
 
+  mode: agentic           # the `verify` step below judges whether existing issues
+                          # are similar enough and asks the user before creating
+
   parameters:
     - name: "topic"
       type: text

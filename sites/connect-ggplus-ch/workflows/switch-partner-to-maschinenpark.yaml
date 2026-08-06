@@ -1,7 +1,10 @@
 workflow:
   name: switch-partner-to-maschinenpark
   description: Switch to a partner account and navigate to their Maschinenpark (machine list)
-  site: iot-portal
+  site: connect-ggplus-ch
+
+  mode: deterministic     # every step is navigate/click/input; the row is selected
+                          # by value-scoped text match, so no judgement is needed
 
   parameters:
     - name: partner_name
