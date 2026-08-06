@@ -40,6 +40,8 @@ lowercase = this project's own content.
 ## Tooling
 
 - [scripts/lint.py](../scripts/lint.py) — validate all repo YAML parses
+- [scripts/inventory.py](../scripts/inventory.py) — generate `inventory.md`; `--check` fails when it is stale
+- [inventory.md](inventory.md) — **generated**: every site, project and workflow
 
 ## Guidelines
 

@@ -17,6 +17,7 @@ Copilot. Host-specific tool names live in one file only
 | Running a workflow                      | `docs/skills/run-workflow.md`           |
 | Running a UI **test** workflow          | `docs/skills/test.md`                   |
 | Listing available workflows             | `docs/skills/list-workflows.md`         |
+| Asking what exists in the repo          | `docs/inventory.md` (generated)         |
 | Checking a map for drift                | `docs/skills/verify-map.md`             |
 | Looking up which tool does what         | `docs/HOST_BINDINGS.md`                 |
 | Writing a new workflow YAML             | `schema/workflow.yaml` (+ a sibling `<workflow>.md` with a Mermaid flowchart — see `USAGE.md`) |
@@ -30,6 +31,7 @@ Copilot. Host-specific tool names live in one file only
 | Opening an issue or recording a decision| `docs/issue-tracker.md`                 |
 | About to save something to agent memory | `docs/KNOWLEDGE_PLACEMENT.md` **first** |
 | Validating YAML before commit           | `scripts/lint.py`                       |
+| Adding/removing a site or workflow      | re-run `scripts/inventory.py`           |
 
 ## Available Skills
 
