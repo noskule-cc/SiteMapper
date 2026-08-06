@@ -27,6 +27,8 @@ Copilot. Host-specific tool names live in one file only
 | Being called by another system          | `docs/INTERFACE.md`                     |
 | Understanding the project               | `PRD.md`                                |
 | Writing or updating documentation       | `docs/INFORMATION_MINIMALISM.md`        |
+| Deciding script vs. LLM for a task      | `docs/CODE_OVER_LLM.md`                 |
+| Creating or invoking a sub-agent        | `docs/subagents/README.md`              |
 | Deciding **where** a fact belongs       | `docs/KNOWLEDGE_PLACEMENT.md`           |
 | Opening an issue or recording a decision| `docs/issue-tracker.md`                 |
 | About to save something to agent memory | `docs/KNOWLEDGE_PLACEMENT.md` **first** |
@@ -57,6 +59,16 @@ doc and follow it directly.
 - **Prefer a script over the browser.** Where data is reachable from a site's API, `action: script` is faster, headless, host-neutral, and does not break when the UI changes.
 - **The repo is the source of truth; agent memory is a staging area.** Project-true facts live in the repo (page `gotchas`, `scripts/README.md`, `settings:`, `guardrails.md`); machine- or person-specific facts live in the host agent's own memory store. Never both — when they disagree, the repo wins. See `docs/KNOWLEDGE_PLACEMENT.md`.
 - **Open decisions are GitHub issues**, not files in this repo. See `docs/issue-tracker.md`.
+
+## Sub-Agents
+
+Specialised instruction sets for self-contained work, in `docs/subagents/` with
+thin host wrappers (`.claude/agents/`). A sub-agent is an execution strategy,
+never part of the contract — see [subagents/README.md](subagents/README.md).
+
+| Agent | Use when |
+|-------|----------|
+| `workflow-companion` | A workflow YAML has no sibling `.md` |
 
 ## Host Bindings
 

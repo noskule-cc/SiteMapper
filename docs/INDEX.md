@@ -20,8 +20,9 @@ lowercase = this project's own content.
 - [INTERFACE.md](INTERFACE.md) — how a host invokes SiteMapper and consumes its results; the bindings model
 - [HOST_BINDINGS.md](HOST_BINDINGS.md) — capability → tool mapping per host
 
-## Skills
+## Skills and Sub-Agents
 
+- [subagents/README.md](subagents/README.md) — skills vs. sub-agents; how to add one
 - [map-site.md](skills/map-site.md) — discovery session for mapping a site
 - [run-workflow.md](skills/run-workflow.md) — execute a named workflow
 - [test.md](skills/test.md) — execute a deterministic test workflow, emit a result
@@ -45,8 +46,9 @@ lowercase = this project's own content.
 
 ## Guidelines
 
-- [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — when and what to document
+- [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — whether to document at all
 - [KNOWLEDGE_PLACEMENT.md](KNOWLEDGE_PLACEMENT.md) — where a fact belongs: repo vs. agent memory
+- [CODE_OVER_LLM.md](CODE_OVER_LLM.md) — who executes: prefer a script over an LLM
 - [GUARDRAILS.template.md](GUARDRAILS.template.md) — framework template behind `guardrails.md`
 - [issue-tracker.md](issue-tracker.md) — issue conventions; where open decisions live
 
