@@ -2,7 +2,7 @@ page:
   name: Dashboard
   url_pattern: /dashboard
   purpose: Main landing page with navigation to all site sections
-  screenshot: screenshots/dashboard.png
+  screenshot: ""              # TODO: capture — needs a browser session on the live site
 
   elements:
     # Top Navigation

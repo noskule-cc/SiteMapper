@@ -38,5 +38,10 @@ page:
                               #   render on records/devices that support that feature)
       children: []            # Optional: nested sub-elements (e.g., submenu items under a nav link)
 
+  settings: {}                # Optional page-scope settings block — most specific
+                              # scope, overrides site.yaml and config.yaml. Usually
+                              # `form_defaults` (field prefills keyed by element
+                              # name). See schema/settings.yaml.
+
   gotchas:
     - ""                      # Non-obvious behavior (e.g., "Save stays active when form invalid")

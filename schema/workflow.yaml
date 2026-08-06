@@ -42,6 +42,33 @@ workflow:
                               #   fixtures:
                               #     location_id: "10000"
                               #     location_name: "Gehrig Group AG test"
+                              #
+                              # ENVIRONMENT-KEYED FIXTURES — when ONE workflow must run
+                              # against several environments of the same app, key the
+                              # fixtures by the value of a `select` parameter and add a
+                              # `common:` block for the shared ones. A $name resolves
+                              # against fixtures.<param value> first, then falls back to
+                              # fixtures.common:
+                              #   parameters:
+                              #     - name: environment
+                              #       type: select
+                              #       options: [stg, prod]
+                              #   fixtures:
+                              #     common: { join_key: "353141283322738" }
+                              #     stg:    { connect_site: my-app-stg, device_id: "1eb2…" }
+                              #     prod:   { connect_site: my-app,     device_id: "9f8a…" }
+                              # Steps then name a site ROLE (site: $connect_site) instead
+                              # of a literal site, so no step is environment-specific.
+                              # Worked example:
+                              #   projects/brita-iq-sync/workflows/kartusche-wechseln-test.yaml
+                              #
+                              # Use this only when the environments are mapped as
+                              # SEPARATE sites — the normal case, since they rarely carry
+                              # the same feature set, and each needs its own page maps.
+                              # Do NOT parameterize the URL itself: base_url belongs to
+                              # site.yaml and steps navigate with PATHS ONLY, so a
+                              # workflow is already URL-neutral. Confirm the paths really
+                              # are identical across environments before relying on it.
 
   setup:                      # Precondition steps run BEFORE `steps` to put the page
                               # into a known state - navigate, reset sticky UI state
@@ -62,7 +89,12 @@ workflow:
                               #   (see `script` below). Prefer this whenever the data is
                               #   reachable from the site's API - it is faster, headless and
                               #   does not break when the UI changes.
-      site: ""                # Which site this step runs on (required for cross-site workflows)
+      site: ""                # Which site this step runs on (required for cross-site
+                              #   workflows). May be a literal site name OR a "$param" /
+                              #   "$fixture" reference that resolves to one — that is how
+                              #   an environment-parameterized workflow keeps its steps
+                              #   environment-neutral (see fixtures above). The resolved
+                              #   value must name a directory under sites/.
       page: ""                # Page name (references a page YAML file)
       element: ""             # Element name from the page map
       script: ""              # For action: script — a script in sites/<site>/scripts/
