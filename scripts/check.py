@@ -91,7 +91,7 @@ def check_yaml():
     """Every YAML file parses."""
     fails = []
     for f in files(["config.yaml", "schema/*.yaml", "sites/**/*.yaml",
-                    "projects/**/*.yaml"]):
+                    "projects/**/*.yaml", "data/**/*.yaml"]):
         try:
             load(f)
         except yaml.YAMLError as e:

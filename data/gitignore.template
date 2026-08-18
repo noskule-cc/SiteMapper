@@ -1,0 +1,32 @@
+# Rename to .gitignore in your map repository.
+
+__pycache__/
+*.pyc
+.idea/
+.claude/settings.local.json
+
+# draw.io editor backups (.$<name>.drawio.bkp)
+.$*.bkp
+
+# ---------------------------------------------------------------------------
+# RUN OUTPUTS — ALL OF THEM
+# ---------------------------------------------------------------------------
+# Even in a private repository this is worth keeping deliberate. A run output is
+# the most sensitive thing here and the least reviewed: nobody reads a 40 MB
+# device log before committing it, and git keeps it forever in every clone.
+#
+# Commit a run when it is EVIDENCE someone will come back to — the record behind
+# a published number, a reproduction of a bug. Force that to be a decision by
+# excluding the class and adding the exception, rather than the reverse.
+#
+# Blanket, and with no negations: git cannot re-include a file whose parent
+# directory is excluded, so "results/" plus "!results/README.md" silently drops
+# the README. Layout docs belong beside the workflow instead.
+results/
+**/results/
+
+# Oversized raw logs, if you keep any results at all. A device that is entirely
+# off the network repeats one failure with a full stack trace for the whole
+# window — tens of MB with a few thousand unique lines. Commit the sibling
+# <id>.md summary; leave the raw file local.
+# projects/<project>/results/<run>/logs/<id>.log

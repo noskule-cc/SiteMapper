@@ -20,16 +20,20 @@ tracker mapped end to end so the format has something concrete to point at.
 **Your maps do not belong here.** A map of a real application describes somebody's
 internal systems: page structure, API endpoints, account identifiers, the gotchas
 that only show up in production. Keep them in your own repository, private,
-alongside the run outputs they produce. The layout mirrors this one, so nothing
-about the format changes:
+alongside the run outputs they produce.
 
+[`data/`](data/) is that repository as a copyable skeleton — README, a
+`config.yaml` to fill in, a guardrails starter, and a `.gitignore` that excludes
+run outputs as a class:
+
+```bash
+cp -r data ../my-maps && cd ../my-maps
+mv gitignore.template .gitignore
+git init -b main && git add -A && git commit -m "Initial map repository"
+gh repo create <owner>/my-maps --private --source . --push
 ```
-your-maps/                     (private)
-  config.yaml                  settings.contact / settings.mailboxes
-  docs/guardrails.md           your standing rules — see docs/GUARDRAILS.template.md
-  sites/<site>/                site.yaml, pages/, workflows/, scripts/, results/
-  projects/<project>/          cross-site workflows and their results
-```
+
+The layout mirrors this repo, so nothing about the format changes.
 
 Two things follow from that split, and both are in the schema rather than left to
 discipline. Identity values — a contact, a mailbox — are referenced by key from a

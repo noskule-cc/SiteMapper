@@ -7,6 +7,7 @@ lowercase = this project's own content.
 
 - [AGENTS.md](AGENTS.md) — start here (situational references, available skills)
 - [GUARDRAILS.template.md](GUARDRAILS.template.md) — how to write the standing rules a deployment follows
+- [../data/](../data/) — copyable skeleton for your own private map repository
 
 ## Getting Started
 

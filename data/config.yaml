@@ -1,0 +1,36 @@
+# Private half of the global configuration. Template — fill in and keep private.
+#
+# The framework repo's own config.yaml carries settings.policy, which is not
+# identifying and ships with the tool. This file carries the values that name a
+# real person, and is deep-merged over it at the SAME global scope:
+#
+#     my-maps/config.yaml       (this file, private)   contact, mailboxes
+#       └─ SiteMapper/config.yaml                      policy
+#            └─ sites/<site>/site.yaml
+#                 └─ sites/<site>/pages/<page>.yaml
+#
+# See SiteMapper/schema/settings.yaml for the full key definition.
+
+settings:
+
+  # Typed into live forms. A workflow that needs an identity field and finds
+  # nothing here must STOP rather than invent a person — that is the intended
+  # failure when this repo is not cloned beside the framework.
+  contact:
+    name: ""
+    salutation: ""
+    email: ""
+    phone: ""            # E.164, e.g. "+41791234567"
+
+  # Named mailbox identities. Maps and workflows reference these BY KEY —
+  # `mailboxes.customer_a` — and never spell an address out. Key them however
+  # suits the deployment.
+  #
+  # Provider facts are not identity and can stay in the public map: which host
+  # answers, what password it wants, what its spam folder is called. Only the
+  # address is withheld. Resolve it strictly, with no fallback — a login against
+  # a guessed address either fails confusingly or succeeds against a mailbox the
+  # run was never meant to touch.
+  mailboxes: {}
+    # customer_a: ""
+    # internal: ""
