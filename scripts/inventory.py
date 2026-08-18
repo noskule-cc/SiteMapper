@@ -48,7 +48,7 @@ def oneline(s, limit=110):
 # NO RUN HISTORY IS COLLECTED HERE, DELIBERATELY.
 #
 # Both views used to carry a "Last run" column and links to each run, read from
-# <owner>/results/. Run outputs now live in the private SiteMapper-data repo, and
+# <owner>/results/. Run outputs live in a deployment's private map repo, and
 # collecting them again would be wrong in both directions: on a clean clone every
 # workflow reads "never run", and on a machine with the private repo mounted the
 # generated files fill up with run dates and paths that then get committed HERE.

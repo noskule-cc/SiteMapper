@@ -4,7 +4,7 @@
 # The same `settings:` block may appear at three scopes. Lower (more specific)
 # scopes override higher ones, deep-merged per key:
 #
-#     global  (SiteMapper-data/config.yaml, private — contact only)
+#     global  (<your-maps>/config.yaml, private — contact only)
 #       └─ global  (config.yaml at repo root — policy)
 #            └─ site   (sites/<site>/site.yaml)
 #                 └─ page  (sites/<site>/pages/<page>.yaml)
@@ -22,8 +22,9 @@ settings:
     # Any contact field may be overridden at site or page level.
     #
     # ⛔ REAL VALUES DO NOT BELONG IN THIS REPOSITORY - it is public, and these
-    # are a real person's identity. They live in the private SiteMapper-data
-    # repo's config.yaml. The examples above are deliberately fictitious.
+    # are a real person's identity. They live in your own private map
+    # repository's config.yaml — see data/README.md. The examples above are
+    # deliberately fictitious.
 
   mailboxes: {}               # Named mailbox identities, keyed however the deployment
                               # likes, e.g.:

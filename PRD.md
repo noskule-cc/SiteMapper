@@ -149,16 +149,17 @@ Reusable configuration — contact/identity data, agent behavior flags, and form
 The same `settings:` block can appear at three levels, deep-merged per key:
 
 ```
-global  (SiteMapper-data/config.yaml, private — contact)
+global  (<your-maps>/config.yaml, private — contact)
   └─ global  (config.yaml at repo root — policy)
        └─ site   (sites/<site>/site.yaml)
             └─ page  (sites/<site>/pages/<page>.yaml)
 ```
 
 `contact` is split out because this repository is public and those values are a
-real person's identity. It lives in the private **SiteMapper-data** repo and is
+real person's identity. It lives in your own private map repository and is
 merged in at global scope; without that repo cloned beside this one, a workflow
 that needs an identity field finds nothing and stops rather than inventing one.
+See [data/README.md](data/README.md).
 
 A page that overrides `settings.contact.email` still inherits `contact.name` and `contact.phone` from the site or global scope.
 
@@ -173,7 +174,7 @@ A page that overrides `settings.contact.email` still inherits `contact.name` and
 ### Example
 
 ```yaml
-# SiteMapper-data/config.yaml (global, PRIVATE — see below)
+# <your-maps>/config.yaml (global, PRIVATE — see below)
 settings:
   contact:
     name: Erika Mustermann

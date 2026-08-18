@@ -436,7 +436,7 @@ def proc_workflow(w, show_owner=False):
     if w["calls"]:
         links.append("calls " + ", ".join(f"<code>{e(c)}</code>" for c in w["calls"]))
     # No run history here — see the note in inventory.py. Run outputs live in the
-    # private SiteMapper-data repo, so linking them from a public page would either
+    # deployment's private map repo, so linking them from here would either
     # dangle or publish the run dates it was meant to keep out.
 
     search = " ".join([w["name"], w["owner"], w["mode"], w["purpose"]] + w["params"]).lower()
