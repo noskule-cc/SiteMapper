@@ -1,0 +1,47 @@
+# Schema: Page Map
+# Each page in a site gets one YAML file describing its purpose, elements, and gotchas.
+#
+# Dynamic URLs & instances:
+#   Map the page TEMPLATE, not a specific record. When a URL embeds a record id,
+#   write it as a {placeholder} in url_pattern (e.g. /geraete/geraet/{deviceId}).
+#   One file covers every instance of that page type - never one file per record.
+#   Reach a specific instance at runtime by navigating from a list using a stable
+#   semantic key (serial number, name), or by passing the id as a workflow
+#   parameter / captured variable. Treat opaque ids (UUIDs) as runtime data, not
+#   as map identity.
+#
+# Structural variants:
+#   When the same url_pattern renders different elements depending on the record's
+#   type/capabilities (e.g. a coffee machine vs different dishwasher models that
+#   each expose a different set of tabs), keep ONE page file and flag the
+#   conditional elements with states: [capability-dependent]. Add a gotcha (and,
+#   where helpful, a matrix) describing which records show which elements. Do not
+#   assume an element is present just because it is mapped - capability-dependent
+#   elements are absent on devices that don't support them.
+
+page:
+  name: ""                    # Human-readable page name
+  url_pattern: ""             # URL pattern; use {placeholders} for dynamic ids (e.g. "/issues/{id}")
+  purpose: ""                 # What this page is for
+  screenshot: ""              # Relative path to reference screenshot
+
+  elements:
+    - name: ""                # Semantic name for the element
+      type: ""                # button | input | link | select | checkbox | table | text | container
+      locator:
+        strategy: ""          # text | aria-label | role | data-testid | css
+        value: ""             # The locator value
+      description: ""         # What this element does
+      states: []              # Optional: possible states (e.g. [enabled, disabled, hidden])
+                              #   or variant flags marking when the element appears
+                              #   (e.g. [capability-dependent] for elements that only
+                              #   render on records/devices that support that feature)
+      children: []            # Optional: nested sub-elements (e.g., submenu items under a nav link)
+
+  settings: {}                # Optional page-scope settings block — most specific
+                              # scope, overrides site.yaml and config.yaml. Usually
+                              # `form_defaults` (field prefills keyed by element
+                              # name). See schema/settings.yaml.
+
+  gotchas:
+    - ""                      # Non-obvious behavior (e.g., "Save stays active when form invalid")

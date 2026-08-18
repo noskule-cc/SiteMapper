@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SiteMapper</title>
+<style>:root {
+  --bg: #f6f7f9; --panel: #ffffff; --ink: #16181d; --muted: #5d6473;
+  --line: #e2e5ea; --accent: #2563eb; --chip: #eef1f6;
+  /* Ink for text sitting ON the accent — white over the light theme's deep
+     blue, but the dark theme's accent is pale, so it flips to near-black. */
+  --on-accent: #ffffff;
+  --agentic: #6d28d9; --deterministic: #0f766e; --warn: #b45309;
+  --prod-bg: #fee2e2; --prod-fg: #991b1b;
+  --staging-bg: #fef3c7; --staging-fg: #92400e;
+  --dev-bg: #dcfce7; --dev-fg: #166534;
+  --h0: #2563eb;
+  --h1: #c2410c;
+  --h2: #047857;
+  --h3: #7e22ce;
+  --h4: #be123c;
+  --h5: #0369a1;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14161a; --panel: #1c1f25; --ink: #e7e9ee; --muted: #99a1b0;
+  --line: #2b3038; --accent: #7aa2f7; --chip: #262b33;
+  --on-accent: #10131a;
+  --agentic: #a78bfa; --deterministic: #2dd4bf; --warn: #fbbf24;
+  --prod-bg: #3f1d1d; --prod-fg: #fca5a5;
+  --staging-bg: #3d2f10; --staging-fg: #fcd34d;
+  --dev-bg: #12331f; --dev-fg: #86efac;
+  --h0: #60a5fa;
+  --h1: #fb923c;
+  --h2: #34d399;
+  --h3: #c084fc;
+  --h4: #fb7185;
+  --h5: #38bdf8;
+} }
+:root[data-theme="dark"] {
+  --bg: #14161a; --panel: #1c1f25; --ink: #e7e9ee; --muted: #99a1b0;
+  --line: #2b3038; --accent: #7aa2f7; --chip: #262b33;
+  --on-accent: #10131a;
+  --agentic: #a78bfa; --deterministic: #2dd4bf; --warn: #fbbf24;
+  --prod-bg: #3f1d1d; --prod-fg: #fca5a5;
+  --staging-bg: #3d2f10; --staging-fg: #fcd34d;
+  --dev-bg: #12331f; --dev-fg: #86efac;
+  --h0: #60a5fa;
+  --h1: #fb923c;
+  --h2: #34d399;
+  --h3: #c084fc;
+  --h4: #fb7185;
+  --h5: #38bdf8;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 15px/1.55 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+code, .mono, .name { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px 64px; }
+
+header.top { border-bottom: 1px solid var(--line); background: var(--panel); }
+header.top .wrap { padding-top: 26px; padding-bottom: 0; }
+h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
+.counts { display: flex; flex-wrap: wrap; gap: 20px; margin: 0 0 18px; }
+.counts div { line-height: 1.2; }
+.counts b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+.counts span { color: var(--muted); font-size: 12px; text-transform: uppercase;
+  letter-spacing: .06em; }
+
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+  padding-bottom: 16px; }
+#q {
+  flex: 1 1 260px; min-width: 200px; padding: 9px 12px; font: inherit;
+  background: var(--bg); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px;
+}
+#q:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.chips-label { color: var(--muted); font-size: 11px; text-transform: uppercase;
+  letter-spacing: .07em; margin-right: 2px; }
+.chip {
+  padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  background: var(--chip); color: var(--ink);
+  border: 1px solid transparent; border-radius: 999px;
+}
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.shown { color: var(--muted); font-size: 13px; margin-left: auto; }
+
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--muted); margin: 40px 0 14px; font-weight: 600; }
+
+.map { background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 8px 12px 12px; overflow-x: auto; }
+.map svg { display: block; min-width: 680px; }
+.map .n-label { font: 12.5px ui-monospace, Consolas, monospace; }
+.map .n-meta { font: 11px ui-sans-serif, sans-serif; fill: var(--muted); }
+.map g.node:hover .box { stroke-width: 2px; }
+.map .edge { fill: none; stroke-width: 1.6px; opacity: .55; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; padding: 10px 2px 0;
+  color: var(--muted); font-size: 12px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+  margin-right: 5px; vertical-align: baseline; }
+
+.card { background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
+.card > h3 { margin: 0; font-size: 17px; display: flex; flex-wrap: wrap;
+  align-items: center; gap: 9px; }
+.card > h3 .name { font-size: 16px; }
+.card .desc { color: var(--muted); margin: 8px 0 0; font-size: 14px;
+  max-width: 78ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0 0;
+  color: var(--muted); font-size: 12.5px; }
+.meta b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  background: var(--chip); color: var(--muted); letter-spacing: .02em;
+  white-space: nowrap; }
+.tag.env-production { background: var(--prod-bg); color: var(--prod-fg); }
+.tag.env-staging { background: var(--staging-bg); color: var(--staging-fg); }
+.tag.env-development { background: var(--dev-bg); color: var(--dev-fg); }
+.tag.mode-agentic { color: var(--agentic); }
+.tag.mode-deterministic { color: var(--deterministic); }
+.tag.kind-workflow, .tag.kind-script { font-weight: 600; }
+.tag.kind-script { color: var(--warn); }
+
+.procs { margin: 16px 0 0; border-top: 1px solid var(--line); }
+.proc { padding: 12px 0 12px; border-bottom: 1px solid var(--line); }
+.proc:last-child { border-bottom: 0; padding-bottom: 0; }
+.proc-head { display: flex; flex-wrap: wrap; align-items: center; gap: 9px;
+  min-width: 0; }
+.proc-head .name { font-size: 14px; font-weight: 600; }
+.proc .purpose { color: var(--muted); font-size: 13px; margin: 6px 0 0;
+  max-width: 84ch; }
+.proc .links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 7px;
+  font-size: 12.5px; }
+.spacer { flex: 1; }
+.run {
+  font: 12px/1.25 ui-monospace, Consolas, monospace; cursor: pointer;
+  padding: 6px 10px; border-radius: 7px; white-space: nowrap;
+  background: var(--chip); color: var(--ink); border: 1px solid var(--line);
+  /* The label is a short form of the command; data-cmd carries it in full.
+     Without a cap, a script path is wide enough to scroll the whole page. */
+  max-width: 340px; overflow: hidden; text-overflow: ellipsis;
+}
+.run:hover { border-color: var(--accent); color: var(--accent); }
+.run.copied { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+details { margin-top: 12px; }
+summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+summary:hover { color: var(--accent); }
+.pages { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.pages a { font-size: 12px; padding: 3px 9px; border-radius: 6px;
+  background: var(--chip); }
+pre { overflow-x: auto; background: var(--chip); padding: 12px;
+  border-radius: 8px; font-size: 12px; line-height: 1.45; }
+.empty { color: var(--muted); font-size: 14px; padding: 30px 0; display: none; }
+footer { color: var(--muted); font-size: 12.5px; margin-top: 44px;
+  border-top: 1px solid var(--line); padding-top: 14px; }
+.hidden { display: none !important; }
+</style>
+</head><body>
+<header class="top"><div class="wrap">
+<h1>SiteMapper</h1>
+<p class="sub">Every mapped site, every process that runs against it, and the projects that span them. 1 agentic by mode.</p>
+<div class="counts"><div><b>1</b><span>sites</span></div><div><b>0</b><span>projects</span></div><div><b>1</b><span>processes</span></div><div><b>1</b><span>workflows</span></div><div><b>0</b><span>scripts</span></div><div><b>2</b><span>mapped pages</span></div></div>
+<div class="toolbar">
+<input id="q" type="search" placeholder="Search sites, processes, pages — press /" autocomplete="off">
+<div class="chips"><span class="chips-label">kind</span>
+<button class="chip" data-group="kind" data-value="all" aria-pressed="true">all</button>
+<button class="chip" data-group="kind" data-value="workflow" aria-pressed="false">workflow</button>
+<button class="chip" data-group="kind" data-value="script" aria-pressed="false">script</button>
+</div>
+<div class="chips"><span class="chips-label">mode</span>
+<button class="chip" data-group="mode" data-value="all" aria-pressed="true">all</button>
+<button class="chip" data-group="mode" data-value="agentic" aria-pressed="false">agentic</button>
+<button class="chip" data-group="mode" data-value="deterministic" aria-pressed="false">deterministic</button>
+</div>
+<span class="shown" id="shown"></span>
+</div></div></header>
+<div class="wrap">
+<h2>Landscape</h2>
+<div class="map"><svg viewBox="0 0 714 56" width="100%" height="56" role="img" aria-label="projects and the sites they span">
+<g class="node" data-key="sitemapper-demo"><a href="#s-sitemapper-demo"><rect class="box" x="400" y="7.0" width="300" height="30" rx="7" fill="var(--chip)" stroke="var(--line)"/><text class="n-label" x="411" y="26.5" fill="currentColor">sitemapper-demo</text><text class="n-meta" x="689" y="26.5" text-anchor="end">1 wf</text></a></g>
+</svg></div><div class="legend"><span>numbers: workflows on a project, wf/sc on a site</span></div>
+<details><summary>Mermaid source for this graph</summary><pre class="mermaid">graph LR
+  subgraph site-only
+    o_sitemapper_demo(&quot;sitemapper-demo&quot;)
+  end</pre></details>
+<section data-group="projects"><h2>Projects</h2>
+</section>
+<section data-group="sites"><h2>Sites</h2>
+<article class="card" id="s-sitemapper-demo" data-search="sitemapper-demo sitemapper demo demo github repo for sitemapper — map issues page and create issues via workflow https://github.com/noskule-cc/sitemapper.demo  issues-list new-issue"><h3><span class="name">sitemapper-demo</span></h3><div class="meta"><a href="https://github.com/noskule-cc/SiteMapper.demo">https://github.com/noskule-cc/SiteMapper.demo</a><span><a href="../sites/sitemapper-demo/site.yaml">site.yaml</a></span></div><p class="desc">Demo GitHub repo for SiteMapper — map issues page and create issues via workflow</p><div class="meta"><span><b>2</b> pages</span><span><b>1</b> workflows</span><span><b>0</b> scripts</span><span>mapped <b>2026-05-03</b></span></div><div class="procs"><div class="proc" data-kind="workflow" data-mode="agentic" data-search="smart-issue sitemapper-demo agentic ask what the issue is about, search for similar existing issues, present matches or create a new one topic label"><div class="proc-head"><span class="tag kind-workflow">workflow</span><a class="name" href="../sites/sitemapper-demo/workflows/smart-issue.yaml">smart-issue</a><span class="tag mode-agentic">agentic</span><span class="tag">11 steps</span><span class="tag">2 params</span><span class="spacer"></span><button class="run" data-cmd="/run smart-issue" title="copy: /run smart-issue">/run smart-issue</button></div><p class="purpose">Ask what the issue is about, search for similar existing issues, present matches or create a new one</p><div class="links"><a href="../sites/sitemapper-demo/workflows/smart-issue.md">flowchart&nbsp;.md</a></div></div></div><details><summary>2 mapped pages</summary><div class="pages"><a href="../sites/sitemapper-demo/pages/issues-list.yaml">issues-list</a><a href="../sites/sitemapper-demo/pages/new-issue.yaml">new-issue</a></div></details></article>
+</section>
+<p class="empty" id="none">Nothing matches that.</p>
+<footer>Generated by <code>scripts/inventory.py</code> from the YAML in the SiteMapper repo — do not edit. <code>python scripts/check.py --only overview</code> fails when it is stale. This page lists the command that starts each process; it cannot run one itself.</footer>
+</div>
+<script>
+const q = document.getElementById('q');
+const cards = [...document.querySelectorAll('.card')];
+const chips = [...document.querySelectorAll('.chip')];
+const filters = { kind: 'all', mode: 'all' };
+
+function apply() {
+  const term = q.value.trim().toLowerCase();
+  let shown = 0;
+  for (const card of cards) {
+    const cardHit = !term || card.dataset.search.includes(term);
+    let any = false, anyHit = false;
+    for (const proc of card.querySelectorAll('.proc')) {
+      const passes = (filters.kind === 'all' || proc.dataset.kind === filters.kind)
+                  && (filters.mode === 'all' || proc.dataset.mode === filters.mode);
+      const hit = !term || cardHit || proc.dataset.search.includes(term);
+      proc.classList.toggle('hidden', !(passes && hit));
+      any = any || passes;
+      anyHit = anyHit || (passes && hit && !cardHit);
+    }
+    // A card with no process at all is still a real site — hide it only when a
+    // process filter is on, because then the question being asked is about processes.
+    const filtering = filters.kind !== 'all' || filters.mode !== 'all';
+    const visible = (cardHit || anyHit) && (!filtering || any);
+    card.classList.toggle('hidden', !visible);
+    if (visible) shown++;
+  }
+  for (const sec of document.querySelectorAll('section[data-group]')) {
+    const has = [...sec.querySelectorAll('.card')].some(c => !c.classList.contains('hidden'));
+    sec.classList.toggle('hidden', !has);
+  }
+  document.getElementById('shown').textContent =
+    shown === cards.length ? `${cards.length} cards` : `${shown} of ${cards.length} cards`;
+  document.getElementById('none').style.display = shown ? 'none' : 'block';
+}
+
+q.addEventListener('input', apply);
+for (const chip of chips) {
+  chip.addEventListener('click', () => {
+    const group = chip.dataset.group;
+    for (const other of chips) {
+      if (other.dataset.group === group) other.setAttribute('aria-pressed', other === chip);
+    }
+    filters[group] = chip.dataset.value;
+    apply();
+  });
+}
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+  if (e.key === 'Escape' && document.activeElement === q) { q.value = ''; apply(); }
+});
+
+// Copy the invocation. file:// is a secure context in Chrome, but fall back to
+// the old selection trick anywhere the clipboard API is unavailable.
+function copy(text) {
+  if (navigator.clipboard) return navigator.clipboard.writeText(text);
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); ta.remove();
+  return Promise.resolve();
+}
+for (const btn of document.querySelectorAll('.run')) {
+  btn.addEventListener('click', () => {
+    copy(btn.dataset.cmd).then(() => {
+      const was = btn.textContent;
+      btn.textContent = 'copied'; btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = was; btn.classList.remove('copied'); }, 1200);
+    });
+  });
+}
+
+// Hovering a graph node dims everything not connected to it.
+const svg = document.querySelector('.map svg');
+if (svg) {
+  const edges = [...svg.querySelectorAll('.edge')];
+  const focus = key => {
+    for (const e of edges) {
+      const on = !key || e.dataset.from === key || e.dataset.to === key;
+      e.style.opacity = on ? (key ? 1 : .55) : .06;
+    }
+    for (const n of svg.querySelectorAll('g.node')) {
+      const on = !key || n.dataset.key === key
+              || edges.some(e => (e.dataset.from === key && e.dataset.to === n.dataset.key)
+                              || (e.dataset.to === key && e.dataset.from === n.dataset.key));
+      n.style.opacity = on ? 1 : .25;
+    }
+  };
+  for (const n of svg.querySelectorAll('g.node')) {
+    n.addEventListener('mouseenter', () => focus(n.dataset.key));
+    n.addEventListener('mouseleave', () => focus(null));
+  }
+}
+apply();
+</script>
+</body></html>

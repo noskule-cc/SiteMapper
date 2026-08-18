@@ -1,0 +1,28 @@
+# Schema: Site Configuration
+# Top-level config for a mapped site.
+
+site:
+  name: ""                    # Human-readable site name
+  base_url: ""                # Base URL (e.g., "https://issues.example.com")
+  description: ""             # What this site/app is
+  auth_notes: ""              # How to authenticate (e.g., "SSO via Okta", "admin/admin on staging")
+  mapped_at: ""               # ISO date of last full mapping
+  verified_at: ""             # ISO date of the last /verify-map drift check.
+                              #   mapped_at says when the map was WRITTEN;
+                              #   verified_at says when it was last confirmed to
+                              #   still match the live site. A long-stale
+                              #   verified_at on a site you do not control is the
+                              #   signal to re-map.
+  pages: []                   # List of page YAML filenames
+  workflows: []               # List of workflow YAML filenames
+
+  scripts:                    # Scripts in sites/<site>/scripts/ that workflows may
+                              # call with `action: script`. Declaring them here is
+                              # what makes them addressable — see schema/workflow.yaml.
+    - name: ""                #   Filename, e.g. "get_gateway_status_table.py"
+      description: ""         #   What it returns and which workflow node it backs.
+                              #   Record parked/blocked scripts here too, with why.
+
+  settings: {}                # Optional site-scope settings block (contact, policy,
+                              # form_defaults). Overrides config.yaml; overridden by
+                              # a page. See schema/settings.yaml.

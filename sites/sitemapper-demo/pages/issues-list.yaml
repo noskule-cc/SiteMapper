@@ -1,0 +1,37 @@
+page:
+  name: "Issues List"
+  url_pattern: "/<owner>/<repo>/issues"
+  purpose: "Lists all open/closed issues for the repository"
+
+  elements:
+    - name: "new-issue-button"
+      type: link
+      locator:
+        strategy: css
+        value: "a[href$='/issues/new/choose']"
+      description: "Opens the new issue form"
+
+    - name: "search-input"
+      type: input
+      locator:
+        strategy: css
+        value: "input[placeholder='Search Issues']"
+      description: "Search and filter issues"
+
+    - name: "open-tab"
+      type: link
+      locator:
+        strategy: css
+        value: "a[href$='/issues']"
+      description: "Show open issues"
+
+    - name: "closed-tab"
+      type: link
+      locator:
+        strategy: css
+        value: "a[href*='state%3Aclosed']"
+      description: "Show closed issues"
+
+  gotchas:
+    - "New issue button links to /issues/new/choose but may redirect to /issues/new if no templates exist"
+    - "Empty state shows 'No results' instead of issue rows"

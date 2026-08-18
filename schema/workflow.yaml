@@ -1,0 +1,148 @@
+# Schema: Workflow Definition
+# Each workflow defines a named, repeatable sequence of actions on mapped sites.
+# Workflows can span a single site or multiple sites (cross-site workflows).
+#
+# Companion doc: every workflow YAML gets a sibling <workflow>.md in the same
+# folder — a short human-readable summary with a Mermaid `flowchart` of the steps.
+# The YAML is the source of truth; the .md is the at-a-glance view. See USAGE.md
+# ("Companion doc") and the example projects/gateway-audit/workflows/*.md.
+#
+# A workflow is a callable unit: it takes inputs (parameters/fixtures), runs steps
+# against the mapped site(s), and emits a neutral `result` object (see
+# schema/result.yaml). The host that calls the workflow (an LLM agent or a Python
+# program) is responsible for routing that result somewhere - SiteMapper itself is
+# sink-agnostic and never pushes results to an external system.
+
+workflow:
+  name: ""                    # Workflow name (used as command: /run <name>)
+  description: ""             # What this workflow accomplishes
+  site: ""                    # Single site (for simple workflows)
+  sites: []                   # Multiple sites (for cross-site workflows)
+
+  mode: ""                    # deterministic | agentic
+                              #   deterministic - every step is mechanical (navigate/
+                              #     click/input/read/assert/wait) and checkable, so the
+                              #     workflow can run headless with no LLM in the loop.
+                              #     Best for UI tests and CI.
+                              #   agentic - one or more steps need judgement (e.g. a
+                              #     `verify` step that decides/branches, or formatting
+                              #     free text), so an LLM must execute it.
+
+  parameters:                 # Caller-supplied inputs (prompted at run time).
+    - name: ""                # Parameter name
+      type: ""                # select | text
+      description: ""         # What this parameter controls
+      required: true
+      options: []             # For type: select — predefined choices (rendered as dropdown)
+      default: ""             # Optional default value
+
+  fixtures: {}                # Pinned, deterministic test data (NOT prompted). Use for
+                              # tests that must target known entities. Referenced as
+                              # $fixture_name in step values, e.g.:
+                              #   fixtures:
+                              #     location_id: "10000"
+                              #     location_name: "Example Corp (test)"
+                              #
+                              # ENVIRONMENT-KEYED FIXTURES — when ONE workflow must run
+                              # against several environments of the same app, key the
+                              # fixtures by the value of a `select` parameter and add a
+                              # `common:` block for the shared ones. A $name resolves
+                              # against fixtures.<param value> first, then falls back to
+                              # fixtures.common:
+                              #   parameters:
+                              #     - name: environment
+                              #       type: select
+                              #       options: [stg, prod]
+                              #   fixtures:
+                              #     common: { join_key: "0000000000000" }
+                              #     stg:    { connect_site: my-app-stg, device_id: "1eb2…" }
+                              #     prod:   { connect_site: my-app,     device_id: "9f8a…" }
+                              # Steps then name a site ROLE (site: $connect_site) instead
+                              # of a literal site, so no step is environment-specific.
+                              # Worked example:
+                              #   projects/<project>/workflows/<workflow>.yaml
+                              #
+                              # Use this only when the environments are mapped as
+                              # SEPARATE sites — the normal case, since they rarely carry
+                              # the same feature set, and each needs its own page maps.
+                              # Do NOT parameterize the URL itself: base_url belongs to
+                              # site.yaml and steps navigate with PATHS ONLY, so a
+                              # workflow is already URL-neutral. Confirm the paths really
+                              # are identical across environments before relying on it.
+
+  setup:                      # Precondition steps run BEFORE `steps` to put the page
+                              # into a known state - navigate, reset sticky UI state
+                              # (e.g. select a grouping), clear filters. These are NOT
+                              # assertions. A setup failure => result.status = error
+                              # (the test could not start), distinct from a failed
+                              # assertion. Same step shape as `steps`. Required for
+                              # hermetic tests, because some UI state (grouping, sort)
+                              # persists per user across sessions and would otherwise
+                              # leak into the run.
+    - action: ""
+
+  steps:
+    - action: ""              # navigate | click | input | read | assert | verify | wait | key | script
+                              #   key: press a keyboard key (value = the key, e.g. "Escape",
+                              #   "Enter") - e.g. to dismiss a dropdown without changing state
+                              #   script: run a site script instead of driving the browser
+                              #   (see `script` below). Prefer this whenever the data is
+                              #   reachable from the site's API - it is faster, headless and
+                              #   does not break when the UI changes. This is one case of a
+                              #   governing principle; see docs/CODE_OVER_LLM.md for the
+                              #   boundary (what still needs an LLM) and the ratchet
+                              #   (promoting a stable agentic workflow into a script).
+      site: ""                # Which site this step runs on (required for cross-site
+                              #   workflows). May be a literal site name OR a "$param" /
+                              #   "$fixture" reference that resolves to one — that is how
+                              #   an environment-parameterized workflow keeps its steps
+                              #   environment-neutral (see fixtures above). The resolved
+                              #   value must name a directory under sites/.
+      page: ""                # Page name (references a page YAML file)
+      element: ""             # Element name from the page map
+      script: ""              # For action: script — a script in sites/<site>/scripts/
+                              #   (declared in that site's site.yaml `scripts:` list).
+                              #   `value` carries its CLI arguments; `capture` stores its
+                              #   parsed stdout (JSON when the script is run with --json).
+      value: ""               # Value to input, a URL to navigate to, CLI args for a script,
+                              #   or a reference like "$param", "$fixture", "$captured_var"
+      capture: ""             # Store step output in a named variable (e.g., "offline_devices")
+      expect: null            # For action: assert — the expected condition (see below)
+      description: ""         # Human-readable step description
+
+  teardown:                   # Steps run AFTER `steps` to restore any state the test
+                              # mutated (uncheck a column, delete a created record). Run
+                              # on a best-effort basis even if an assertion failed, so a
+                              # mutating test leaves the environment as it found it. Same
+                              # step shape as `steps`; not assertions.
+    - action: ""
+
+  verify:
+    - ""                      # Prose expected outcome, checked after the workflow completes.
+                              # Coarse/human-readable. Prefer structured `assert` steps for
+                              # anything a runner should evaluate mechanically.
+
+# action: assert
+#   A checkable, per-step assertion against a mapped element. `expect` is one of:
+#     visible                       # element is present and visible
+#     absent                        # element is NOT present (e.g. capability-dependent tab)
+#     enabled                       # element is enabled/interactive
+#     disabled                      # element is present but disabled
+#     { contains: "text" }          # element text contains the substring
+#     { equals: "text" }            # element text equals exactly
+#     { value: "text" }             # input/select current value equals
+#     { count: 3 }                  # number of matching elements equals N
+#     { url_matches: "/path/.*" }   # current page URL matches the pattern
+#   Each assert contributes one entry to result.assertions (id, expect, actual, pass).
+#
+# action: input
+#   For a text field, types `value`. For a select/combobox element (e.g. a
+#   grouping or sort dropdown), selects the option whose text equals `value`
+#   (the runner opens the dropdown and picks it). Used in `setup` to force a
+#   known grouping, e.g. element: device-grouping-dropdown, value: "IOT-Geräte".
+#
+# Variable references:
+#   $param_name     — references a workflow parameter
+#   $fixture_name   — references a pinned fixture value
+#   $captured_var   — references a value captured by a previous step
+#   Captured variables are available to all subsequent steps, even across sites.

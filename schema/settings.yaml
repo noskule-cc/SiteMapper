@@ -1,0 +1,61 @@
+# Schema: Settings
+# Layered configuration for contact data, agent behavior, and form defaults.
+#
+# The same `settings:` block may appear at three scopes. Lower (more specific)
+# scopes override higher ones, deep-merged per key:
+#
+#     global  (SiteMapper-data/config.yaml, private — contact only)
+#       └─ global  (config.yaml at repo root — policy)
+#            └─ site   (sites/<site>/site.yaml)
+#                 └─ page  (sites/<site>/pages/<page>.yaml)
+#
+# Resolution = deep merge, most-specific wins. A page that overrides
+# settings.contact.email keeps the inherited contact.name / contact.phone.
+
+settings:
+
+  contact:                    # Form-fill / identity values typed into forms.
+    name: ""                  #   Full name
+    salutation: ""            #   Salutation / Geschlecht (e.g. "Herr", "Frau")
+    email: ""                 #   Contact email
+    phone: ""                 #   Contact phone, E.164 (e.g. "+41791234567")
+    # Any contact field may be overridden at site or page level.
+    #
+    # ⛔ REAL VALUES DO NOT BELONG IN THIS REPOSITORY - it is public, and these
+    # are a real person's identity. They live in the private SiteMapper-data
+    # repo's config.yaml. The examples above are deliberately fictitious.
+
+  mailboxes: {}               # Named mailbox identities, keyed however the deployment
+                              # likes, e.g.:
+                              #   mailboxes:
+                              #     customer_a: ""
+                              #     internal: ""
+    #
+    # Maps and workflows NAME a mailbox — `mailboxes.customer_a` — and never spell
+    # one out. An address identifies a person, so like `contact` it belongs with the
+    # deployment's private configuration, and the map holds only the key.
+    #
+    # Provider facts are NOT part of the identity and can stay in the open: which
+    # host answers, what kind of password it wants, what its spam folder is called.
+    # Only the address is withheld. Resolve it strictly, with no fallback and no
+    # guess — an IMAP login against a guessed address either fails confusingly or
+    # succeeds against a mailbox the suite was never meant to touch.
+
+  policy:                     # Flags that tell the agent how to behave on this scope.
+    environment: ""           #   dev | staging | production
+    safe_to_submit_forms: false
+                              #   When true, the agent MAY fill and submit forms on
+                              #   this scope without asking (e.g. dev/test sites).
+                              #   When false/absent, the agent asks before submitting.
+
+  form_defaults: {}           # Per-page field prefills, keyed by the element `name`
+                              # from the page map. Example (on a page YAML):
+                              #   form_defaults:
+                              #     geraetestatus-select: "Ausser Betrieb"
+                              #     stoerung-freetext: "Testmeldung (Dev-Test)"
+
+# Notes:
+# - `contact` and `policy` are typically defined globally (config.yaml) and
+#   refined per-site; `form_defaults` is typically page-level.
+# - `safe_to_submit_forms` is the machine-readable authorization for form
+#   submission. Keep it false on production sites.

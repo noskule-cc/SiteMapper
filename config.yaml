@@ -1,0 +1,24 @@
+# Global SiteMapper configuration.
+# Baseline settings inherited by every site and page. More-specific scopes
+# (sites/<site>/site.yaml, then sites/<site>/pages/<page>.yaml) override these
+# per key. See schema/settings.yaml for the full definition.
+#
+# ⛔ NO CONTACT BLOCK HERE, DELIBERATELY. This repository is public, and
+# settings.contact is a real person's name, e-mail and phone number - the values
+# that get typed into live forms. It lives in the private SiteMapper-data repo
+# instead, as its config.yaml, and is deep-merged over this file at the same
+# global scope:
+#
+#     SiteMapper-data/config.yaml   (private)  settings.contact
+#       └─ config.yaml              (this file, public)  settings.policy
+#            └─ sites/<site>/site.yaml
+#                 └─ sites/<site>/pages/<page>.yaml
+#
+# A workflow that needs to fill an identity field reads settings.contact and
+# will find nothing if the private repo is not cloned beside this one. That is
+# the intended failure: it stops, rather than inventing a person.
+
+settings:
+  policy:
+    environment: production     # default-safe; dev/staging sites opt in below their own site.yaml
+    safe_to_submit_forms: false # never submit forms without asking unless a scope opts in

@@ -1,0 +1,44 @@
+.idea/
+.claude/settings.local.json
+__pycache__/
+*.pyc
+
+# draw.io editor backups (.$<name>.drawio.bkp)
+.$*.bkp
+
+# ---------------------------------------------------------------------------
+# RUN OUTPUTS — ALL OF THEM, WITHOUT EXCEPTION
+# ---------------------------------------------------------------------------
+# This repository is public and holds the reusable half of SiteMapper: maps,
+# schemas, workflows and scripts. Run outputs live in the private companion
+# repo, SiteMapper-data, whose layout mirrors this one.
+#
+# It is a blanket rule on purpose. The previous version listed directories
+# one at a time with a per-case justification, and the failure mode was
+# structural: a NEW project's results were committed by default, and the
+# question "is this one sensitive?" got asked after the data was already
+# published. Excluding everything and moving the whole class out inverts that —
+# a run output has to be deliberately carried across, not deliberately caught.
+#
+# No negations. An earlier version kept results/README.md via a contents-glob
+# plus "!results/README.md", which is fragile enough to have needed its own
+# comment explaining why. Layout docs belong beside the workflow, not inside a
+# directory that is otherwise entirely excluded.
+results/
+**/results/
+
+# The private data repo, if it is cloned inside this tree rather than beside it.
+SiteMapper-data/
+
+# Identifying inputs that are NOT run outputs, and so would not be caught above.
+# This repository is the FRAMEWORK: schema, docs, scripts, and one worked example
+# in sites/sitemapper-demo. Real maps belong to whoever mapped them and live in
+# their own repository, together with the runs they produce.
+#
+#   config.yaml    keeps settings.policy only. settings.contact and
+#                  settings.mailboxes name a real person, so a deployment keeps
+#                  them in its own private config and merges them in at global
+#                  scope. See schema/settings.yaml.
+#
+# Nothing tenant-specific is listed by name here any more, because nothing
+# tenant-specific is supposed to be in this tree at all.
