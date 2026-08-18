@@ -2,8 +2,9 @@
 """Generate docs/inventory.md — what exists in this repo, from the YAML itself.
 
 Usage:
-    python scripts/inventory.py            # write docs/inventory.md + docs/overview.html
-    python scripts/inventory.py --check    # exit 1 if either committed copy is stale
+    python scripts/inventory.py                    # write both views for this repo
+    python scripts/inventory.py --check            # exit 1 if either is stale
+    python scripts/inventory.py --root ../my-maps  # write THAT repo's views, into its docs/
 
 Both files are GENERATED. Never hand-edit them; change the YAML and re-run.
 `--check` is what keeps that true: a generated file nobody verifies is just
@@ -27,8 +28,25 @@ try:
 except ImportError:
     sys.exit("PyYAML not installed. Run: python -m pip install pyyaml")
 
+# The tree being inventoried — this script's own repo by default. set_root()
+# repoints it at a separate map repository, which is what check.py --root does:
+# the tooling lives in the framework repo, the maps it describes need not.
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "inventory.md")
+
+
+def set_root(root):
+    """Point the collectors at another tree, and OUT with them.
+
+    OUT moves deliberately: a --root run inventories that repository, so its
+    generated file belongs in ITS docs/, not in the framework's. Writing the
+    framework's inventory.md from someone else's maps is exactly the leak the
+    two-repo split exists to prevent.
+    """
+    global ROOT, OUT
+    ROOT = os.path.abspath(root)
+    OUT = os.path.join(ROOT, "docs", "inventory.md")
+    return ROOT
 
 
 def rel(p):
@@ -259,15 +277,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="exit 1 if a generated file is stale")
+    ap.add_argument("--root", help="inventory this tree instead of the script's own "
+                                   "repo (e.g. a private map repository)")
     args = ap.parse_args()
 
     import overview  # one command regenerates both views; see overview.py
+    if args.root:
+        set_root(args.root)
+        overview.set_root(args.root)
 
     targets = [(OUT, render()), (overview.OUT, overview.render())]
     if args.check:
         bad = [p for p, fresh in targets if stale(p, fresh)]
         for p in bad:
-            print(f"FAIL  {rel(p)} is stale — run: python scripts/inventory.py")
+            hint = f" --root {args.root}" if args.root else ""
+            print(f"FAIL  {rel(p)} is stale — run: python scripts/inventory.py{hint}")
         if bad:
             return 1
         print("docs/inventory.md and docs/overview.html are current")

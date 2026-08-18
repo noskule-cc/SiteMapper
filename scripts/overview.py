@@ -35,6 +35,15 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "docs", "overview.html")
 
+
+def set_root(root):
+    """Render another tree. See inventory.set_root(); the collectors live there,
+    so callers must set both — inventory.main() and check.py both do."""
+    global ROOT, OUT
+    ROOT = os.path.abspath(root)
+    OUT = os.path.join(ROOT, "docs", "overview.html")
+    return ROOT
+
 # Where a link to a repo file points. Default is relative, which is what the
 # committed copy in docs/ needs; --links github rewrites them absolute so the
 # page still works when it is read somewhere other than a clone.
@@ -549,6 +558,13 @@ def render(base=LOCAL, fragment=False):
     own <head> and <body> and only wants the page itself."""
     import inventory  # deferred: inventory.py imports this module to write it
 
+    # The collectors follow THIS module's root, always. Not belt-and-braces:
+    # running inventory.py as a script makes it __main__, so this deferred import
+    # loads a SECOND copy of it whose root nobody set. Without this line a --root
+    # run wrote the framework's own overview into the map repo's docs/ — correct
+    # inventory.md beside a completely wrong overview.html.
+    inventory.set_root(ROOT)
+
     global BASE
     BASE = base
 
@@ -648,10 +664,14 @@ def main():
     ap.add_argument("--out", help="write here instead of docs/overview.html")
     ap.add_argument("--fragment", action="store_true",
                     help="omit <html>/<head>/<body>, for a host that wraps the page")
+    ap.add_argument("--root", help="render this tree instead of the script's own repo")
     args = ap.parse_args()
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import inventory
+    if args.root:
+        set_root(args.root)
+        inventory.set_root(args.root)
 
     base = args.base or (github_base(args.branch) if args.links == "github" else LOCAL)
     fresh = render(base, fragment=args.fragment)

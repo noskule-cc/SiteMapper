@@ -2,9 +2,15 @@
 """Check that the repo is internally consistent. Exits non-zero on any failure.
 
 Usage:
-    python scripts/check.py                # run everything
-    python scripts/check.py --only links   # run one check
-    python scripts/check.py --list         # show check names
+    python scripts/check.py                    # run everything, on this repo
+    python scripts/check.py --only links       # run one check
+    python scripts/check.py --list             # show check names
+    python scripts/check.py --root ../my-maps  # check a separate map repository
+
+`--root` exists because the maps this was written to protect usually live in a
+different (private) repository. Schemas and bindings still come from THIS repo —
+see the two-roots note below — so there is one tool and one schema, not a copy
+per map repo that drifts out of sync.
 
 Every check here exists because the thing it catches actually happened. None of
 them need an LLM: they are enumeration and comparison, which is code's job (see
@@ -24,10 +30,42 @@ try:
 except ImportError:
     sys.exit("PyYAML not installed. Run: python -m pip install pyyaml")
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# TWO ROOTS, DELIBERATELY.
+#
+# HOME is this script's own repository: the framework. It owns schema/*.yaml,
+# docs/ and the .claude bindings, and those do NOT travel with a map repository.
+# ROOT is the tree being checked, which defaults to HOME and is repointed by
+# --root at a separate (usually private) repository of maps.
+#
+# The distinction matters because the alternative is to copy this script and the
+# schemas next to the maps, and a FORKED SCHEMA IS WORSE THAN NO CHECK: the copy
+# drifts, the maps validate green against a contract nobody updated, and the
+# check reports health it cannot know about. One tool, many trees.
+HOME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+ROOT = HOME
+
+# Where the user actually stood when they typed the command. Captured BEFORE the
+# chdir below, because a relative --root has to resolve against the shell's cwd,
+# not against this repo. Getting that wrong is not a small bug: `--root .` from a
+# map repository resolved to the framework instead and reported it green, which
+# is a check lying about a tree it never looked at.
+INVOCATION_CWD = os.getcwd()
+
 os.chdir(ROOT)
 
+
+def home(*parts):
+    """A path inside the framework repo, wherever ROOT currently points."""
+    return norm(os.path.join(HOME, *parts))
+
+
+def external():
+    return os.path.abspath(ROOT) != os.path.abspath(HOME)
+
 NOTES = []
+# Checks that declined to run. Reported as 'skipped', never as 'ok' — a check
+# that did not run must not read like one that passed.
+SKIPPED = set()
 
 WORKFLOW_GLOBS = ["sites/*/workflows/*.yaml", "projects/*/workflows/*.yaml"]
 DOC_GLOBS = ["README.md", "USAGE.md", "PRD.md", "Concept.md", "CLAUDE.md",
@@ -101,6 +139,7 @@ def check_yaml():
     return fails
 
 
+# (top-level key, schema file — always in HOME, globs — always under ROOT)
 SCHEMA_MAP = [
     ("site", "schema/site.yaml", ["sites/*/site.yaml"]),
     ("project", "schema/project.yaml", ["projects/*/project.yaml"]),
@@ -118,6 +157,8 @@ def check_schema():
     """
     fails = []
     for top, schema, pats in SCHEMA_MAP:
+        # The schema is the framework's; the files are the checked tree's.
+        schema = home(schema)
         if not os.path.exists(schema):
             fails.append(f"missing schema: {schema}")
             continue
@@ -228,6 +269,16 @@ def check_bindings():
     Catches both halves of the orphan problem: a doc nobody can navigate to
     (INTERFACE.md was orphaned for weeks) and a binding pointing at nothing.
     """
+    # Framework-only. A map repository has no docs/skills/ and no .claude/
+    # bindings — those belong to the tool, not to the maps — so running this
+    # against --root would check nothing and report success, which is worse than
+    # saying so out loud.
+    if external():
+        SKIPPED.add("bindings")
+        NOTES.append("bindings: framework-only — docs/skills and .claude bindings "
+                     "belong to the tool, not to a map repository")
+        return []
+
     fails = []
     index = open("docs/INDEX.md", encoding="utf-8").read() if os.path.exists("docs/INDEX.md") else ""
     agents = open("docs/AGENTS.md", encoding="utf-8").read() if os.path.exists("docs/AGENTS.md") else ""
@@ -262,13 +313,20 @@ def check_bindings():
 
 
 def generated_is_stale(module, out_attr="OUT"):
-    sys.path.insert(0, os.path.join(ROOT, "scripts"))
+    # The generators are the framework's (import from HOME); the tree they walk
+    # is the checked one (set_root to ROOT). Both must be set, or a --root run
+    # silently regenerates the framework's own views instead.
+    sys.path.insert(0, os.path.join(HOME, "scripts"))
     mod = __import__(module)
+    if external():
+        mod.set_root(ROOT)
+        __import__("inventory").set_root(ROOT)
     out = getattr(mod, out_attr)
     cur = open(out, encoding="utf-8").read() if os.path.exists(out) else ""
     if cur != mod.render():
+        hint = f" --root {norm(ROOT)}" if external() else ""
         return [f"{norm(os.path.relpath(out, ROOT))} is stale — "
-                "run: python scripts/inventory.py"]
+                f"run: python scripts/inventory.py{hint}"]
     return []
 
 
@@ -298,7 +356,19 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--only", choices=sorted(CHECKS), help="run a single check")
     ap.add_argument("--list", action="store_true", help="list check names")
+    ap.add_argument("--root", help="check this tree instead of the script's own repo "
+                                   "(e.g. a private map repository). Schemas and "
+                                   "bindings still come from the framework.")
     args = ap.parse_args()
+
+    if args.root:
+        global ROOT
+        ROOT = os.path.abspath(os.path.join(INVOCATION_CWD, args.root))
+        if not os.path.isdir(ROOT):
+            sys.exit(f"--root is not a directory: {ROOT}")
+        os.chdir(ROOT)
+        print(f"checking {norm(ROOT)}  (schemas from {norm(HOME)})")
+        print()
 
     if args.list:
         for name, fn in sorted(CHECKS.items()):
@@ -310,13 +380,17 @@ def main():
     for name in selected:
         fails = CHECKS[name]()
         total += len(fails)
-        status = "ok" if not fails else f"{len(fails)} FAILED"
+        status = ("skipped" if name in SKIPPED
+                  else "ok" if not fails else f"{len(fails)} FAILED")
         print(f"[{name}] {status}")
         for msg in fails:
             print(f"  FAIL  {msg}")
     for msg in NOTES:
         print(f"  note  {msg}")
-    print(f"\n{len(selected)} checks run, {total} failures, {len(NOTES)} notes")
+    skipped = SKIPPED & set(selected)
+    tail = f", {len(skipped)} skipped" if skipped else ""
+    print(f"\n{len(selected) - len(skipped)} checks run, {total} failures, "
+          f"{len(NOTES)} notes{tail}")
     return 1 if total else 0
 
 
