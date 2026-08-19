@@ -26,6 +26,8 @@ lowercase = this project's own content.
 - [subagents/README.md](subagents/README.md) — skills vs. sub-agents; how to add one
 - [subagents/workflow-companion.md](subagents/workflow-companion.md) — writes a workflow's companion `.md`
 - [subagents/validation-llm.md](subagents/validation-llm.md) — tests the docs on a fresh LLM
+- [subagents/verify-map.md](subagents/verify-map.md) — background drift sweep of a site, read-only
+- [subagents/map-site-scout.md](subagents/map-site-scout.md) — read-only page-map draft for human review
 - [map-site.md](skills/map-site.md) — discovery session for mapping a site
 - [run-workflow.md](skills/run-workflow.md) — execute a named workflow
 - [test.md](skills/test.md) — execute a deterministic test workflow, emit a result

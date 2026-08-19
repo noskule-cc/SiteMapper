@@ -1,15 +1,18 @@
 # SiteMapper
 
-Persistent, structured site maps for LLM browser agents. Map a web app once with human-in-the-loop discovery, then reuse the map across sessions — no redundant DOM exploration or screenshot-heavy navigation.
+Persistent, structured site maps for LLM browser agents. Map a web app once with human-in-the-loop discovery, then reuse the map across sessions — no redundant DOM exploration or screenshot-heavy navigation. The governing idea: **LLM for decisions, code for work.**
 
 ## How It Works
 
-1. A discovery agent walks through a site with you, asking targeted questions
-2. You annotate and correct in real time
-3. The output is a set of YAML files describing pages, elements, flows, and gotchas
-4. Future agent sessions load the map as context instead of re-exploring from scratch
+Three roles, each given to the executor that is good at it:
 
-See [Concept.md](Concept.md) for the full design rationale and [PRD.md](PRD.md) for the product requirements.
+1. **Discovery (LLM + human).** An agent walks through a site with you, asking targeted questions; you annotate and correct in real time. The output is YAML: pages, elements, workflows, and the gotchas only a human can contribute.
+2. **Execution (code, or an LLM following the map).** Workflows run against the map. `mode: deterministic` workflows run **headless with no LLM at all** (`scripts/run.py`, Playwright driving your installed Chrome), gated by a machine-readable [permission model](docs/PERMISSIONS.md). Agentic workflows run in an LLM session.
+3. **Repair (LLM, on demand).** When the site drifts, runs degrade the workflow's `trust` and emit a structured failure report; the repair skill patches the map and execution is fast again.
+
+A generated [dashboard](docs/overview.html) shows the whole estate — servable locally with real run buttons (`scripts/serve.py`).
+
+See [docs/INDEX.md](docs/INDEX.md) for all documentation, the [wiki](https://github.com/noskule-cc/SiteMapper/wiki) for how it functions, and [PRD.md](PRD.md) for the product requirements.
 
 ## What is in this repository
 
@@ -44,20 +47,24 @@ so a new project's results are private by default instead of after review.
 ## Project Structure
 
 ```
-schema/                              # YAML schema definitions
-  page.yaml                          #   Page map format
-  site.yaml                          #   Site-level metadata
-  workflow.yaml                      #   Workflow format (single + cross-site)
-  project.yaml                       #   Cross-site project format
+schema/                              # Commented YAML templates — the format's source of truth
+  page.yaml site.yaml workflow.yaml  #   Maps and workflows (incl. fingerprint/trust/effect)
+  project.yaml settings.yaml         #   Cross-site projects; layered settings + permissions
+  result.yaml persona.yaml           #   The neutral run result; who is logged in
 
-sites/                               # One directory per mapped site
-  sitemapper-demo/
-    site.yaml                        #   Base URL, auth, page list
-    pages/
-      issues-list.yaml               #   Issue list page
-      new-issue.yaml                 #   New issue form
-    workflows/
-      smart-issue.yaml               #   Create issue workflow
+docs/                                # Everything agents and maintainers read — start at docs/INDEX.md
+  skills/  subagents/                #   Neutral instructions; .claude/ holds the thin bindings
+
+scripts/
+  check.py                           #   All mechanical consistency checks (also in CI)
+  inventory.py                       #   Generates docs/inventory.md + docs/overview.html
+  run.py                             #   Headless deterministic workflow runner
+  serve.py                           #   Serves the dashboard live with a run API
+
+sites/sitemapper-demo/               # The worked example: pages/, workflows/, results/
+projects/                            # Cross-site projects (none in the framework repo)
+config.yaml                          # Global settings: environment + permission defaults
+data/                                # Copyable skeleton for your private map repository
 ```
 
 ## Getting Started
@@ -75,7 +82,7 @@ Maps use YAML with semantic locators (text, aria-label, role, `data-testid`) rat
 
 ## Demo Site
 
-[SiteMapper.demo](https://github.com/noskule-cc/SiteMapper.demo) — a GitHub repo for testing SiteMapper end-to-end. Map at least the readme and issues page, then create a "smart issue" workflow where it asks the user for an issue, checks for similar existing issues, presents matches, and lets the user decide whether to create it or not.
+[SiteMapper.demo](https://github.com/noskule-cc/SiteMapper.demo) — a GitHub repo the worked example maps end to end. Its two workflows show the two execution modes: `search-issues` (deterministic, `trust: verified`, runs headless in CI as the runner's smoke test) and `smart-issue` (agentic — judges similarity and asks before creating).
 
 ## Best Fit
 

@@ -1,13 +1,23 @@
 # Usage Guide
 
+**Host-agnostic by design.** The instructions behind every command live in
+`docs/skills/*.md` in terms of capabilities, not tool names; the slash
+commands below are one host's *bindings* of them (`docs/INTERFACE.md`). On a
+host without slash commands, read the skill doc and follow it directly —
+`docs/HOST_BINDINGS.md` maps capabilities to concrete tools per host.
+Deterministic workflows additionally need no agent host at all — see
+"Running headless" below.
+
 ## Setup
 
-SiteMapper requires two things running side by side:
+For LLM-driven sessions, two things run side by side:
 
-- **Claude Code** (CLI, desktop, or web) — reads/writes site maps from this repo, runs skills and workflows
-- **Chrome + Claude-in-Chrome MCP extension** — gives Claude Code browser control (DOM reading, clicking, form input, navigation)
+- **An agent host** (e.g. Claude Code — CLI, desktop, or web) — reads/writes site maps from this repo, runs skills and workflows
+- **A browser the agent can drive** (e.g. Chrome + the Claude-in-Chrome extension) — DOM reading, clicking, form input, navigation
 
-You type commands in Claude Code. Claude controls the browser through the MCP extension. The site maps live on your file system, not in the browser.
+You type commands in the agent host; it controls the browser. The site maps live on your file system, not in the browser.
+
+The headless runner needs only Python + PyYAML + Playwright (`pip install playwright` — it drives your installed Chrome, no browser download).
 
 To begin, tell Claude to open a Chrome browser session (it creates its own tab via the MCP extension) and navigate to your target URL — you don't open the tab by hand. Make sure Chrome and the Claude-in-Chrome extension are running first, and that you're logged in to the target site if it requires auth (Claude won't enter credentials for you).
 
@@ -64,6 +74,30 @@ workflow:
   verify:
     - "Issue created successfully"
 ```
+
+### The keys that matter beyond name/steps
+
+All defined, with their semantics, in `schema/workflow.yaml` — the schema
+comments are the reference; this is the orientation:
+
+- **`mode`** — `deterministic` (every step mechanical; can run headless) or
+  `agentic` (a step needs judgement; needs an LLM).
+- **`effect`** — `read-only | mutating | destructive`, declared. Checked up
+  front against the environment's permission policy (`docs/PERMISSIONS.md`).
+- **`trust` / `verified_at`** — lifecycle for headless runs: `draft` until a
+  green run is reviewed, `verified` after, `broken` automatically on
+  failure or fingerprint drift.
+- **`parameters`** vs. **`fixtures`** — caller-supplied (prompted) vs. pinned
+  test data; fixtures can be environment-keyed with a `common:` fallback.
+- **`setup` / `teardown`** — force a known state before, restore it after
+  (best-effort even on failure). What makes a test hermetic.
+- **`assert` steps** — checkable expectations (`visible`, `absent`,
+  `{contains}`, `{count}`, `{url_matches}`, …) that feed the result's
+  assertion list. Prefer them over prose `verify:` bullets.
+- **`action: script`** — call a site script (declared in `site.yaml`
+  `scripts:`) instead of driving the browser; prefer it whenever the data is
+  reachable from an API (`docs/CODE_OVER_LLM.md`).
+- **`action: key`** — press a keyboard key (e.g. `Enter` to submit a search).
 
 ### Project Workflows (cross-site)
 
@@ -147,10 +181,33 @@ flowchart TD
 ## Running Workflows
 
 ```
-/run <workflow-name>
+/run <workflow-name>          # any workflow, in an LLM session
+/test <workflow-name>         # deterministic test workflows: evaluates asserts, emits a result
 ```
 
-The runner searches both `sites/*/workflows/` and `projects/*/workflows/`. It collects parameters (dropdown for select, prompt for text), executes steps via Chrome MCP tools, and reports results.
+Both search `sites/*/workflows/` and `projects/*/workflows/`, collect
+parameters (dropdown for select, prompt for text), execute the steps through
+the host's browser tools, and report a `result` (`schema/result.yaml`).
+
+### Running headless (no LLM)
+
+```
+python scripts/run.py <workflow> [--param key=value] [--record] [--root <maps>]
+python scripts/serve.py [--root <maps>]     # the dashboard with real run buttons
+```
+
+`run.py` executes `mode: deterministic` workflows with no LLM in the loop —
+auto-waiting browser automation, the full assert grammar, `--json` for a
+machine-readable result with a structured failure report, `--record` to write
+the `results/` record. Permission-gated up front; `--root` points at your map
+repository. Test workflows run this way in CI on every push.
+
+### Results
+
+A run worth keeping is recorded as `results/<workflow>.<YYYY-MM-DD>.md`
+beside the workflow's own directory (`sites/<site>/results/` or
+`projects/<project>/results/`). Which runs are worth committing — and which
+are noise — is `docs/MAINTENANCE.md` → Results retention.
 
 ## Listing Workflows
 

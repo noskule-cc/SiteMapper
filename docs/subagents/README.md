@@ -52,6 +52,8 @@ silently read another tenant's data.
 |-------|----------|
 | `workflow-companion` | A workflow YAML has no sibling `.md` |
 | `validation-llm` | The docs were restructured — test them on a fresh LLM |
+| `verify-map` | A whole site (or several) needs a background drift sweep |
+| `map-site-scout` | A page needs a first-draft map proposal before the human session |
 
 ## Adding one
 

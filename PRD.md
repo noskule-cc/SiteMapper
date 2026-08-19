@@ -8,14 +8,18 @@ LLM browser agents re-explore the same web applications from scratch every sessi
 
 A collaborative site-mapping system where Claude and a human walk through a web application together, producing a versioned, reloadable map of pages, elements, flows, and gotchas. The map is stored as YAML and reference screenshots, committed to a git repo, and reused across sessions.
 
-### Two Operating Modes
+### Two Ways of Working
 
-**Workflow Mode** — Named, predefined sequences that execute against the saved map.
+(Not to be confused with a workflow's `mode:` key — `deterministic | agentic` —
+which says who can *execute* the steps. This section is about how a *user*
+engages the system.)
+
+**Workflow** — Named, predefined sequences that execute against the saved map.
 - Example: "check for login change requests" triggers a defined series of steps: navigate to issues, filter by tag, review results, report back.
 - Parameters are presented as dropdown selections when options are predefined, or the LLM prompts interactively for open-ended inputs.
-- Triggered via command (e.g., `/run check-login-issues`).
+- Triggered via command (`/run`, `/test`) — or, for `mode: deterministic` workflows, executed headless by `scripts/run.py` with no LLM at all.
 
-**Manual Mode** — User describes what to do in natural language or uses ad-hoc commands. Claude uses the loaded site map to navigate efficiently without re-discovering the DOM.
+**Manual** — User describes what to do in natural language or uses ad-hoc commands. The agent uses the loaded site map to navigate efficiently without re-discovering the DOM.
 
 ## Discovery Phase
 
@@ -67,7 +71,10 @@ Each workflow file defines:
 | `/map-site` | Start a discovery session for the current site |
 | `/verify-map` | On-demand drift check for the loaded map |
 | `/run <workflow>` | Execute a named workflow |
+| `/test <workflow>` | Execute a deterministic test workflow and emit a `result` |
+| `/repair <workflow>` | Fix the map after a headless runner failure, restore trust |
 | `/list-workflows` | Show available workflows for the current site |
+| `python scripts/run.py <workflow>` | Headless execution, no LLM (deterministic workflows) |
 
 ### Site-specific
 
@@ -81,10 +88,13 @@ Defined in each site's `workflows/` folder. Loaded when the user activates a sit
 
 ## Drift & Verification
 
-- On-demand only (no automatic checks).
-- Triggered via `/verify-map` or implicitly when a workflow step fails to find an expected element.
-- Element-existence checks against saved locators.
-- Screenshot comparison for visual changes.
+- **In passing:** every headless run verifies page fingerprints; a mismatch or
+  failed step degrades the workflow's `trust:` to `broken` in its YAML and
+  produces a structured failure report for the repair skill.
+- **On demand:** `/verify-map`, or implicitly when a workflow step fails to
+  find an expected element.
+- Element-existence checks against saved locators; screenshot comparison for
+  visual changes.
 
 ## Locator Strategy
 
@@ -100,7 +110,7 @@ Defined in each site's `workflows/` folder. Loaded when the user activates a sit
 ## MVP Scope
 
 1. Define YAML schema for pages and workflows (separate task).
-2. Build discovery skill (`/map-site`) as a Claude Code skill/subagent.
+2. Build the discovery skill (`/map-site`) — neutral instructions in `docs/skills/`, thin per-host binding (what shipped; there is deliberately no discovery subagent — discovery is human-in-the-loop by design, see `docs/CODE_OVER_LLM.md`).
 3. Build workflow runner (`/run`) with dropdown parameter selection.
 4. Map one pilot site (sitemapper-demo) end-to-end.
 5. Capture reference screenshots during discovery.
@@ -166,9 +176,9 @@ A page that overrides `settings.contact.email` still inherits `contact.name` and
 ### Sections
 
 - **`contact`** — form-fill / identity values (`name`, `salutation`, `email`, `phone`). Usually defined globally; any field may be overridden per-site or per-page.
-- **`policy`** — agent behavior flags:
+- **`policy`** — executor behavior:
   - `environment`: `dev | staging | production`
-  - `safe_to_submit_forms`: when `true`, the agent may fill and submit forms on that scope without asking (e.g. dev/test sites); when `false`/absent it asks first. This is the machine-readable authorization that keeps production submissions gated.
+  - `permissions`: `allow | ask | deny` per action class (`read`, `write`, `auth`, `destructive`) — the machine-readable authorization model, checked up front against a workflow's declared `effect`. See `docs/PERMISSIONS.md`. (`safe_to_submit_forms` survives as a legacy alias of `permissions.write`.)
 - **`form_defaults`** — per-page field prefills, keyed by the element `name` from the page map (e.g. `geraetestatus-select: "Ausser Betrieb"`). Typically page-level.
 
 ### Example
@@ -185,13 +195,13 @@ settings:
 # config.yaml (global, public)
 settings:
   policy:
-    safe_to_submit_forms: false   # default-safe; dev sites opt in
+    permissions: { write: ask, destructive: deny }   # default-safe; dev sites opt in
 
 # sites/<site>/site.yaml
 settings:
   policy:
     environment: dev
-    safe_to_submit_forms: true
+    permissions: { write: allow, auth: allow }
 
 # sites/<site>/pages/<page>.yaml
 settings:
@@ -201,11 +211,14 @@ settings:
 
 ## Architecture
 
-Claude Code is the orchestration layer. It has both:
+An agent host (Claude Code is one; the docs are host-neutral, see
+`docs/INTERFACE.md`) is the orchestration layer for LLM-driven work. It has:
 - **File system access** — reads/writes site maps, workflows, and screenshots from this repo.
-- **Browser control** — via the Claude-in-Chrome MCP extension tools (DOM reading, clicking, form input, navigation, screenshots).
+- **Browser control** — via the host's browser tools (mapped per host in `docs/HOST_BINDINGS.md`).
 
-The user interacts through Claude Code (CLI, desktop app, or web app) while the target site is open in Chrome with the MCP extension installed.
+For deterministic workflows there is a second, LLM-free execution path:
+`scripts/run.py` (Playwright), with `scripts/serve.py` offering the same runs
+from the generated dashboard.
 
 ## Future Vision
 
@@ -219,8 +232,11 @@ This replaces the current multi-window setup with a purpose-built workstation fo
 
 ## Out of Scope (v1)
 
-- Automatic or scheduled drift detection.
+- Scheduled drift detection / recurring runs (tracked in #4; drift detection
+  *in passing* shipped with the runner's fingerprint watch).
 - Cross-site reusable workflow templates (cross-site workflows are supported; reusable templates are not).
 - Map versioning beyond git history.
-- CI/CD integration.
 - Dedicated desktop application (see Future Vision).
+
+(CI was originally out of scope; it shipped meanwhile — `check.py` plus the
+runner smoke test run on every push.)

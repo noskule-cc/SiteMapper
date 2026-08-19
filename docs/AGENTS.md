@@ -80,6 +80,8 @@ never part of the contract — see [subagents/README.md](subagents/README.md).
 |-------|----------|
 | `workflow-companion` | A workflow YAML has no sibling `.md` |
 | `validation-llm` | The docs were restructured — test them on a fresh LLM |
+| `verify-map` | A whole site needs a background drift sweep (read-only) |
+| `map-site-scout` | Draft a page-map proposal for the human to review in `/map-site` |
 
 ## Host Bindings
 
