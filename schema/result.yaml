@@ -37,5 +37,23 @@ result:
 
   error: ""                   # Populated when status == error: what went wrong
 
+  failure:                    # Populated by the headless runner when status == error —
+                              # everything the repair loop (docs/skills/) needs to fix
+                              # the map without re-exploring. Absent on passed/failed.
+    phase: ""                 #   setup | steps | teardown
+    step_index: 0             #   0-based index of the failing step in that phase
+    action: ""                #   the step's action
+    description: ""           #   the step's description
+    page: ""                  #   page the step targeted
+    element: ""               #   element name from the page map
+    locator: {}               #   the locator AS TRIED: {strategy, value}
+    resolved_values: {}       #   $variables as resolved for this step
+    url: ""                   #   actual URL at failure time
+    page_title: ""            #   actual document title at failure time
+    fingerprint: ""           #   ok | mismatch | unchecked — the target page's
+                              #   fingerprint state at failure time
+    screenshot: ""            #   failure screenshot — a LOCAL, gitignored path
+                              #   (.runner/); referenced, never committed
+
 # Summary convenience (a runner may also include):
 #   counts: { total: N, passed: N, failed: N }

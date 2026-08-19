@@ -216,6 +216,7 @@ class Runner:
         self.default_site = workflow.get("site")
         self.assertions: list[dict] = []
         self.evidence: list[str] = []
+        self.current: dict = {}  # {phase, index, step} of the step in flight
         self._pw = None
         self.browser = None
         self.pw_page = None
@@ -253,11 +254,61 @@ class Runner:
                 pass
 
     # -- steps -------------------------------------------------------------
-    def run_step(self, step: dict):
+    def run_step(self, step: dict, phase: str = "steps", index: int = 0):
+        self.current = {"phase": phase, "index": index, "step": step}
         action = step.get("action")
         if action not in MECHANICAL_ACTIONS:
             raise RunError(f"action '{action}' is not mechanical — this workflow needs an LLM")
         getattr(self, f"do_{action}")(step)
+
+    # -- failure report (#21) ----------------------------------------------
+    def build_failure(self) -> dict:
+        """Everything the repair loop needs: which step, which locator, what
+        the page actually was. Built best-effort — never raises."""
+        step = self.current.get("step") or {}
+        failure = {
+            "phase": self.current.get("phase", ""),
+            "step_index": self.current.get("index", 0),
+            "action": step.get("action", ""),
+            "description": step.get("description", ""),
+            "page": step.get("page", ""),
+            "element": step.get("element", ""),
+            "locator": {},
+            "resolved_values": {},
+            "url": "", "page_title": "",
+            "fingerprint": "unchecked",
+            "screenshot": "",
+        }
+        try:
+            site = self.site(step)
+            if step.get("page") and step.get("element"):
+                el = site.element(step["page"], step["element"])
+                failure["locator"] = dict(el.get("locator") or {})
+        except Exception:
+            pass
+        for key in ("value", "site"):
+            raw = step.get(key)
+            if isinstance(raw, str) and "$" in raw:
+                try:
+                    failure["resolved_values"][raw] = self.bindings.resolve(raw)
+                except Exception as exc:
+                    failure["resolved_values"][raw] = f"<unresolved: {exc}>"
+        if self.pw_page:
+            try:
+                failure["url"] = self.pw_page.url
+                failure["page_title"] = self.pw_page.title()
+            except Exception:
+                pass
+            try:
+                shots = self.root / ".runner"
+                shots.mkdir(exist_ok=True)
+                stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+                shot = shots / f"{self.workflow.get('name', 'run')}-{stamp}.png"
+                self.pw_page.screenshot(path=str(shot), full_page=False)
+                failure["screenshot"] = str(shot)
+            except Exception:
+                pass
+        return failure
 
     def _element(self, step, site: Site):
         return site.element(step["page"], step["element"])
@@ -467,22 +518,28 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool):
     try:
         runner.start()
         for phase in ("setup", "steps"):
-            for step in workflow.get(phase) or []:
-                runner.run_step(step)
+            for index, step in enumerate(workflow.get(phase) or []):
+                runner.run_step(step, phase, index)
     except RunError as exc:
         result["status"] = "error"
         result["error"] = f"[{phase}] {exc}"
+        result["failure"] = runner.build_failure()
     except Exception as exc:  # Playwright timeouts, navigation errors, ...
         result["status"] = "error"
         result["error"] = f"[{phase}] {type(exc).__name__}: {str(exc).splitlines()[0]}"
+        result["failure"] = runner.build_failure()
     finally:
         try:  # teardown is best-effort, even after a failure
-            for step in workflow.get("teardown") or []:
-                runner.run_step(step)
+            for index, step in enumerate(workflow.get("teardown") or []):
+                runner.run_step(step, "teardown", index)
         except Exception as exc:
             note = f"teardown incomplete: {str(exc).splitlines()[0]}"
             result["error"] = (result["error"] + "; " + note).lstrip("; ")
+            if "failure" not in result:
+                result["failure"] = runner.build_failure()
         runner.stop()
+    if result.get("failure", {}).get("screenshot"):
+        runner.evidence.append(result["failure"]["screenshot"])
 
     result["captures"] = bindings.captures
     result["assertions"] = runner.assertions

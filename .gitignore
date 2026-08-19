@@ -44,3 +44,6 @@ SiteMapper-data/
 # tenant-specific is supposed to be in this tree at all.
 
 *.stackdump
+
+# runner artifacts (failure screenshots) - local only
+.runner/
