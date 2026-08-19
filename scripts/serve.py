@@ -77,6 +77,9 @@ class Handler(BaseHTTPRequestHandler):
             return self.page()
         if path == "/api/inventory":
             return self.send_json(200, collect())
+        if path == "/api/meta":
+            return self.send_json(200, {"tree": ROOT.name,
+                                        "framework": ROOT == FRAMEWORK})
         if path == "/api/results":
             data = collect()["workflows"]
             return self.send_json(200, [
@@ -107,9 +110,46 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(200, target.read_bytes(), BIN_TYPES[ext])
         return self.send_json(404, {"error": f"file type not served: {ext}"})
 
+    # -- POST /api/deploy ----------------------------------------------------
+    def deploy(self):
+        """Prepare THE FRAMEWORK dashboard's shareable build and hand off to
+        the /deploy-dashboard skill. Artifact publishing is interactive-only
+        (off in headless agent contexts by design), so the button cannot
+        publish by itself — it builds, and an interactive agent session
+        publishes. Guardrail, enforced structurally: this endpoint refuses a
+        map repository. A deployment's dashboard never gets a shareable URL —
+        it is served here, locally, and that is its home."""
+        if ROOT != FRAMEWORK:
+            return self.send_json(403, {"error":
+                "deploy is framework-only. A map repository's dashboard is never "
+                "published (docs/PERMISSIONS.md, the wiki's features-dashboard) — "
+                "serve it locally; that is the guardrail, not a limitation."})
+        jobs = (FRAMEWORK / "docs" / "JOBS.md").read_text(encoding="utf-8")
+        m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
+        if not m:
+            return self.send_json(500, {"error":
+                "no standing artifact URL registered in docs/JOBS.md"})
+        out = ROOT / ".runner" / "deploy" / "dashboard-artifact.html"
+        out.parent.mkdir(parents=True, exist_ok=True)
+        overview.set_root(str(ROOT))
+        inventory.set_root(str(ROOT))
+        out.write_text(overview.render(base=overview.github_base(), fragment=True),
+                       encoding="utf-8")
+        return self.send_json(200, {
+            "prepared": str(out),
+            "url": m.group(0),
+            "command": "/deploy-dashboard",
+            "note": "Build ready. Publishing needs an interactive agent session "
+                    "(artifact publishing is off in headless contexts by design): "
+                    "run /deploy-dashboard in Claude Code — it publishes this "
+                    "build to the standing URL.",
+        })
+
     # -- POST /api/run/<workflow> ------------------------------------------
     def do_POST(self):
         path = urlsplit(self.path).path
+        if path == "/api/deploy":
+            return self.deploy()
         m = re.match(r"^/api/run/([A-Za-z0-9._-]+)$", path)
         if not m:
             return self.send_json(404, {"error": "unknown endpoint"})

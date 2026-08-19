@@ -16,7 +16,7 @@ script; only jobs needing judgement are skills or sub-agents.
 | Staleness check | `python scripts/inventory.py --check` | non-zero exit when a generated view is stale | script |
 | Headless workflow run | `python scripts/run.py <workflow> --param k=v` | a `result` object (`--json` for machine-readable) | script |
 | Live dashboard | `python scripts/serve.py [--root <maps>]` | the overview at `http://127.0.0.1:8765/` with real run buttons | script |
-| Republish the dashboard artifact | build: `python scripts/overview.py --links github --fragment --out <tmp>`; publish via an agent session's artifact capability **to the standing URL** <https://claude.ai/code/artifact/88589587-c88d-4092-b4d7-3e1ac07e47a7> | shareable snapshot of THIS repo's page | agent session |
+| Deploy the dashboard | the **deploy button** on the live page (builds), then `/deploy-dashboard` (publishes) — **to the standing URL** <https://claude.ai/code/artifact/88589587-c88d-4092-b4d7-3e1ac07e47a7>. Framework page ONLY; the serve endpoint refuses map repos | shareable snapshot of THIS repo's page | skill ([deploy-dashboard.md](skills/deploy-dashboard.md)) |
 | Map drift check | `/verify-map <site>` | FOUND / MISSING per element | skill ([verify-map.md](skills/verify-map.md)) |
 | Deterministic UI test | `/test <workflow>` | a `result` object + `results/` record | skill ([test.md](skills/test.md)) |
 | Map repair after a failed run | `/repair <workflow>` | patched map + restored `trust` | skill ([repair.md](skills/repair.md)) |
@@ -35,7 +35,7 @@ map repository.
 | A headless run fails (`trust` degraded to broken) | `/repair` with the runner's `--json` report |
 | Changing a deterministic workflow | `/test` it |
 | Restructuring the documentation | `validation-llm` |
-| Sites/workflows/projects changed and the shared page should show it | republish the dashboard artifact (standing page — same URL, decided in #14) |
+| Sites/workflows/projects changed and the shared page should show it | deploy the dashboard (standing page — same URL, decided in #14) |
 
 ---
 

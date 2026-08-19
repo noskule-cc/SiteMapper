@@ -64,6 +64,7 @@ say so in its doc when it does.
 | list-workflows   | `/list-workflows` | Show available workflows                   |
 | verify-map       | `/verify-map`     | On-demand drift check for a mapped site    |
 | repair           | `/repair`         | Fix the map after a headless runner failure, restore trust |
+| deploy-dashboard | `/deploy-dashboard` | Publish the framework dashboard to its standing shareable URL |
 
 ## Key Concepts
 

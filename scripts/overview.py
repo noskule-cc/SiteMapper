@@ -183,6 +183,14 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
   font: 12.5px ui-monospace, "Cascadia Code", Consolas, monospace;
   white-space: pre-wrap; overflow-x: auto; }
 .live-result.fail { border-color: var(--prod-fg); }
+/* Which copy is this? local file / live server / published shareable page. */
+.where { font-size: 11px; font-weight: 500; padding: 3px 10px;
+  border-radius: 999px; letter-spacing: .03em; vertical-align: 3px; }
+.where-local { background: var(--chip); color: var(--muted); }
+.where-live { background: var(--dev-bg); color: var(--dev-fg); }
+.where-shared { background: var(--staging-bg); color: var(--staging-fg); }
+.chip.deploy { border: 1px solid var(--line); }
+.chip.deploy:hover { border-color: var(--accent); color: var(--accent); }
 
 .procs { margin: 16px 0 0; border-top: 1px solid var(--line); }
 .proc { padding: 12px 0 12px; border-bottom: 1px solid var(--line); }
@@ -298,9 +306,50 @@ for (const btn of document.querySelectorAll('.run')) {
 // page stays the static copy-paste version. One page, two modes.
 fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() => {
   document.body.classList.add('live');
+  const where = document.querySelector('.where');
+  if (where) {
+    where.textContent = 'live — localhost only, not published';
+    where.className = 'where where-live';
+  }
   const foot = document.querySelector('footer');
   if (foot) foot.append(' Live mode: run buttons execute via scripts/run.py; '
                         + 'mutating runs still ask first.');
+  // Deploy: framework tree only — the server refuses it for a map repository
+  // (that is the guardrail), so the button only appears where it can work.
+  fetch('/api/meta').then(r => r.json()).then(meta => {
+    if (!meta.framework) return;
+    const bar = document.querySelector('.toolbar');
+    const d = document.createElement('button');
+    d.className = 'chip deploy';
+    d.textContent = 'deploy → shareable URL';
+    d.title = 'Publish this page as the standing shareable artifact';
+    d.addEventListener('click', async () => {
+      if (!confirm('Prepare the shareable build of the framework dashboard? '
+                   + '(Publishing then happens in your Claude session — it '
+                   + 'replaces the currently published version.)')) return;
+      d.disabled = true; d.textContent = 'building…';
+      try {
+        const r = await fetch('/api/deploy', {method: 'POST'});
+        const data = await r.json();
+        if (data.command) {
+          d.textContent = 'build ready';
+          prompt('Build ready. Run this in Claude Code to publish '
+                 + '(Ctrl+C to copy):', data.command);
+        } else {
+          d.textContent = 'deploy failed';
+          alert('Deploy refused/failed: ' + (data.error || ('HTTP ' + r.status)));
+        }
+      } catch (err) {
+        d.textContent = 'deploy failed';
+        alert('deploy: ' + err);
+      } finally {
+        setTimeout(() => {
+          d.disabled = false; d.textContent = 'deploy → shareable URL';
+        }, 5000);
+      }
+    });
+    bar.appendChild(d);
+  }).catch(() => {});
   for (const btn of document.querySelectorAll('.run[data-wf]')) {
     btn.dataset.live = '1';
     const c = document.createElement('button');
@@ -723,8 +772,20 @@ def render(base=LOCAL, fragment=False):
     if not fragment:
         a("</head><body>")
 
+    # WHERE badge: the reader must always know which copy this is. Three
+    # states — "shareable copy" (a published snapshot, stamped at build),
+    # "local copy" (the committed file; no date, or the staleness check would
+    # always fail), and "live" (swapped in by JS when serve.py answers).
+    if base != LOCAL:
+        import datetime as _dt
+        where = ('<span class="where where-shared">shareable copy — published '
+                 f'snapshot, built {_dt.date.today().isoformat()}</span>')
+    else:
+        where = ('<span class="where where-local">local copy — this machine '
+                 'only</span>')
+
     a('<header class="top"><div class="wrap">')
-    a(f"<h1>{e(title)}</h1>")
+    a(f"<h1>{e(title)} {where}</h1>")
     a('<p class="sub">Every mapped site, every process that runs against it, and '
       "the projects that span them. "
       f'{", ".join(f"{v} {k}" for k, v in sorted(modes.items()))} by mode.</p>')
