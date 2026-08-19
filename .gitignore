@@ -42,3 +42,5 @@ SiteMapper-data/
 #
 # Nothing tenant-specific is listed by name here any more, because nothing
 # tenant-specific is supposed to be in this tree at all.
+
+*.stackdump
