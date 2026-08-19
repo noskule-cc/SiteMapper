@@ -60,7 +60,7 @@ doc and follow it directly.
 - **Workflows** are YAML files in `sites/<site-name>/workflows/` defining step sequences, each with a sibling `<workflow>.md` — a short human-readable summary with a Mermaid flowchart.
 - **Cross-site workflows** live in `projects/<project>/workflows/` and span multiple sites using capture variables.
 - **Schemas** in `schema/` define the YAML format for pages, sites, workflows, projects, settings and results.
-- **Settings** are layered (`config.yaml` global → `site.yaml` → page YAML), merged most-specific-wins; `policy.safe_to_submit_forms` gates form submission.
+- **Settings** are layered (`config.yaml` global → `site.yaml` → page YAML), merged most-specific-wins; `policy.permissions` (allow/ask/deny per action class) gates what a run may do — see `docs/PERMISSIONS.md`.
 - **A workflow's `mode`** is `deterministic` (mechanical, runnable with no LLM) or `agentic` (needs judgement). Tests should be deterministic.
 - **Prefer a script over the browser.** Where data is reachable from a site's API, `action: script` is faster, headless, host-neutral, and does not break when the UI changes.
 - **The repo is the source of truth; agent memory is a staging area.** Project-true facts live in the repo (page `gotchas`, `scripts/README.md`, `settings:`, the deployment's guardrails); machine- or person-specific facts live in the host agent's own memory store. Never both — when they disagree, the repo wins. See `docs/KNOWLEDGE_PLACEMENT.md`.

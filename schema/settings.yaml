@@ -42,12 +42,32 @@ settings:
     # guess — an IMAP login against a guessed address either fails confusingly or
     # succeeds against a mailbox the suite was never meant to touch.
 
-  policy:                     # Flags that tell the agent how to behave on this scope.
+  policy:                     # Flags that tell any executor how to behave on this scope.
     environment: ""           #   dev | staging | production
+
+    permissions:              # allow | ask | deny per ACTION CLASS (#18/#22). Checked
+                              # UP FRONT against the workflow's declared `effect`
+                              # (schema/workflow.yaml) before anything runs.
+                              #   The `ask` channel depends on the executor: an LLM
+                              #   host asks in the conversation; the headless runner
+                              #   (scripts/run.py) prompts on the TTY or accepts an
+                              #   explicit --yes-<class> flag; when non-interactive
+                              #   (CI), `ask` degrades to `deny`.
+                              #   `trust: verified` never grants permission.
+      read: ""                #   navigate/read/assert — changes nothing on the site.
+                              #   Default: allow
+      write: ""               #   creating/editing data; form submission included.
+                              #   Default: ask
+      auth: ""                #   logging in without a human (persona `automated`).
+                              #   Default: ask
+      destructive: ""         #   deleting/overwriting data the run did not create.
+                              #   Default: deny
+
     safe_to_submit_forms: false
-                              #   When true, the agent MAY fill and submit forms on
-                              #   this scope without asking (e.g. dev/test sites).
-                              #   When false/absent, the agent asks before submitting.
+                              #   LEGACY alias, subsumed by permissions.write:
+                              #   `true` acts as `write: allow` on that scope when
+                              #   permissions.write is unset. Kept so existing maps
+                              #   keep working; prefer permissions.write.
 
   form_defaults: {}           # Per-page field prefills, keyed by the element `name`
                               # from the page map. Example (on a page YAML):
@@ -58,5 +78,6 @@ settings:
 # Notes:
 # - `contact` and `policy` are typically defined globally (config.yaml) and
 #   refined per-site; `form_defaults` is typically page-level.
-# - `safe_to_submit_forms` is the machine-readable authorization for form
-#   submission. Keep it false on production sites.
+# - `policy.permissions` is the machine-readable authorization model. Keep
+#   `write`/`destructive` at ask/deny on production scopes; dev/staging sites
+#   opt in below their own site.yaml. See docs/PERMISSIONS.md.

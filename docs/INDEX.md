@@ -56,6 +56,7 @@ lowercase = this project's own content.
 - [KNOWLEDGE_PLACEMENT.md](KNOWLEDGE_PLACEMENT.md) — where a fact belongs: repo vs. agent memory
 - [DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md) — which level it goes on: artifact, `docs/`, or wiki
 - [CODE_OVER_LLM.md](CODE_OVER_LLM.md) — who executes: prefer a script over an LLM
+- [PERMISSIONS.md](PERMISSIONS.md) — what a run may do: action classes × allow/ask/deny
 - [JOBS.md](JOBS.md) — registry of runnable maintenance jobs
 - [wiki.md](wiki.md) — where the wiki lives; how SiteMapper *functions* is documented there
 - a deployment's own `docs/guardrails.md` lives with its maps, in its own repository — never here

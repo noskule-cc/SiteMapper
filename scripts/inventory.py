@@ -136,7 +136,9 @@ def collect_sites():
             "url": str(s.get("base_url") or ""),
             "auth": oneline(s.get("auth_notes"), 200),
             "environment": str(policy.get("environment") or ""),
-            "safe_forms": policy.get("safe_to_submit_forms"),
+            # permissions.write, with the legacy safe_to_submit_forms as alias
+            "safe_forms": ((policy.get("permissions") or {}).get("write") == "allow"
+                           or policy.get("safe_to_submit_forms") or None),
             "pages": len(glob.glob(os.path.join(sd, "pages", "*.yaml"))),
             "page_files": [{"name": os.path.basename(f)[:-5], "path": rel(f)}
                            for f in sorted(glob.glob(os.path.join(sd, "pages", "*.yaml")))],

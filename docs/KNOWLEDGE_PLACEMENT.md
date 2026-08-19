@@ -72,7 +72,7 @@ of the project, promote it and delete the memory — do not leave both.
 |---|---|---|
 | A detail page has an "Enable new design" toggle; with it off, the mapped tabs do not exist | that page's `gotchas` | Breaks any workflow, for anyone |
 | Headless auth is blocked three ways, so the readout runs browser-driven | that site's `scripts/README.md` | Site-wide constraint + a parked-code rationale |
-| Dev forms may be submitted with the standard contact | `settings.policy.safe_to_submit_forms` | Machine-readable beats prose |
+| Dev forms may be submitted with the standard contact | `settings.policy.permissions.write` | Machine-readable beats prose |
 | `ado` is installed at user scope with `--authentication azcli`; `az` must be on the Machine PATH | memory | True of this machine only |
 | An MCP server may touch one project's wiki only | the deployment's `docs/guardrails.md` | A standing rule for every session, on every host |
 

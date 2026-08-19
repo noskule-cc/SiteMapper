@@ -32,13 +32,15 @@ script, not into a file. If a site needs auth, confirm the human is logged in
 and continue from their session. No committed file may contain a secret; a map
 references a run-time secret (`credential_ref: env:…`), never the value.
 
-## Form submission is gated by `settings.policy.safe_to_submit_forms`
+## Writing through a UI is gated by `settings.policy.permissions`
 
-The machine-readable authorization for writing through a UI, resolved through
-the layered `settings:` block. `true` means the agent may submit on that scope
-without asking; `false` or absent means ask, every time. Do not flip it to
-unblock a workflow — it is set per scope for a reason, and flipping it at site
-level silently authorizes every page of that site for every future run.
+The machine-readable authorization model (allow/ask/deny per action class —
+see the framework's `docs/PERMISSIONS.md`), resolved through the layered
+`settings:` block; form submission is a `write`-class action (the old
+`safe_to_submit_forms: true` still acts as `write: allow`). Do not flip a
+permission to unblock a workflow — it is set per scope for a reason, and
+flipping it at site level silently authorizes every page of that site for
+every future run.
 
 ## Production writes
 

@@ -92,6 +92,7 @@ of just performing a task, it evaluates `assert` steps and reports PASS/FAIL.
 
 ## Safety
 
-- A test run may submit forms only where `settings.policy.safe_to_submit_forms`
-  is true for that scope (e.g. dev). Otherwise treat submit controls as
-  read-only and assert on them without clicking.
+- A test run may submit forms only where the scope's policy allows the `write`
+  class (`settings.policy.permissions.write: allow` — or the legacy
+  `safe_to_submit_forms: true`; see `docs/PERMISSIONS.md`). Otherwise treat
+  submit controls as read-only and assert on them without clicking.

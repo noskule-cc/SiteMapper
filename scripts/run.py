@@ -464,13 +464,79 @@ class Runner:
 
 
 # ---------------------------------------------------------------------------
+# Permissions (#22) — action classes x allow/ask/deny, gated UP FRONT.
+
+EFFECT_CLASS = {"read-only": "read", "mutating": "write", "destructive": "destructive"}
+PERMISSION_DEFAULTS = {"read": "allow", "write": "ask", "auth": "ask", "destructive": "deny"}
+STRICTNESS = {"allow": 0, "ask": 1, "deny": 2}
+
+
+def permission_verdict(settings: dict, action_class: str) -> str:
+    policy = settings.get("policy") or {}
+    verdict = (policy.get("permissions") or {}).get(action_class)
+    if not verdict and action_class == "write" and policy.get("safe_to_submit_forms"):
+        verdict = "allow"  # legacy alias
+    return verdict or PERMISSION_DEFAULTS[action_class]
+
+
+def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str]):
+    """Refuse or ask BEFORE the browser opens. `trust` grants nothing here.
+
+    Cross-site workflows are gated against every involved site; the strictest
+    verdict wins. `ask` resolves via --yes-<class>, then a TTY prompt, and
+    degrades to deny when non-interactive (CI has no human to ask).
+    """
+    effect = workflow.get("effect")
+    if effect not in EFFECT_CLASS:
+        raise RunError(
+            f"effect: {effect or 'undeclared'} — a headless run needs the workflow to "
+            "declare read-only | mutating | destructive (schema/workflow.yaml)"
+        )
+    action_class = EFFECT_CLASS[effect]
+    verdict, source = "allow", "defaults"
+    for site_name in sites:
+        site = Site(root, site_name)
+        v = permission_verdict(resolve_settings(root, site, None), action_class)
+        env = (resolve_settings(root, site, None).get("policy") or {}).get("environment", "?")
+        if STRICTNESS[v] > STRICTNESS[verdict]:
+            verdict, source = v, f"site '{site_name}' (environment: {env})"
+    if verdict == "deny":
+        raise RunError(
+            f"permission denied: effect '{effect}' needs class '{action_class}' which is "
+            f"'deny' for {source}. This is policy, not a bug — see docs/PERMISSIONS.md."
+        )
+    if verdict == "ask":
+        if action_class in pre_authorized:
+            return
+        if sys.stdin.isatty():
+            try:
+                answer = input(
+                    f"'{workflow.get('name')}' is {effect} and {source} says ask. "
+                    "Proceed? [y/N] "
+                )
+            except (EOFError, KeyboardInterrupt):
+                answer = ""  # a TTY that cannot actually answer is non-interactive
+            if answer.strip().lower() == "y":
+                return
+            raise RunError(
+                f"not authorized: class '{action_class}' is 'ask' for {source} and no "
+                f"consent was given. Pass --yes-{action_class} to pre-authorize."
+            )
+        raise RunError(
+            f"class '{action_class}' is 'ask' for {source}, and this run is non-interactive "
+            f"— `ask` degrades to deny. Pass --yes-{action_class} to pre-authorize."
+        )
+
+
+# ---------------------------------------------------------------------------
 # Orchestration
 
 def utc_now() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def run_workflow(root: Path, name: str, cli_params: dict, headed: bool):
+def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
+                 pre_authorized: set[str] = frozenset()):
     wf_path, data = find_workflow(root, name)
     workflow = data.get("workflow", {})
 
@@ -488,14 +554,12 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool):
                     "cannot be deterministic; fix its mode or the step"
                 )
 
-    # Permission gate (interim until #22): only read-only workflows run headless.
-    effect = workflow.get("effect")
-    if effect != "read-only":
-        raise RunError(
-            f"effect: {effect or 'undeclared'} — until the permission model (#22) lands, "
-            "the runner accepts only `effect: read-only` workflows. Declare the key "
-            "(schema/workflow.yaml)."
-        )
+    involved = [s for s in ([workflow.get("site")] if workflow.get("site") else
+                            list(workflow.get("sites") or [])) if isinstance(s, str)
+                and not s.startswith("$")]
+    if not involved:
+        raise RunError("workflow names no literal site — cannot resolve a permission scope")
+    gate(root, workflow, involved, pre_authorized)
 
     bindings = Bindings(workflow, cli_params)
     runner = Runner(root, wf_path, workflow, bindings, headed=headed)
@@ -592,6 +656,10 @@ def main(argv=None):
     ap.add_argument("--headed", action="store_true", help="show the browser window")
     ap.add_argument("--record", action="store_true",
                     help="write the results/<workflow>.<date>.md record")
+    ap.add_argument("--yes-write", action="store_true",
+                    help="pre-authorize the 'write' class where policy says ask")
+    ap.add_argument("--yes-destructive", action="store_true",
+                    help="pre-authorize the 'destructive' class where policy says ask")
     args = ap.parse_args(argv)
 
     root = Path(args.root).resolve() if args.root else FRAMEWORK_ROOT
@@ -602,8 +670,12 @@ def main(argv=None):
         key, value = item.split("=", 1)
         cli_params[key] = value
 
+    pre_authorized = {cls for cls, flag in
+                      (("write", args.yes_write), ("destructive", args.yes_destructive))
+                      if flag}
     try:
-        result, wf_path = run_workflow(root, args.workflow, cli_params, args.headed)
+        result, wf_path = run_workflow(root, args.workflow, cli_params, args.headed,
+                                       pre_authorized)
     except RunError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

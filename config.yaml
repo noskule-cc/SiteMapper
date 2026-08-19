@@ -21,4 +21,9 @@
 settings:
   policy:
     environment: production     # default-safe; dev/staging sites opt in below their own site.yaml
-    safe_to_submit_forms: false # never submit forms without asking unless a scope opts in
+    permissions:                # allow | ask | deny per action class — see docs/PERMISSIONS.md
+      read: allow               # reading changes nothing
+      write: ask                # never create/edit (incl. form submits) without asking
+      auth: ask                 # automated login is an opt-in, per environment
+      destructive: deny         # deleting what a run did not create: never by default
+    safe_to_submit_forms: false # legacy alias of permissions.write — kept for old maps
