@@ -1,9 +1,16 @@
 # Skill: deploy-dashboard
 
-Publish the **framework** dashboard to its standing shareable URL. This is the
-publish half of the dashboard's deploy button (`scripts/serve.py` →
-`POST /api/deploy` builds; this skill publishes) — artifact publishing needs
-an interactive agent session, headless contexts cannot do it by design.
+Publish the **framework** dashboard to its standing shareable URL — the
+manual path. **The normal path is automatic:** the `deploy-dashboard` cloud
+routine republishes the standing artifact on every push to
+`noskule-cc/SiteMapper` (GitHub webhook) and daily at 03:00 UTC as a safety
+net (<https://claude.ai/code/routines/trig_01KVFkR31fCPHq466Q88Tse2>). Use
+this skill only for an out-of-band deploy of uncommitted state, or when the
+routine failed.
+
+Artifact publishing needs an agent session with the Artifact capability —
+plain headless `claude -p` cannot do it by design; the dashboard's deploy
+button therefore builds and hands off to a session.
 
 ## Guardrail — read before anything else
 

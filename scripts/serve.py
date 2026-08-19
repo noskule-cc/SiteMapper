@@ -84,6 +84,7 @@ class Handler(BaseHTTPRequestHandler):
                 m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
                 if m:  # the standing shareable URL — framework page only
                     meta["share_url"] = m.group(0)
+                meta["deployed"] = self.deployed_state()
             return self.send_json(200, meta)
         if path == "/api/results":
             data = collect()["workflows"]
@@ -114,6 +115,32 @@ class Handler(BaseHTTPRequestHandler):
         if ext in BIN_TYPES:
             return self.send(200, target.read_bytes(), BIN_TYPES[ext])
         return self.send_json(404, {"error": f"file type not served: {ext}"})
+
+    _fetch_at = 0.0
+
+    def deployed_state(self) -> bool:
+        """Is the published page current? With deploy-on-push automation the
+        standing artifact tracks origin/main, so 'deployed' means: no local
+        changes to the page's inputs, and HEAD is pushed. Gray share link
+        otherwise — 'the shared page does not have your changes yet'."""
+        import time
+        try:
+            if time.time() - Handler._fetch_at > 300:  # refresh origin/main ref
+                subprocess.run(["git", "-C", str(ROOT), "fetch", "--quiet"],
+                               capture_output=True, timeout=20)
+                Handler._fetch_at = time.time()
+            dirty = subprocess.run(
+                ["git", "-C", str(ROOT), "status", "--porcelain", "--",
+                 "sites", "projects", "schema", "scripts", "docs", "config.yaml"],
+                capture_output=True, text=True, timeout=20).stdout.strip()
+            head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
+                                  capture_output=True, text=True, timeout=20).stdout
+            remote = subprocess.run(
+                ["git", "-C", str(ROOT), "rev-parse", "origin/main"],
+                capture_output=True, text=True, timeout=20).stdout
+            return not dirty and head.strip() == remote.strip() and bool(head.strip())
+        except Exception:
+            return False
 
     # -- POST /api/deploy ----------------------------------------------------
     def deploy(self):

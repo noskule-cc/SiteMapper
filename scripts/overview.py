@@ -194,6 +194,8 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
 .where-local { background: var(--chip); color: var(--muted); }
 .where-live { background: var(--dev-bg); color: var(--dev-fg); }
 .where-shared { background: var(--staging-bg); color: var(--staging-fg); }
+/* share link goes gray while the published page lags the local state */
+.run.stale { color: var(--muted); border-style: dashed; }
 
 .procs { margin: 16px 0 0; border-top: 1px solid var(--line); }
 .proc { padding: 12px 0 12px; border-bottom: 1px solid var(--line); }
@@ -327,9 +329,12 @@ fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() =>
     document.querySelector('h1').appendChild(actions);
     if (meta.share_url) {
       const s = document.createElement('button');
-      s.className = 'run share';
+      s.className = 'run share' + (meta.deployed ? '' : ' stale');
       s.textContent = 'share link';
-      s.title = 'Copy the shareable URL: ' + meta.share_url;
+      s.title = meta.deployed
+        ? 'Copy the shareable URL: ' + meta.share_url
+        : 'The published page does not have your local changes yet — '
+          + 'deploy first. (Copies the URL anyway: ' + meta.share_url + ')';
       s.addEventListener('click', () => copy(meta.share_url).then(() => {
         s.textContent = 'link copied ✓';
         setTimeout(() => { s.textContent = 'share link'; }, 1500);
@@ -338,31 +343,26 @@ fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() =>
     }
     const d = document.createElement('button');
     d.className = 'run deploy';
-    d.textContent = 'deploy → shareable URL';
-    d.title = 'Publish this page as the standing shareable artifact';
+    d.textContent = 'deploy';
+    d.title = meta.deployed
+      ? 'Published page is current (deploys automatically on push)'
+      : 'Build the shareable page; publish via /deploy-dashboard or push to main';
     d.addEventListener('click', async () => {
-      if (!confirm('Prepare the shareable build of the framework dashboard? '
-                   + '(Publishing then happens in your Claude session — it '
-                   + 'replaces the currently published version.)')) return;
       d.disabled = true; d.textContent = 'building…';
       try {
         const r = await fetch('/api/deploy', {method: 'POST'});
         const data = await r.json();
         if (data.command) {
-          d.textContent = 'build ready';
-          prompt('Build ready. Run this in Claude Code to publish '
-                 + '(Ctrl+C to copy):', data.command);
+          d.textContent = 'build ready → ' + data.command;
+          d.title = data.note;
         } else {
-          d.textContent = 'deploy failed';
-          alert('Deploy refused/failed: ' + (data.error || ('HTTP ' + r.status)));
+          d.textContent = 'refused: ' + (data.error || ('HTTP ' + r.status));
         }
       } catch (err) {
         d.textContent = 'deploy failed';
-        alert('deploy: ' + err);
+        d.title = String(err);
       } finally {
-        setTimeout(() => {
-          d.disabled = false; d.textContent = 'deploy → shareable URL';
-        }, 5000);
+        setTimeout(() => { d.disabled = false; }, 1500);
       }
     });
     actions.appendChild(d);
