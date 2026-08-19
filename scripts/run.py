@@ -258,6 +258,8 @@ class Runner:
         self.assertions: list[dict] = []
         self.evidence: list[str] = []
         self.current: dict = {}  # {phase, index, step} of the step in flight
+        self.fingerprints: dict[str, str] = {}  # page -> ok | mismatch (watch, #24)
+        self._last_page: str | None = None
         self._pw = None
         self.browser = None
         self.pw_page = None
@@ -369,7 +371,40 @@ class Runner:
         action = step.get("action")
         if action not in MECHANICAL_ACTIONS:
             raise RunError(f"action '{action}' is not mechanical — this workflow needs an LLM")
+        # Watch (#24): arriving at a page by click-chain — verify its
+        # fingerprint in passing before acting on it. Deep-link arrivals are
+        # verified in do_navigate after goto().
+        page_name = step.get("page")
+        if (page_name and page_name != self._last_page and action != "navigate"
+                and self.pw_page):
+            self.check_fingerprint(self.site(step), page_name)
         getattr(self, f"do_{action}")(step)
+        if page_name:
+            self._last_page = page_name
+
+    # -- watch (#24) --------------------------------------------------------
+    def check_fingerprint(self, site: Site, page_name: str):
+        """Cheap arrival check: URL regex + one anchor element. A mismatch is a
+        drift signal, not an abort — it is recorded, degrades trust, and the
+        step that needed the page will fail on its own if the page is gone."""
+        fp = site.page(page_name).get("fingerprint") or {}
+        if not fp:
+            return
+        ok = True
+        url_re = fp.get("url")
+        if url_re and not re.search(url_re, self.pw_page.url):
+            ok = False
+        anchor = fp.get("anchor")
+        if ok and anchor:
+            element = site.element(page_name, anchor)
+            try:
+                build_locator(self.pw_page, element).wait_for(state="visible", timeout=3000)
+            except Exception:
+                ok = False
+        # a later mismatch on the same page must not be shadowed by an early ok
+        current = self.fingerprints.get(page_name)
+        self.fingerprints[page_name] = "mismatch" if (not ok or current == "mismatch") \
+            else "ok"
 
     # -- failure report (#21) ----------------------------------------------
     def build_failure(self) -> dict:
@@ -386,7 +421,7 @@ class Runner:
             "locator": {},
             "resolved_values": {},
             "url": "", "page_title": "",
-            "fingerprint": "unchecked",
+            "fingerprint": self.fingerprints.get(step.get("page", ""), "unchecked"),
             "screenshot": "",
         }
         try:
@@ -444,6 +479,9 @@ class Runner:
         else:
             raise RunError("navigate step has neither `value` nor `page`")
         self.pw_page.goto(url)
+        if step.get("page"):
+            self.check_fingerprint(site, step["page"])
+            self._last_page = step["page"]
 
     def do_click(self, step):
         site = self.site(step)
@@ -639,6 +677,40 @@ def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str])
 
 
 # ---------------------------------------------------------------------------
+# Trust bookkeeping (#24) — the YAML is updated, not just the log. Text-level
+# edits so the schema-template comments and formatting survive (no yaml.dump).
+
+def _set_workflow_key(wf_path: Path, key: str, value: str):
+    text = wf_path.read_text(encoding="utf-8")
+    pattern = re.compile(rf"^(\s*){key}:\s*\S*.*$", re.M)
+    if pattern.search(text):
+        text = pattern.sub(rf"\g<1>{key}: {value}", text, count=1)
+    else:  # insert directly under mode: (or name: as fallback)
+        for anchor in ("mode", "name"):
+            m = re.search(rf"^(\s*){anchor}:.*$", text, re.M)
+            if m:
+                indent = m.group(1)
+                text = text[:m.end()] + f"\n{indent}{key}: {value}" + text[m.end():]
+                break
+    wf_path.write_text(text, encoding="utf-8")
+
+
+def update_trust(wf_path: Path, workflow: dict, result: dict):
+    """broken on failure/drift; verified_at refresh on a green verified run;
+    a green draft run promotes NOTHING — promotion is a review decision."""
+    trust = workflow.get("trust")
+    drifted = [p for p, s in result.get("fingerprints", {}).items() if s == "mismatch"]
+    if result["status"] in ("failed", "error") or drifted:
+        if trust != "broken":
+            _set_workflow_key(wf_path, "trust", "broken")
+            note = f" (drifted: {', '.join(drifted)})" if drifted else ""
+            print(f"trust: {trust or 'unset'} -> broken in {wf_path.name}{note}",
+                  file=sys.stderr)
+    elif result["status"] == "passed" and trust == "verified":
+        _set_workflow_key(wf_path, "verified_at", f'"{result["finished_at"][:10]}"')
+
+
+# ---------------------------------------------------------------------------
 # Orchestration
 
 def utc_now() -> str:
@@ -720,12 +792,14 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
     result["captures"] = bindings.captures
     result["assertions"] = runner.assertions
     result["evidence"] = runner.evidence
+    result["fingerprints"] = runner.fingerprints
     if result["status"] == "passed" and any(not a["pass"] for a in runner.assertions):
         result["status"] = "failed"
     total = len(runner.assertions)
     passed = sum(1 for a in runner.assertions if a["pass"])
     result["counts"] = {"total": total, "passed": passed, "failed": total - passed}
     result["finished_at"] = utc_now()
+    update_trust(wf_path, workflow, result)
     return result, wf_path
 
 

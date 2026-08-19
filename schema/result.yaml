@@ -35,6 +35,11 @@ result:
   evidence: []                # Optional artifact paths (e.g. screenshots) captured
                               # during the run, relative to the repo
 
+  fingerprints: {}            # Watch (#24): per-page fingerprint outcome, ok | mismatch,
+                              # for every fingerprinted page the run arrived at. Same
+                              # drift vocabulary as /verify-map. A mismatch degrades
+                              # the workflow's `trust` to broken in its YAML.
+
   error: ""                   # Populated when status == error: what went wrong
 
   failure:                    # Populated by the headless runner when status == error —
