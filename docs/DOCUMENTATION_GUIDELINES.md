@@ -91,6 +91,20 @@ diagrams too.
 - Brief caption sentence before each diagram
 - Keep under ~15 nodes — split or simplify if larger
 
+## Relationship to aiDocs
+
+SiteMapper **cherry-picks** from the aiDocs framework — per-file, adapted on
+copy, never vendored wholesale (decided with #9; the alternative, vendoring
+`docs/` and re-copying on upstream changes, buys sync at the price of carrying
+files this repo does not use). The contract that keeps drift honest:
+
+- An adopted file says so ("Adopted from the aiDocs framework") — that line
+  is the pointer for anyone diffing against upstream.
+- Upstream improvements are pulled deliberately, per file, when they earn it —
+  not on a schedule.
+- What SiteMapper improves gets **proposed upstream** rather than silently
+  forked (e.g. `check.py` as the mechanical half of doc validation).
+
 ## Periodic Validation
 
 - **Structural** (links, orphans, index consistency): `scripts/check.py` —

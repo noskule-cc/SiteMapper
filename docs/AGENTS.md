@@ -49,6 +49,13 @@ Copilot. Host-specific tool names live in one file only
 Invoked as slash commands in hosts that support them; in other hosts, read the
 doc and follow it directly.
 
+**All skills are slash-only (no auto-triggering) — a deliberate decision, not
+a default.** Every SiteMapper skill drives a browser against a real site or
+edits maps; that is operator-initiated work, and auto-triggering on a
+description match would sidestep the intent behind `docs/PERMISSIONS.md`. A
+future skill that is pure knowledge injection may opt in to auto-triggering;
+say so in its doc when it does.
+
 | Skill            | Trigger           | Purpose                                    |
 |------------------|-------------------|--------------------------------------------|
 | map-site         | `/map-site`       | Start a discovery session for a site       |
