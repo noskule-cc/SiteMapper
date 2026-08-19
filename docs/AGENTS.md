@@ -29,7 +29,9 @@ Copilot. Host-specific tool names live in one file only
 | Configuring contact/behavior/defaults   | `schema/settings.yaml`, `config.yaml`   |
 | Being called by another system          | `docs/INTERFACE.md`                     |
 | Understanding the project               | `PRD.md`                                |
-| Writing or updating documentation       | `docs/INFORMATION_MINIMALISM.md`        |
+| Writing or updating documentation       | `docs/INFORMATION_MINIMALISM.md`, then `docs/DOCUMENTATION_GUIDELINES.md` (which level it goes on) |
+| Documenting how SiteMapper *functions*  | the wiki — see `docs/wiki.md`           |
+| Looking for a runnable maintenance task | `docs/JOBS.md`                          |
 | Deciding script vs. LLM for a task      | `docs/CODE_OVER_LLM.md`                 |
 | Finding drift a script could catch      | add a check to `scripts/check.py`       |
 | Creating or invoking a sub-agent        | `docs/subagents/README.md`              |
@@ -73,6 +75,7 @@ never part of the contract — see [subagents/README.md](subagents/README.md).
 | Agent | Use when |
 |-------|----------|
 | `workflow-companion` | A workflow YAML has no sibling `.md` |
+| `validation-llm` | The docs were restructured — test them on a fresh LLM |
 
 ## Host Bindings
 
@@ -81,4 +84,4 @@ This project is host-independent. `docs/` is neutral and authoritative;
 back at it and contain no instructions of their own. See
 [HOST_BINDINGS.md](HOST_BINDINGS.md) and [INTERFACE.md](INTERFACE.md) → Bindings.
 
-**Last Updated:** 2026-08-05
+**Last Updated:** 2026-08-19

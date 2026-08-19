@@ -25,6 +25,7 @@ lowercase = this project's own content.
 
 - [subagents/README.md](subagents/README.md) — skills vs. sub-agents; how to add one
 - [subagents/workflow-companion.md](subagents/workflow-companion.md) — writes a workflow's companion `.md`
+- [subagents/validation-llm.md](subagents/validation-llm.md) — tests the docs on a fresh LLM
 - [map-site.md](skills/map-site.md) — discovery session for mapping a site
 - [run-workflow.md](skills/run-workflow.md) — execute a named workflow
 - [test.md](skills/test.md) — execute a deterministic test workflow, emit a result
@@ -52,7 +53,10 @@ lowercase = this project's own content.
 
 - [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — whether to document at all
 - [KNOWLEDGE_PLACEMENT.md](KNOWLEDGE_PLACEMENT.md) — where a fact belongs: repo vs. agent memory
+- [DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md) — which level it goes on: artifact, `docs/`, or wiki
 - [CODE_OVER_LLM.md](CODE_OVER_LLM.md) — who executes: prefer a script over an LLM
+- [JOBS.md](JOBS.md) — registry of runnable maintenance jobs
+- [wiki.md](wiki.md) — where the wiki lives; how SiteMapper *functions* is documented there
 - a deployment's own `docs/guardrails.md` lives with its maps, in its own repository — never here
 - [issue-tracker.md](issue-tracker.md) — issue conventions; where open decisions live
 

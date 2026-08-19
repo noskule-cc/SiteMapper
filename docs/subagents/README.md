@@ -51,6 +51,7 @@ silently read another tenant's data.
 | Agent | Use when |
 |-------|----------|
 | `workflow-companion` | A workflow YAML has no sibling `.md` |
+| `validation-llm` | The docs were restructured — test them on a fresh LLM |
 
 ## Adding one
 
