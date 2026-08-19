@@ -84,3 +84,6 @@ When a step switches to a different site than the previous step:
 - If an element can't be found, take a screenshot and report the issue. Don't retry blindly.
 - If a page doesn't match expectations, run a quick drift check on that page's map.
 - Ask the user before continuing if a step fails.
+- A failed **headless** run (`scripts/run.py`) hands its `--json` failure
+  report to the repair skill (`docs/skills/repair.md`), which patches the map
+  and restores the workflow's `trust`.

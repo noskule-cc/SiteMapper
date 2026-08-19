@@ -22,6 +22,7 @@ Copilot. Host-specific tool names live in one file only
 | Asking what exists in the repo          | `docs/inventory.md` (generated)         |
 | Showing a **human** what exists         | `docs/overview.html` (generated) — open in a browser |
 | Checking a map for drift                | `docs/skills/verify-map.md`             |
+| A headless run failed (runner report)   | `docs/skills/repair.md`                 |
 | Looking up which tool does what         | `docs/HOST_BINDINGS.md`                 |
 | Writing a new workflow YAML             | `schema/workflow.yaml` (+ a sibling `<workflow>.md` with a Mermaid flowchart — see `USAGE.md`) |
 | Emitting or consuming a run result      | `schema/result.yaml`, `docs/INTERFACE.md` |
@@ -53,6 +54,7 @@ doc and follow it directly.
 | test             | `/test`           | Execute a deterministic test workflow and emit a `result` |
 | list-workflows   | `/list-workflows` | Show available workflows                   |
 | verify-map       | `/verify-map`     | On-demand drift check for a mapped site    |
+| repair           | `/repair`         | Fix the map after a headless runner failure, restore trust |
 
 ## Key Concepts
 

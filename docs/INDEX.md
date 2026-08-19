@@ -31,6 +31,7 @@ lowercase = this project's own content.
 - [test.md](skills/test.md) — execute a deterministic test workflow, emit a result
 - [list-workflows.md](skills/list-workflows.md) — list available workflows
 - [verify-map.md](skills/verify-map.md) — drift check for mapped sites
+- [repair.md](skills/repair.md) — fix the map after a headless runner failure
 
 ## Schemas
 

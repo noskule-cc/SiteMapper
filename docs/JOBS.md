@@ -17,6 +17,7 @@ script; only jobs needing judgement are skills or sub-agents.
 | Headless workflow run | `python scripts/run.py <workflow> --param k=v` | a `result` object (`--json` for machine-readable) | script |
 | Map drift check | `/verify-map <site>` | FOUND / MISSING per element | skill ([verify-map.md](skills/verify-map.md)) |
 | Deterministic UI test | `/test <workflow>` | a `result` object + `results/` record | skill ([test.md](skills/test.md)) |
+| Map repair after a failed run | `/repair <workflow>` | patched map + restored `trust` | skill ([repair.md](skills/repair.md)) |
 | LLM docs test | invoke `validation-llm` | knowledge-test report | sub-agent ([subagents/validation-llm.md](subagents/validation-llm.md)) |
 
 `check.py` and `inventory.py` accept `--root <path>` to run against a separate
@@ -29,6 +30,7 @@ map repository.
 | Any change, before committing | `python scripts/check.py` |
 | Adding/removing a site, page, workflow or project | `python scripts/inventory.py` (then `check.py`) |
 | A workflow step fails to find a mapped element | `/verify-map` on that site |
+| A headless run fails (`trust` degraded to broken) | `/repair` with the runner's `--json` report |
 | Changing a deterministic workflow | `/test` it |
 | Restructuring the documentation | `validation-llm` |
 
