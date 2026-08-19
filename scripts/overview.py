@@ -468,9 +468,14 @@ def proc_workflow(w, show_owner=False):
         links.append(f'<a href="{e(href(w["doc_path"]))}">flowchart&nbsp;.md</a>')
     if w["calls"]:
         links.append("calls " + ", ".join(f"<code>{e(c)}</code>" for c in w["calls"]))
-    # No run history here — see the note in inventory.py. Run outputs live in the
-    # deployment's private map repo, so linking them from here would either
-    # dangle or publish the run dates it was meant to keep out.
+    # Run history: only records that exist in the rendered tree are collected,
+    # so nothing dangles and a map repo's run dates never leak into a page
+    # rendered from another tree.
+    if w["results"]:
+        newest = w["results"][0]
+        more = f" (+{len(w['results']) - 1} more)" if len(w["results"]) > 1 else ""
+        links.append(f'last run <a href="{e(href(newest["path"]))}">'
+                     f'{e(newest["date"])}</a>{e(more)}')
 
     search = " ".join([w["name"], w["owner"], w["mode"], w["trust"], w["effect"],
                        w["purpose"]] + w["params"]).lower()

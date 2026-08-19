@@ -19,10 +19,10 @@ graph LR
 
 ## Workflows
 
-| Owner | Workflow | Mode | Steps | Doc | Purpose |
-|---|---|---|---:|:-:|---|
-| `sitemapper-demo` | [`search-issues`](../sites/sitemapper-demo/workflows/search-issues.yaml) | deterministic | 10 | ✓ | Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching… |
-| `sitemapper-demo` | [`smart-issue`](../sites/sitemapper-demo/workflows/smart-issue.yaml) | agentic | 12 | ✓ | Ask what the issue is about, search for similar existing issues, present matches or create a new one |
+| Owner | Workflow | Mode | Trust | Steps | Doc | Last run | Purpose |
+|---|---|---|---|---:|:-:|---|---|
+| `sitemapper-demo` | [`search-issues`](../sites/sitemapper-demo/workflows/search-issues.yaml) | deterministic | verified | 10 | ✓ | [2026-08-19](../sites/sitemapper-demo/results/search-issues.2026-08-19.md) | Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching… |
+| `sitemapper-demo` | [`smart-issue`](../sites/sitemapper-demo/workflows/smart-issue.yaml) | agentic | draft | 12 | ✓ | — | Ask what the issue is about, search for similar existing issues, present matches or create a new one |
 
 ## Sites
 

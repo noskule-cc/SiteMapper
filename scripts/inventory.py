@@ -115,6 +115,15 @@ def collect_workflows():
                 "is_test": (str(w.get("mode")) == "deterministic"
                             and any(s.get("action") == "assert" for s in steps)),
                 "calls": sorted({str(s.get("script")) for s in steps if s.get("script")}),
+                # Run records beside the workflow: results/<name>.<date>.md,
+                # newest first. Only records that exist in THIS tree — so a
+                # rendered link can never dangle or leak another repo's runs.
+                "results": [
+                    {"date": (re.search(r"\.(\d{4}-\d{2}-\d{2})\.md$", r) or [None, ""])[1],
+                     "path": rel(r)}
+                    for r in sorted(glob.glob(os.path.join(
+                        os.path.dirname(os.path.dirname(f)), "results",
+                        os.path.basename(f)[:-5] + ".*.md")), reverse=True)],
                 "companion": os.path.exists(f[:-5] + ".md"),
                 "doc_path": rel(f[:-5] + ".md") if os.path.exists(f[:-5] + ".md") else "",
                 "path": rel(f),
@@ -247,12 +256,15 @@ def render():
 
     a("## Workflows")
     a("")
-    a("| Owner | Workflow | Mode | Steps | Doc | Purpose |")
-    a("|---|---|---|---:|:-:|---|")
+    a("| Owner | Workflow | Mode | Trust | Steps | Doc | Last run | Purpose |")
+    a("|---|---|---|---|---:|:-:|---|---|")
     for w in sorted(wf, key=lambda r: (r["kind"], r["owner"], r["name"])):
+        last = (f'[{w["results"][0]["date"]}]'
+                f'({os.path.relpath(w["results"][0]["path"], "docs").replace(os.sep, "/")})'
+                if w["results"] else "—")
         a(f'| `{w["owner"]}` | [`{w["name"]}`]({os.path.relpath(w["path"], "docs").replace(os.sep, "/")}) '
-          f'| {w["mode"]} | {w["steps"]} | {"✓" if w["companion"] else "—"} '
-          f'| {w["desc"]} |')
+          f'| {w["mode"]} | {w["trust"] or "—"} | {w["steps"]} | {"✓" if w["companion"] else "—"} '
+          f'| {last} | {w["desc"]} |')
     a("")
 
     a("## Sites")
