@@ -70,7 +70,7 @@ h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em;
 /* Page-level actions (share link, deploy) sit top right in the title row,
    beside the state badge they relate to — deliberately NOT among the content
    filters in the toolbar. */
-.h1-actions { margin-left: auto; display: flex; gap: 8px; }
+.h1-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 .sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
 .counts { display: flex; flex-wrap: wrap; gap: 20px; margin: 0 0 18px; }
 .counts div { line-height: 1.2; }
@@ -311,51 +311,79 @@ fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() =>
   const foot = document.querySelector('footer');
   if (foot) foot.append(' Live mode: run buttons execute via scripts/run.py; '
                         + 'mutating runs still ask first.');
-  // Page-level actions, top right in the title row. Framework tree only —
-  // the server refuses deploy for a map repository (that is the guardrail),
-  // and a map repository has no share URL, so neither button appears there.
+  // Page-level actions, top right in the title row. The framework page
+  // deploys freely — public content, standing URL. A map repository's page
+  // is local by default (#34): deploy exists, but the server answers with
+  // the ask question and the confirmation consents to that build only. Its
+  // target is the repo's OWN private artifact, never the framework's URL —
+  // and that artifact is never shared; the button copy says so.
   fetch('/api/meta').then(r => r.json()).then(meta => {
-    if (!meta.framework) return;
     const actions = document.createElement('span');
     actions.className = 'h1-actions';
     document.querySelector('h1').appendChild(actions);
+    // #36: the artifact chip — is a snapshot published, and is it current?
+    const art = meta.artifact || {};
+    const chip = document.createElement('span');
+    const when = art.published_at ? ' (' + art.published_at + ')' : '';
+    if (!art.url) {
+      chip.className = 'tag';
+      chip.textContent = 'artifact: none';
+      chip.title = 'No published snapshot. The deploy button builds one.';
+    } else if (art.current === true) {
+      chip.className = 'tag trust-verified';
+      chip.textContent = 'artifact: current' + when;
+      chip.title = 'The published snapshot matches this page: ' + art.url;
+    } else if (art.current === false) {
+      chip.className = 'tag effect-mutating';
+      chip.textContent = 'artifact: stale' + when;
+      chip.title = 'The published snapshot no longer matches this page — '
+                 + 'deploy to refresh it: ' + art.url;
+    } else {
+      chip.className = 'tag';
+      chip.textContent = 'artifact: published' + when;
+      chip.title = 'Currency unknown — no publish hash recorded yet: ' + art.url;
+    }
+    actions.appendChild(chip);
     if (meta.share_url) {
       const s = document.createElement('button');
-      s.className = 'run share' + (meta.deployed ? '' : ' stale');
-      s.textContent = 'share link';
-      s.title = meta.deployed
+      const stale = art.current === false;
+      s.className = 'run share' + (stale ? ' stale' : '');
+      s.textContent = meta.framework ? 'share link' : 'private link';
+      s.title = !meta.framework
+        ? 'Copy this map repository\'s PRIVATE artifact URL — your account '
+          + 'only, never to be shared: ' + meta.share_url
+        : meta.deployed
         ? 'Copy the shareable URL: ' + meta.share_url
         : 'The published page does not have your local changes yet — '
           + 'deploy first. (Copies the URL anyway: ' + meta.share_url + ')';
       s.addEventListener('click', () => copy(meta.share_url).then(() => {
+        const was = s.textContent;
         s.textContent = 'link copied ✓';
-        setTimeout(() => { s.textContent = 'share link'; }, 1500);
+        setTimeout(() => { s.textContent = was; }, 1500);
       }));
       actions.appendChild(s);
     }
     const d = document.createElement('button');
     d.className = 'run deploy';
-    d.textContent = 'deploy';
-    d.title = meta.deployed
+    d.textContent = meta.framework ? 'deploy' : 'deploy (private)';
+    d.title = !meta.framework
+      ? 'Build this page for its own private Claude artifact — asks first; '
+        + 'nothing leaves this machine until an agent session publishes'
+      : meta.deployed
       ? 'Published page is current (deploys automatically on push)'
       : 'Build the shareable page; publish via /deploy-dashboard or push to main';
-    d.addEventListener('click', async () => {
-      d.disabled = true; d.textContent = 'building…';
-      try {
-        const r = await fetch('/api/deploy', {method: 'POST'});
-        const data = await r.json();
-        if (data.command) {
-          d.textContent = 'build ready → ' + data.command;
-          d.title = data.note;
-        } else {
-          d.textContent = 'refused: ' + (data.error || ('HTTP ' + r.status));
-        }
-      } catch (err) {
-        d.textContent = 'deploy failed';
-        d.title = String(err);
-      } finally {
-        setTimeout(() => { d.disabled = false; }, 1500);
+    d.addEventListener('click', () => {
+      // After a build the click copies the handoff command — it must never
+      // loop back into consent + rebuild; that reads as a broken button.
+      if (d.dataset.built === '1') {
+        copy(d.dataset.cmd).then(() => {
+          const was = d.textContent;
+          d.textContent = 'copied ✓ — run it in Claude Code';
+          setTimeout(() => { d.textContent = was; }, 1800);
+        });
+        return;
       }
+      postDeploy(d, []);
     });
     actions.appendChild(d);
   }).catch(() => {});
@@ -392,6 +420,49 @@ function startRun(btn) {
     if (v) params[name] = v;
   }
   postRun(btn, params, []);
+}
+
+async function postDeploy(d, consent) {
+  const label = d.textContent;
+  d.disabled = true; d.textContent = 'building…';
+  try {
+    const r = await fetch('/api/deploy', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({consent: consent})});
+    const data = await r.json();
+    if (r.status === 409 && data.ask) {
+      // Same ask channel as a mutating run: the server states the question,
+      // a human answers it, consent applies to THIS build only (#34).
+      d.textContent = label;
+      if (confirm(data.question)) return postDeploy(d, consent.concat([data.ask]));
+      d.textContent = 'not built: consent declined';
+      setTimeout(() => { d.textContent = label; }, 2500);
+      return;
+    }
+    if (data.command) {
+      // Terminal state: the server can only build — publishing needs an
+      // interactive agent session. Say so in the page, not a tooltip, and
+      // turn the button into a copy of the handoff command.
+      d.dataset.built = '1';
+      d.dataset.cmd = data.command;
+      d.textContent = 'build ready — copy ' + data.command;
+      d.title = 'Click to copy. ' + data.note;
+      let note = document.querySelector('.deploy-note');
+      if (!note) {
+        note = document.createElement('p');
+        note.className = 'sub deploy-note';
+        document.querySelector('h1').after(note);
+      }
+      note.textContent = data.note;
+    } else {
+      d.textContent = 'refused: ' + (data.error || ('HTTP ' + r.status));
+    }
+  } catch (err) {
+    d.textContent = 'deploy failed';
+    d.title = String(err);
+  } finally {
+    setTimeout(() => { d.disabled = false; }, 1500);
+  }
 }
 
 async function postRun(btn, params, consent) {

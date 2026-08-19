@@ -82,9 +82,19 @@ class Handler(BaseHTTPRequestHandler):
             if ROOT == FRAMEWORK:
                 jobs = (FRAMEWORK / "docs" / "JOBS.md").read_text(encoding="utf-8")
                 m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
+                deployed = self.deployed_state()
                 if m:  # the standing shareable URL — framework page only
                     meta["share_url"] = m.group(0)
-                meta["deployed"] = self.deployed_state()
+                meta["deployed"] = deployed
+                # Uniform chip data (#36): currency by the auto-deploy contract
+                # (artifact tracks origin/main), not by publish hash.
+                meta["artifact"] = {"url": m.group(0) if m else None,
+                                    "published_at": None, "current": deployed}
+            else:
+                art = self.map_dashboard()
+                if art["url"]:  # the map repo's own PRIVATE artifact (#34)
+                    meta["share_url"] = art["url"]
+                meta["artifact"] = art
             return self.send_json(200, meta)
         if path == "/api/results":
             data = collect()["workflows"]
@@ -143,55 +153,125 @@ class Handler(BaseHTTPRequestHandler):
             return False
 
     # -- POST /api/deploy ----------------------------------------------------
-    def deploy(self):
-        """Prepare THE FRAMEWORK dashboard's shareable build and hand off to
-        the /deploy-dashboard skill. Artifact publishing is interactive-only
+    @staticmethod
+    def map_artifact_url() -> str | None:
+        """A map repository's own dashboard artifact, registered in its
+        config.yaml as `dashboard: artifact_url:`. None until the first
+        publish writes it back. Read by regex, not a YAML parser — this
+        server stays stdlib-only."""
+        cfg = ROOT / "config.yaml"
+        if not cfg.is_file():
+            return None
+        m = re.search(r"artifact_url:\s*"
+                      r"(https://claude\.ai/code/artifact/[0-9a-f-]+)",
+                      cfg.read_text(encoding="utf-8"))
+        return m.group(1) if m else None
+
+    @staticmethod
+    def map_dashboard() -> dict:
+        """#36: the map repo's artifact registration plus currency — is the
+        published snapshot's hash the hash this page would build to now?
+        current is None when unknowable (nothing published, no hash recorded
+        at publish time, or no git remote to build deploy links from)."""
+        art = {"url": None, "published_at": None, "current": None}
+        cfg = ROOT / "config.yaml"
+        if not cfg.is_file():
+            return art
+        text = cfg.read_text(encoding="utf-8")
+        m = re.search(r"artifact_url:\s*"
+                      r"(https://claude\.ai/code/artifact/[0-9a-f-]+)", text)
+        if not m:
+            return art
+        art["url"] = m.group(1)
+        m = re.search(r"published_at:\s*\"?([0-9][0-9-]+)", text)
+        if m:
+            art["published_at"] = m.group(1)
+        m = re.search(r"published_hash:\s*(sha256:[0-9a-f]+)", text)
+        if m:
+            try:
+                overview.set_root(str(ROOT))
+                inventory.set_root(str(ROOT))
+                fresh = overview.render(base=overview.github_base(),
+                                        fragment=True)
+                art["current"] = overview.content_hash(fresh) == m.group(1)
+            except SystemExit:
+                pass  # github_base exits without a remote; deploy would too
+        return art
+
+    def deploy(self, consent: set):
+        """Prepare the dashboard's shareable build and hand off to the
+        /deploy-dashboard skill. Artifact publishing is interactive-only
         (off in headless agent contexts by design), so the button cannot
         publish by itself — it builds, and an interactive agent session
-        publishes. Guardrail, enforced structurally: this endpoint refuses a
-        map repository. A deployment's dashboard never gets a shareable URL —
-        it is served here, locally, and that is its home."""
-        if ROOT != FRAMEWORK:
-            return self.send_json(403, {"error":
-                "deploy is framework-only. A map repository's dashboard is never "
-                "published (docs/PERMISSIONS.md, the wiki's features-dashboard) — "
-                "serve it locally; that is the guardrail, not a limitation."})
-        jobs = (FRAMEWORK / "docs" / "JOBS.md").read_text(encoding="utf-8")
-        m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
-        if not m:
-            return self.send_json(500, {"error":
-                "no standing artifact URL registered in docs/JOBS.md"})
-        out = ROOT / ".runner" / "deploy" / "dashboard-artifact.html"
-        out.parent.mkdir(parents=True, exist_ok=True)
-        overview.set_root(str(ROOT))
-        inventory.set_root(str(ROOT))
-        out.write_text(overview.render(base=overview.github_base(), fragment=True),
-                       encoding="utf-8")
-        return self.send_json(200, {
-            "prepared": str(out),
-            "url": m.group(0),
-            "command": "/deploy-dashboard",
-            "note": "Build ready. Publishing needs an interactive agent session "
+        publishes.
+
+        Framework page: builds freely — public content, standing URL.
+        Map repository (#34): local by default. Building for deploy is gated
+        by the same ask channel as a mutating run — the server states the
+        question, the confirmation click consents to THIS build only — and
+        the publish target is that repository's OWN private artifact
+        (registered in its config.yaml), never the framework's standing URL.
+        The artifact is private to the operator's account; sharing it is the
+        guardrail's line, and that stays a human decision made elsewhere."""
+        if ROOT == FRAMEWORK:
+            jobs = (FRAMEWORK / "docs" / "JOBS.md").read_text(encoding="utf-8")
+            m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
+            if not m:
+                return self.send_json(500, {"error":
+                    "no standing artifact URL registered in docs/JOBS.md"})
+            url = m.group(0)
+            note = ("Build ready. Publishing needs an interactive agent session "
                     "(artifact publishing is off in headless contexts by design): "
                     "run /deploy-dashboard in Claude Code — it publishes this "
-                    "build to the standing URL.",
+                    "build to the standing URL.")
+        else:
+            if "publish-dashboard" not in consent:
+                return self.send_json(409, {"ask": "publish-dashboard",
+                    "question":
+                    f"'{ROOT.name}' is a map repository — its dashboard stays "
+                    "local by default. Build it for publishing to its own "
+                    "PRIVATE Claude artifact (visible to your account only; "
+                    "never the framework's standing URL, never to be shared)? "
+                    "Publishing itself still happens in an interactive agent "
+                    "session."})
+            url = self.map_artifact_url()
+            note = ("Build ready. Run /deploy-dashboard in a Claude Code "
+                    "session started in THIS map repository (it carries the "
+                    "skill) — it publishes this build to the repo's own "
+                    "private artifact. " + (
+                    "Registered URL: " + url if url else
+                    "No artifact registered yet in config.yaml — the first "
+                    "publish creates one and writes `dashboard: artifact_url:` "
+                    "back.") +
+                    " Never share that artifact; redeploying does not scrub "
+                    "its version history (docs/PERMISSIONS.md).")
+        out = ROOT / ".runner" / "deploy" / "dashboard-artifact.html"
+        overview.set_root(str(ROOT))
+        inventory.set_root(str(ROOT))
+        info = overview.deploy_build(str(out))  # stamped page + build-info.json
+        return self.send_json(200, {
+            "prepared": str(out),
+            "url": url,
+            "command": "/deploy-dashboard",
+            "note": note,
+            "build": info,
         })
 
     # -- POST /api/run/<workflow> ------------------------------------------
     def do_POST(self):
         path = urlsplit(self.path).path
-        if path == "/api/deploy":
-            return self.deploy()
-        m = re.match(r"^/api/run/([A-Za-z0-9._-]+)$", path)
-        if not m:
-            return self.send_json(404, {"error": "unknown endpoint"})
         try:
             length = int(self.headers.get("Content-Length") or 0)
             body = json.loads(self.rfile.read(length) or b"{}")
         except (ValueError, json.JSONDecodeError):
             return self.send_json(400, {"error": "body must be JSON"})
-        params = body.get("params") or {}
         consent = set(body.get("consent") or [])
+        if path == "/api/deploy":
+            return self.deploy(consent)
+        m = re.match(r"^/api/run/([A-Za-z0-9._-]+)$", path)
+        if not m:
+            return self.send_json(404, {"error": "unknown endpoint"})
+        params = body.get("params") or {}
         return self.run_workflow(m.group(1), params, consent)
 
     def run_workflow(self, name: str, params: dict, consent: set):

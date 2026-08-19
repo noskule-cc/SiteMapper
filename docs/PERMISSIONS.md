@@ -58,6 +58,28 @@ This is the structural fix for the 2026-07-03 incident class: a destructive
 teardown can no longer run blind in an environment whose policy says
 `ask`/`deny`.
 
+## Dashboard deploy (#34)
+
+Publishing the dashboard page is gated by whose content it carries:
+
+- **Framework page** — public content. Deploys freely to the standing artifact
+  URL registered in `docs/JOBS.md` (automatic on push; the page's deploy
+  button is the manual fallback).
+- **A map repository's page** — **local by default.** The deploy button is the
+  `ask` channel, same as a mutating run: the server states the question, the
+  confirmation click consents to that one build. The publish target is the map
+  repository's **own private Claude artifact** — registered in its
+  `config.yaml` as `dashboard: artifact_url:`, created by the first publish —
+  never the framework's standing URL. A Claude artifact is private to the
+  owner's account until deliberately shared: **a map repository's dashboard
+  artifact is never shared.** Redeploying does not scrub the artifact's
+  version history — a wrong deploy stays in the history, so look at the build
+  before publishing.
+
+Either way the button only builds; publishing needs an interactive agent
+session running `/deploy-dashboard` (artifact publishing is off in headless
+contexts by design).
+
 ---
 
 **Last Updated:** 2026-08-19

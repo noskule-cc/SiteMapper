@@ -34,3 +34,14 @@ settings:
   mailboxes: {}
     # customer_a: ""
     # internal: ""
+
+# This map repo's dashboard artifact — its OWN private Claude artifact, never
+# the framework's standing URL, never shared (docs/guardrails.md). Written by
+# the first /deploy-dashboard publish; the serve endpoint and the page's
+# "private link" button read it from here (#34). published_hash/published_at
+# are re-recorded on every publish (from .runner/deploy/build-info.json) so
+# the dashboard's staleness chip can compare (#36).
+# dashboard:
+#   artifact_url: ""
+#   published_hash: ""
+#   published_at: ""
