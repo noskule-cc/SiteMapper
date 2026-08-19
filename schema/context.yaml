@@ -1,0 +1,42 @@
+# Schema: Context
+# WHERE a workflow runs and WHAT data fills its roles — the tenant half of the
+# three-layer split (#8): persona = who is logged in (schema/persona.yaml),
+# context = which tenant + which data, workflow = pure behavior. Site-scoped:
+# sites/<site>/contexts/<name>.yaml.
+#
+# Why: a workflow whose steps hardcode tenant data works for exactly one
+# tenant. With contexts, the workflow references ROLES ($role_name) and adding
+# a tenant = writing one context file — no workflow edits, no forks.
+#
+# The runner resolves --context (default: the site's only context, if any) and
+# checks the workflow's `requires:` contract against it BEFORE running — a bad
+# pairing fails fast with a clear message instead of breaking mid-run.
+
+context:
+  name: ""                    # Context name (used as: --context <name>)
+  description: ""             # Which tenant/environment this is
+
+  ids: {}                     # Tenant identifiers, keyed by what the site calls
+                              # them, e.g.:
+                              #   ids:
+                              #     partner_id: "3086769"
+                              #     location_id: "3086769"
+                              # Steps and setup fragments reference them as
+                              # $partner_id etc.
+
+  roles: {}                   # Data values filling the roles workflow steps
+                              # reference as $role_name, e.g.:
+                              #   roles:
+                              #     device_filter_term: "Brita"
+                              #     matching_device: "Brita PURITY C iQ Filterkopf"
+                              # A role answers "which entity plays this part for
+                              # THIS tenant" — the workflow never names entities.
+
+  flags: {}                   # Optional tenant traits a workflow may branch its
+                              # requirements on, e.g. single_location: true
+                              # (→ location-filter roles not required).
+
+# Tenant SWITCHING (e.g. a Partnerwechsel before the steps) is deployment-
+# specific UI work: author it as `setup` steps in the deployment's workflows
+# or as a shared fragment there. The framework deliberately does not model
+# "active tenant" — it cannot detect it generically.

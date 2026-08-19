@@ -64,6 +64,18 @@ workflow:
                               # and refuses or asks before the browser opens.
                               # `trust: verified` never grants permission.
 
+  requires:                   # Fail-fast contract for context-based workflows (#8).
+                              # Checked against the selected context BEFORE the run;
+                              # a bad pairing errors up front, never mid-flow.
+    context:
+      roles: []               #   role names the steps reference as $role
+      ids: []                 #   identifiers that must be present (e.g. partner_id)
+                              # A workflow with `requires:` takes its tenant data
+                              # from the selected context (--context) instead of
+                              # from per-workflow `fixtures`. Partner-agnostic
+                              # workflows list only the ids they need and carry
+                              # no roles.
+
   parameters:                 # Caller-supplied inputs (prompted at run time).
     - name: ""                # Parameter name
       type: ""                # select | text

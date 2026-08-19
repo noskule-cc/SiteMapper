@@ -41,8 +41,10 @@ lowercase = this project's own content.
 - [site.yaml](../schema/site.yaml) — site configuration format
 - [workflow.yaml](../schema/workflow.yaml) — workflow definition format
 - [project.yaml](../schema/project.yaml) — cross-site project format
-- [settings.yaml](../schema/settings.yaml) — layered settings (contact, policy, form defaults)
+- [settings.yaml](../schema/settings.yaml) — layered settings (contact, policy/permissions, form defaults)
 - [result.yaml](../schema/result.yaml) — the neutral result object a run emits
+- [persona.yaml](../schema/persona.yaml) — who is logged in: auth method, never a credential
+- [context.yaml](../schema/context.yaml) — which tenant + which data fill a workflow's roles
 
 ## Tooling
 

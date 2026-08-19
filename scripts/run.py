@@ -117,6 +117,41 @@ def load_persona(root: Path, site_name: str, persona_name: str | None):
                    f"({[f.stem for f in files]}) — pass --persona")
 
 
+def load_context(root: Path, site_name: str, context_name: str | None,
+                 workflow: dict):
+    """Resolve the tenant context (#8): --context, else the site's only one.
+    Check the workflow's `requires:` contract against it — fail fast."""
+    cdir = root / "sites" / site_name / "contexts"
+    files = sorted(cdir.glob("*.yaml")) if cdir.is_dir() else []
+    required = (workflow.get("requires") or {}).get("context") or {}
+    context = None
+    if context_name:
+        match = [f for f in files if f.stem == context_name]
+        if not match:
+            raise RunError(f"site '{site_name}' has no context '{context_name}' "
+                           f"({[f.stem for f in files] or 'none defined'})")
+        context = load_yaml(match[0]).get("context", {})
+    elif required and len(files) == 1:
+        context = load_yaml(files[0]).get("context", {})
+    elif required and files:
+        raise RunError(f"workflow requires a context and site '{site_name}' has "
+                       f"several ({[f.stem for f in files]}) — pass --context")
+    elif required:
+        raise RunError(f"workflow declares `requires.context` but site "
+                       f"'{site_name}' has no contexts/ directory")
+    if context is not None:
+        missing = [r for r in (required.get("roles") or [])
+                   if r not in (context.get("roles") or {})]
+        missing += [i for i in (required.get("ids") or [])
+                    if i not in (context.get("ids") or {})]
+        if missing:
+            raise RunError(
+                f"context '{context.get('name')}' does not satisfy the workflow's "
+                f"requires: missing {missing} — a bad pairing fails up front, "
+                "not mid-run (schema/context.yaml)")
+    return context
+
+
 def state_path(root: Path, site_name: str, persona: dict) -> Path:
     """Saved browser state: a credential, so always local and gitignored."""
     custom = persona.get("storage_state")
@@ -165,9 +200,14 @@ VAR_RE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
 class Bindings:
-    """Resolves $name from parameters, fixtures and captured variables."""
+    """Resolves $name from parameters, context roles/ids, fixtures and
+    captured variables — in that order (most caller-specific wins)."""
 
-    def __init__(self, workflow: dict, cli_params: dict):
+    def __init__(self, workflow: dict, cli_params: dict, context: dict | None = None):
+        self.context_values = {}
+        if context:
+            self.context_values = {**(context.get("ids") or {}),
+                                   **(context.get("roles") or {})}
         self.params = {}
         for p in workflow.get("parameters") or []:
             name = p["name"]
@@ -202,10 +242,11 @@ class Bindings:
         return flat
 
     def lookup(self, name: str) -> str:
-        for source in (self.params, self.fixtures, self.captures):
+        for source in (self.params, self.context_values, self.fixtures, self.captures):
             if name in source:
                 return str(source[name])
-        raise RunError(f"unresolved variable '${name}' (not a parameter, fixture or capture)")
+        raise RunError(f"unresolved variable '${name}' (not a parameter, context "
+                       "role/id, fixture or capture)")
 
     def resolve(self, text):
         if not isinstance(text, str):
@@ -718,7 +759,8 @@ def utc_now() -> str:
 
 
 def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
-                 pre_authorized: set[str] = frozenset(), persona_name: str | None = None):
+                 pre_authorized: set[str] = frozenset(), persona_name: str | None = None,
+                 context_name: str | None = None):
     wf_path, data = find_workflow(root, name)
     workflow = data.get("workflow", {})
 
@@ -743,8 +785,9 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
         raise RunError("workflow names no literal site — cannot resolve a permission scope")
     gate(root, workflow, involved, pre_authorized)
     persona = load_persona(root, involved[0], persona_name)
+    context = load_context(root, involved[0], context_name, workflow)
 
-    bindings = Bindings(workflow, cli_params)
+    bindings = Bindings(workflow, cli_params, context)
     runner = Runner(root, wf_path, workflow, bindings, headed=headed,
                     persona=persona, pre_authorized=pre_authorized)
 
@@ -850,6 +893,9 @@ def main(argv=None):
                     help="pre-authorize automated login where policy says ask")
     ap.add_argument("--persona", default=None,
                     help="persona to run as (default: the site's only persona, if any)")
+    ap.add_argument("--context", default=None,
+                    help="tenant context to bind (default: the site's only one, "
+                         "when the workflow requires a context)")
     args = ap.parse_args(argv)
 
     root = Path(args.root).resolve() if args.root else FRAMEWORK_ROOT
@@ -866,7 +912,7 @@ def main(argv=None):
                       if flag}
     try:
         result, wf_path = run_workflow(root, args.workflow, cli_params, args.headed,
-                                       pre_authorized, args.persona)
+                                       pre_authorized, args.persona, args.context)
     except RunError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
