@@ -1,0 +1,32 @@
+# Mechanical guards on every push/PR (#16). Two jobs:
+#   check        - scripts/check.py, the consistency checks
+#   runner-smoke - the headless runner end-to-end on the read-only acceptance
+#                  workflow (#26): public site, no login, effect: read-only,
+#                  so `ask` never triggers (in CI it would degrade to deny).
+# Linux CI is also the first honest test of case-sensitive path references
+# (NTFS hides wrong-case links locally; check.py's exists_cased guards them).
+name: check
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.x" }
+      - run: pip install pyyaml
+      - run: python scripts/check.py
+
+  runner-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.x" }
+      - run: pip install pyyaml playwright
+      # GitHub's ubuntu images ship Chrome; this is a no-op fallback when the
+      # image changes. channel="chrome" in run.py uses the installed browser.
+      - run: playwright install chrome --with-deps || true
+      - run: python scripts/run.py search-issues --json

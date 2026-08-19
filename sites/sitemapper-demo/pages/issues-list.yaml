@@ -1,7 +1,11 @@
 page:
   name: "Issues List"
-  url_pattern: "/<owner>/<repo>/issues"
+  url_pattern: "/issues"
   purpose: "Lists all open/closed issues for the repository"
+
+  fingerprint:
+    url: "/issues"
+    anchor: "search-input"
 
   elements:
     - name: "new-issue-button"
@@ -32,6 +36,22 @@ page:
         value: "a[href*='state%3Aclosed']"
       description: "Show closed issues"
 
+    - name: "issues-list"
+      type: container
+      locator:
+        strategy: css
+        value: "[data-listview-component='items-list']"
+      description: "The results list; one <li> per issue. Present (empty) even when a search matches nothing"
+
+    - name: "no-results-message"
+      type: text
+      locator:
+        strategy: text
+        value: "No results"
+      description: "Empty state shown inside the results area when a search matches nothing"
+
   gotchas:
     - "New issue button links to /issues/new/choose but may redirect to /issues/new if no templates exist"
     - "Empty state shows 'No results' instead of issue rows"
+    - "Typing in the search box does NOT filter by itself - the query is applied on Enter, which navigates to ?q=<term>"
+    - "networkidle never settles here (GitHub keeps connections open) - wait on elements, not on the network"

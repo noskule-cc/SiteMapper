@@ -1,0 +1,76 @@
+workflow:
+  name: "search-issues"
+  description: "Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state"
+  site: "sitemapper-demo"
+
+  mode: deterministic     # every step is navigate/input/key/assert — no judgement
+  trust: verified         # green headless run 2026-08-19 reviewed: URL carried ?q=,
+                          # filtered list contained the issue, empty state on nonsense
+  verified_at: "2026-08-19"
+  effect: read-only       # searching changes nothing
+
+  # Pinned to the demo repo's standing issue #1 ("...blows up and everything is
+  # dark and smoke is everywhere") so the run is deterministic.
+  fixtures:
+    matching_term: "blows"
+    matching_issue: "blows up"
+    non_matching_term: "zzznothingmatchesthis"
+
+  steps:
+    - action: navigate
+      page: "issues-list"
+      description: "Open the issues list (deep-link via url_pattern)"
+
+    - action: assert
+      page: "issues-list"
+      element: "search-input"
+      expect: visible
+      description: "The search box is there (fingerprint anchor, asserted explicitly)"
+
+    - action: input
+      page: "issues-list"
+      element: "search-input"
+      value: "$matching_term"
+      description: "Type a term that matches the standing demo issue"
+
+    - action: key
+      page: "issues-list"
+      value: "Enter"
+      description: "Apply the search — typing alone does not filter (page gotcha)"
+
+    - action: assert
+      page: "issues-list"
+      expect: { url_matches: "\\?q=" }
+      description: "The query was actually submitted: URL carries ?q="
+
+    - action: assert
+      page: "issues-list"
+      element: "issues-list"
+      expect: { contains: "$matching_issue" }
+      description: "The filtered list shows the matching issue"
+
+    - action: input
+      page: "issues-list"
+      element: "search-input"
+      value: "$non_matching_term"
+      description: "Replace the query with a term that matches nothing"
+
+    - action: key
+      page: "issues-list"
+      value: "Enter"
+      description: "Apply the search"
+
+    - action: assert
+      page: "issues-list"
+      expect: { url_matches: "q=$non_matching_term" }
+      description: "The SECOND query was applied too — not a stale first-query URL"
+
+    - action: assert
+      page: "issues-list"
+      element: "no-results-message"
+      expect: visible
+      description: "The empty state renders instead of issue rows (page gotcha)"
+
+  verify:
+    - "A matching search shows the demo issue; a non-matching search shows 'No results'"
+    - "Both queries were genuinely applied (URL carried ?q=), not judged against the unfiltered list"

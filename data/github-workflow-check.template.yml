@@ -1,0 +1,22 @@
+# Rename to .github/workflows/check.yml in your map repository (#16).
+#
+# A map repository has no scripts/ of its own — it checks out the SiteMapper
+# framework alongside and runs its checks with --root pointed at itself. Same
+# guard, zero copied code.
+name: check
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: noskule-cc/SiteMapper
+          path: sitemapper
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.x" }
+      - run: pip install pyyaml
+      - run: python sitemapper/scripts/check.py --root .

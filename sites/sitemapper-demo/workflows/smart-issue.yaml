@@ -5,6 +5,8 @@ workflow:
 
   mode: agentic           # the `verify` step below judges whether existing issues
                           # are similar enough and asks the user before creating
+  trust: draft            # agentic — can never become `verified` for blind runs
+  effect: mutating        # creates an issue
 
   parameters:
     - name: "topic"
@@ -37,16 +39,27 @@ workflow:
       page: "issues-list"
       element: "search-input"
       value: "$topic"
-      description: "Search for existing issues matching the topic"
+      description: "Type the topic into the issue search"
+
+    - action: key
+      page: "issues-list"
+      value: "Enter"
+      description: "Apply the search — typing alone does not filter (see page gotcha); Enter navigates to ?q=<topic>"
 
     - action: read
       page: "issues-list"
       element: "issues-list"
       capture: "search_results"
-      description: "Read the search results to find similar issues"
+      description: "Read the FILTERED results list to find similar issues"
 
     - action: verify
-      description: "Present search results to the user. If similar issues exist, show them and ask whether to still create a new one. If no results, proceed to create."
+      description: >
+        Present the search results to the user. If similar issues exist, show
+        them and ask whether to still create a new one. If the user declines,
+        STOP HERE — do not execute any of the remaining steps. Only proceed to
+        create when there are no similar issues or the user explicitly
+        confirms. (The remaining steps are the create branch; the schema has no
+        conditional steps yet, so this early exit is the branch.)
 
     - action: navigate
       page: "new-issue"
@@ -87,5 +100,5 @@ workflow:
       description: "Submit the new issue"
 
   verify:
-    - "Issue appears in the issues list with the correct title and label"
-    - "If similar issues were found, user confirmed they still wanted to create a new one"
+    - "If the run reached the create branch: the issue appears in the issues list with the correct title and label"
+    - "If the user declined at the similar-issues check: no issue was created (the run stopped at the verify step)"

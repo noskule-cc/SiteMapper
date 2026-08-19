@@ -9,3 +9,4 @@ site:
     - new-issue.yaml
   workflows:
     - smart-issue.yaml
+    - search-issues.yaml
