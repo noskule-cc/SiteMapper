@@ -53,6 +53,24 @@ def rel(p):
     return os.path.relpath(p, ROOT).replace("\\", "/")
 
 
+def tracked_results():
+    """results/ records that are actually IN the repo (git ls-files), not just
+    on this machine's disk. Both repos gitignore run outputs as a class, so
+    "exists locally" is the wrong predicate for anything the generated views
+    LINK: a link to an untracked record renders fine here and 404s in every
+    other clone — CI caught exactly that. Returns None outside a git repo
+    (then disk presence is the best available answer)."""
+    import subprocess
+    try:
+        out = subprocess.run(
+            ["git", "-C", ROOT, "ls-files", "--", "sites/*/results/*",
+             "projects/*/results/*"],
+            capture_output=True, text=True, check=True).stdout
+        return {line.strip() for line in out.splitlines() if line.strip()}
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
 def load(path):
     with open(path, encoding="utf-8") as fh:
         return yaml.safe_load(fh) or {}
@@ -87,6 +105,7 @@ def phases(w):
 
 def collect_workflows():
     rows = []
+    committed = tracked_results()
     for pat, kind in (("sites/*/workflows/*.yaml", "site"),
                       ("projects/*/workflows/*.yaml", "project")):
         for f in sorted(glob.glob(os.path.join(ROOT, pat))):
@@ -116,14 +135,16 @@ def collect_workflows():
                             and any(s.get("action") == "assert" for s in steps)),
                 "calls": sorted({str(s.get("script")) for s in steps if s.get("script")}),
                 # Run records beside the workflow: results/<name>.<date>.md,
-                # newest first. Only records that exist in THIS tree — so a
-                # rendered link can never dangle or leak another repo's runs.
+                # newest first. Only records COMMITTED to this repo are listed
+                # (see tracked_results) — a link must resolve in every clone,
+                # not just on the machine that happened to run the workflow.
                 "results": [
                     {"date": (re.search(r"\.(\d{4}-\d{2}-\d{2})\.md$", r) or [None, ""])[1],
                      "path": rel(r)}
                     for r in sorted(glob.glob(os.path.join(
                         os.path.dirname(os.path.dirname(f)), "results",
-                        os.path.basename(f)[:-5] + ".*.md")), reverse=True)],
+                        os.path.basename(f)[:-5] + ".*.md")), reverse=True)
+                    if committed is None or rel(r) in committed],
                 "companion": os.path.exists(f[:-5] + ".md"),
                 "doc_path": rel(f[:-5] + ".md") if os.path.exists(f[:-5] + ".md") else "",
                 "path": rel(f),

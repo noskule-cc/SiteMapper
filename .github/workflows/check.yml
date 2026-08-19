@@ -12,6 +12,7 @@ on: [push, pull_request]
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -21,12 +22,14 @@ jobs:
 
   runner-smoke:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.x" }
       - run: pip install pyyaml playwright
-      # GitHub's ubuntu images ship Chrome; this is a no-op fallback when the
-      # image changes. channel="chrome" in run.py uses the installed browser.
-      - run: playwright install chrome --with-deps || true
+      # GitHub's ubuntu images ship Chrome (channel="chrome" in run.py uses
+      # it). Install ONLY if the image ever stops shipping it — the reinstall
+      # path has hung CI before, so never run it unconditionally.
+      - run: google-chrome --version || playwright install chrome --with-deps
       - run: python scripts/run.py search-issues --json
