@@ -41,6 +41,8 @@ Copilot. Host-specific tool names live in one file only
 | About to save something to agent memory | `docs/KNOWLEDGE_PLACEMENT.md` **first** |
 | Checking the repo before a commit       | `scripts/check.py`                      |
 | Adding/removing a site or workflow      | re-run `scripts/inventory.py`           |
+| Adding a skill, agent, action or schema key | `docs/EXTENDING.md`                 |
+| Keeping the tree healthy / reading a failed check | `docs/MAINTENANCE.md`         |
 
 ## Available Skills
 

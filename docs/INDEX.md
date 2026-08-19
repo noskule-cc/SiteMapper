@@ -60,6 +60,8 @@ lowercase = this project's own content.
 - [CODE_OVER_LLM.md](CODE_OVER_LLM.md) — who executes: prefer a script over an LLM
 - [PERMISSIONS.md](PERMISSIONS.md) — what a run may do: action classes × allow/ask/deny
 - [JOBS.md](JOBS.md) — registry of runnable maintenance jobs
+- [EXTENDING.md](EXTENDING.md) — how to add a skill, sub-agent, workflow action, schema key or site script
+- [MAINTENANCE.md](MAINTENANCE.md) — the health routine: checks, drift, results retention
 - [wiki.md](wiki.md) — where the wiki lives; how SiteMapper *functions* is documented there
 - a deployment's own `docs/guardrails.md` lives with its maps, in its own repository — never here
 - [issue-tracker.md](issue-tracker.md) — issue conventions; where open decisions live
