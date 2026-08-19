@@ -101,6 +101,9 @@ def collect_workflows():
                 "purpose": oneline(w.get("description"), 320),
                 "sites": [str(s) for s in sites],
                 "mode": str(w.get("mode") or "**—**"),
+                "trust": str(w.get("trust") or ""),
+                "effect": str(w.get("effect") or ""),
+                "verified_at": str(w.get("verified_at") or ""),
                 "steps": len(w.get("steps") or []),
                 "params": [str(p.get("name")) for p in (w.get("parameters") or [])
                            if isinstance(p, dict) and p.get("name")],

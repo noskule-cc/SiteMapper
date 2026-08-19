@@ -170,6 +170,13 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
 .tag.mode-deterministic { color: var(--deterministic); }
 .tag.kind-workflow, .tag.kind-script { font-weight: 600; }
 .tag.kind-script { color: var(--warn); }
+/* trust = has it been proven; effect = what it does. Both from the YAML. */
+.tag.trust-verified { background: var(--dev-bg); color: var(--dev-fg); }
+.tag.trust-broken { background: var(--prod-bg); color: var(--prod-fg); }
+.tag.trust-draft { color: var(--muted); }
+.tag.effect-read-only { color: var(--deterministic); }
+.tag.effect-mutating { background: var(--staging-bg); color: var(--staging-fg); }
+.tag.effect-destructive { background: var(--prod-bg); color: var(--prod-fg); }
 
 .procs { margin: 16px 0 0; border-top: 1px solid var(--line); }
 .proc { padding: 12px 0 12px; border-bottom: 1px solid var(--line); }
@@ -326,10 +333,21 @@ def github_base(branch="main"):
 
 
 def cmd_for(w):
-    """The invocation a human types. A deterministic workflow with assert steps
-    is a test, so it goes through /test — which evaluates them and emits a
-    result — not /run. See docs/skills/run-workflow.md."""
-    return ("/test " if w["is_test"] else "/run ") + w["name"]
+    """The invocation a human types. Deterministic workflows get the headless
+    runner (code over LLM — no agent needed); tests add --record so the run
+    lands in results/. Agentic workflows need an LLM host, so they keep /run.
+    When this page is rendered for a map repository (--root), the command is
+    stated from that repo, reaching the framework by its real relative path on
+    this machine — regenerating recomputes it."""
+    if w["mode"] != "deterministic":
+        return "/run " + w["name"]
+    here = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if ROOT == here:
+        cmd = "python scripts/run.py " + w["name"]
+    else:
+        framework = os.path.relpath(here, ROOT).replace(os.sep, "/")
+        cmd = f"python {framework}/scripts/run.py {w['name']} --root ."
+    return cmd + (" --record" if w["is_test"] else "")
 
 
 # --------------------------------------------------------------------------
@@ -425,6 +443,12 @@ def proc_workflow(w, show_owner=False):
     bits = [f'<span class="tag kind-workflow">workflow</span>',
             f'<a class="name" href="{e(href(w["path"]))}">{e(w["name"])}</a>',
             f'<span class="tag mode-{e(w["mode"])}">{e(w["mode"])}</span>']
+    if w["trust"]:
+        label = w["trust"] + (f' {w["verified_at"]}'
+                              if w["trust"] == "verified" and w["verified_at"] else "")
+        bits.append(f'<span class="tag trust-{e(w["trust"])}">{e(label)}</span>')
+    if w["effect"]:
+        bits.append(f'<span class="tag effect-{e(w["effect"])}">{e(w["effect"])}</span>')
     if w["is_test"]:
         bits.append('<span class="tag">test</span>')
     if show_owner:
@@ -448,7 +472,8 @@ def proc_workflow(w, show_owner=False):
     # deployment's private map repo, so linking them from here would either
     # dangle or publish the run dates it was meant to keep out.
 
-    search = " ".join([w["name"], w["owner"], w["mode"], w["purpose"]] + w["params"]).lower()
+    search = " ".join([w["name"], w["owner"], w["mode"], w["trust"], w["effect"],
+                       w["purpose"]] + w["params"]).lower()
     return (f'<div class="proc" data-kind="workflow" data-mode="{e(w["mode"])}" '
             f'data-search="{e(search)}">'
             f'<div class="proc-head">{"".join(bits)}</div>'
