@@ -78,8 +78,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/inventory":
             return self.send_json(200, collect())
         if path == "/api/meta":
-            return self.send_json(200, {"tree": ROOT.name,
-                                        "framework": ROOT == FRAMEWORK})
+            meta = {"tree": ROOT.name, "framework": ROOT == FRAMEWORK}
+            if ROOT == FRAMEWORK:
+                jobs = (FRAMEWORK / "docs" / "JOBS.md").read_text(encoding="utf-8")
+                m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
+                if m:  # the standing shareable URL — framework page only
+                    meta["share_url"] = m.group(0)
+            return self.send_json(200, meta)
         if path == "/api/results":
             data = collect()["workflows"]
             return self.send_json(200, [

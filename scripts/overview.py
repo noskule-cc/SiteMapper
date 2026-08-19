@@ -108,7 +108,12 @@ a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visibl
 
 header.top { border-bottom: 1px solid var(--line); background: var(--panel); }
 header.top .wrap { padding-top: 26px; padding-bottom: 0; }
-h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em; }
+h1 { font-size: 26px; margin: 0 0 4px; letter-spacing: -0.01em;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+/* Page-level actions (share link, deploy) sit top right in the title row,
+   beside the state badge they relate to — deliberately NOT among the content
+   filters in the toolbar. */
+.h1-actions { margin-left: auto; display: flex; gap: 8px; }
 .sub { color: var(--muted); margin: 0 0 16px; font-size: 14px; }
 .counts { display: flex; flex-wrap: wrap; gap: 20px; margin: 0 0 18px; }
 .counts div { line-height: 1.2; }
@@ -189,8 +194,6 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
 .where-local { background: var(--chip); color: var(--muted); }
 .where-live { background: var(--dev-bg); color: var(--dev-fg); }
 .where-shared { background: var(--staging-bg); color: var(--staging-fg); }
-.chip.deploy { border: 1px solid var(--line); }
-.chip.deploy:hover { border-color: var(--accent); color: var(--accent); }
 
 .procs { margin: 16px 0 0; border-top: 1px solid var(--line); }
 .proc { padding: 12px 0 12px; border-bottom: 1px solid var(--line); }
@@ -314,13 +317,27 @@ fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() =>
   const foot = document.querySelector('footer');
   if (foot) foot.append(' Live mode: run buttons execute via scripts/run.py; '
                         + 'mutating runs still ask first.');
-  // Deploy: framework tree only — the server refuses it for a map repository
-  // (that is the guardrail), so the button only appears where it can work.
+  // Page-level actions, top right in the title row. Framework tree only —
+  // the server refuses deploy for a map repository (that is the guardrail),
+  // and a map repository has no share URL, so neither button appears there.
   fetch('/api/meta').then(r => r.json()).then(meta => {
     if (!meta.framework) return;
-    const bar = document.querySelector('.toolbar');
+    const actions = document.createElement('span');
+    actions.className = 'h1-actions';
+    document.querySelector('h1').appendChild(actions);
+    if (meta.share_url) {
+      const s = document.createElement('button');
+      s.className = 'run share';
+      s.textContent = 'share link';
+      s.title = 'Copy the shareable URL: ' + meta.share_url;
+      s.addEventListener('click', () => copy(meta.share_url).then(() => {
+        s.textContent = 'link copied ✓';
+        setTimeout(() => { s.textContent = 'share link'; }, 1500);
+      }));
+      actions.appendChild(s);
+    }
     const d = document.createElement('button');
-    d.className = 'chip deploy';
+    d.className = 'run deploy';
     d.textContent = 'deploy → shareable URL';
     d.title = 'Publish this page as the standing shareable artifact';
     d.addEventListener('click', async () => {
@@ -348,7 +365,7 @@ fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() =>
         }, 5000);
       }
     });
-    bar.appendChild(d);
+    actions.appendChild(d);
   }).catch(() => {});
   for (const btn of document.querySelectorAll('.run[data-wf]')) {
     btn.dataset.live = '1';
