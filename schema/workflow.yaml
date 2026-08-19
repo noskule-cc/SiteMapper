@@ -28,6 +28,42 @@ workflow:
                               #     `verify` step that decides/branches, or formatting
                               #     free text), so an LLM must execute it.
 
+  trust: ""                   # draft | verified | broken — lifecycle state for headless
+                              # runs (#18). Orthogonal to `mode`: mode says whether a
+                              # machine COULD run it (a property of the steps); trust
+                              # says whether it has been PROVEN (a lifecycle state).
+                              #   draft    - not yet proven. A green run does NOT
+                              #              auto-promote; promotion is a deliberate
+                              #              review decision (a test can pass for the
+                              #              wrong reason).
+                              #   verified - a human/agent reviewed a green run; the date
+                              #              goes in verified_at, refreshed by later
+                              #              green runs. Only `mode: deterministic`
+                              #              workflows can be verified for blind runs —
+                              #              an agentic workflow is never `verified`.
+                              #   broken   - a run failed or a page fingerprint drifted;
+                              #              the runner downgrades to this automatically.
+                              #              Repair (docs/skills/) restores it.
+  verified_at: ""             # ISO date of the reviewed green run behind
+                              # `trust: verified`. Distinct from site.yaml's
+                              # verified_at, which dates the MAP's last drift check.
+
+  effect: ""                  # read-only | mutating | destructive — what the workflow
+                              # DOES to the target site, declared explicitly because a
+                              # runner cannot infer whether a click mutates.
+                              #   read-only   - changes nothing on the site
+                              #   mutating    - creates/edits data (form submission
+                              #                 included). A workflow whose teardown
+                              #                 deletes what it created is still
+                              #                 `mutating` — the deletion stays inside
+                              #                 the test's own data.
+                              #   destructive - deletes/overwrites data it did not
+                              #                 create in this run.
+                              # A headless runner checks `effect` against the
+                              # environment's policy (schema/settings.yaml) UP FRONT
+                              # and refuses or asks before the browser opens.
+                              # `trust: verified` never grants permission.
+
   parameters:                 # Caller-supplied inputs (prompted at run time).
     - name: ""                # Parameter name
       type: ""                # select | text

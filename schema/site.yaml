@@ -12,7 +12,9 @@ site:
                               #   verified_at says when it was last confirmed to
                               #   still match the live site. A long-stale
                               #   verified_at on a site you do not control is the
-                              #   signal to re-map.
+                              #   signal to re-map. (A WORKFLOW's verified_at in
+                              #   schema/workflow.yaml is different: it dates that
+                              #   workflow's `trust: verified` review.)
   pages: []                   # List of page YAML filenames
   workflows: []               # List of workflow YAML filenames
 

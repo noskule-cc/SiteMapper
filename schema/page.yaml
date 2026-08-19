@@ -38,6 +38,23 @@ page:
                               #   render on records/devices that support that feature)
       children: []            # Optional: nested sub-elements (e.g., submenu items under a nav link)
 
+  fingerprint:                # Cheap arrival check for headless runs (#18). The runner
+                              # verifies this in passing on every arrival at the page;
+                              # a mismatch degrades the consuming workflow's `trust`.
+    url: ""                   #   Regex the current URL (path portion) must match.
+                              #   Usually derivable from url_pattern; state it only
+                              #   when they differ (redirects, canonical URLs).
+    anchor: ""                #   Name of ONE element from `elements` above that must
+                              #   be visible on arrival. A REFERENCE, not a locator —
+                              #   the element list stays the single source of truth.
+
+  wait_for: []                # Readiness hints for what a runner's auto-waiting cannot
+                              # know — a virtualized grid finishing its render, a
+                              # spinner that is not an element state. NOT for ordinary
+                              # load waiting; auto-wait covers that. Each entry:
+                              #   - element: ""           an element name from `elements`
+                              #     state: visible        visible | hidden | attached
+
   settings: {}                # Optional page-scope settings block — most specific
                               # scope, overrides site.yaml and config.yaml. Usually
                               # `form_defaults` (field prefills keyed by element
