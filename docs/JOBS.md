@@ -15,6 +15,7 @@ script; only jobs needing judgement are skills or sub-agents.
 | Regenerate views | `python scripts/inventory.py` | `docs/inventory.md` + `docs/overview.html` | script |
 | Staleness check | `python scripts/inventory.py --check` | non-zero exit when a generated view is stale | script |
 | Headless workflow run | `python scripts/run.py <workflow> --param k=v` | a `result` object (`--json` for machine-readable) | script |
+| Live dashboard | `python scripts/serve.py [--root <maps>]` | the overview at `http://127.0.0.1:8765/` with real run buttons | script |
 | Map drift check | `/verify-map <site>` | FOUND / MISSING per element | skill ([verify-map.md](skills/verify-map.md)) |
 | Deterministic UI test | `/test <workflow>` | a `result` object + `results/` record | skill ([test.md](skills/test.md)) |
 | Map repair after a failed run | `/repair <workflow>` | patched map + restored `trust` | skill ([repair.md](skills/repair.md)) |

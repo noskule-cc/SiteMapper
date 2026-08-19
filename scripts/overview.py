@@ -27,6 +27,7 @@ copy, and a human runs it. See issue #14 for the levels beyond that.
 """
 import argparse
 import html
+import json
 import os
 import re
 import subprocess
@@ -177,6 +178,11 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
 .tag.effect-read-only { color: var(--deterministic); }
 .tag.effect-mutating { background: var(--staging-bg); color: var(--staging-fg); }
 .tag.effect-destructive { background: var(--prod-bg); color: var(--prod-fg); }
+.live-result { background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; margin: 10px 0 0;
+  font: 12.5px ui-monospace, "Cascadia Code", Consolas, monospace;
+  white-space: pre-wrap; overflow-x: auto; }
+.live-result.fail { border-color: var(--prod-fg); }
 
 .procs { margin: 16px 0 0; border-top: 1px solid var(--line); }
 .proc { padding: 12px 0 12px; border-bottom: 1px solid var(--line); }
@@ -277,12 +283,97 @@ function copy(text) {
 }
 for (const btn of document.querySelectorAll('.run')) {
   btn.addEventListener('click', () => {
+    if (btn.dataset.live === '1') return;  // live mode: the run listener owns it
     copy(btn.dataset.cmd).then(() => {
       const was = btn.textContent;
       btn.textContent = 'copied'; btn.classList.add('copied');
       setTimeout(() => { btn.textContent = was; btn.classList.remove('copied'); }, 1200);
     });
   });
+}
+
+// Live mode (#31): when scripts/serve.py serves this page, the API answers
+// and deterministic workflows' buttons run for real. Opened as a file — or
+// as an Artifact, where CSP blocks fetch — the probe fails silently and the
+// page stays the static copy-paste version. One page, two modes.
+fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() => {
+  document.body.classList.add('live');
+  const foot = document.querySelector('footer');
+  if (foot) foot.append(' Live mode: run buttons execute via scripts/run.py; '
+                        + 'mutating runs still ask first.');
+  for (const btn of document.querySelectorAll('.run[data-wf]')) {
+    btn.dataset.live = '1';
+    const c = document.createElement('button');
+    c.className = 'run'; c.textContent = 'copy';
+    c.title = 'copy: ' + btn.dataset.cmd;
+    c.addEventListener('click', () => copy(btn.dataset.cmd).then(() => {
+      c.textContent = 'copied'; setTimeout(() => { c.textContent = 'copy'; }, 1200);
+    }));
+    btn.after(c);
+    btn.textContent = '▶ run';
+    btn.title = 'run now (scripts/run.py)';
+    btn.addEventListener('click', () => startRun(btn));
+  }
+}).catch(() => {});
+
+function resultBox(btn) {
+  let box = btn.closest('.proc').querySelector('.live-result');
+  if (!box) {
+    box = document.createElement('pre');
+    box.className = 'live-result';
+    btn.closest('.proc').appendChild(box);
+  }
+  return box;
+}
+
+function startRun(btn) {
+  const params = {};
+  for (const name of JSON.parse(btn.dataset.params || '[]')) {
+    const v = prompt('Parameter "' + name + '" (empty = default/skip):');
+    if (v === null) return;  // cancelled
+    if (v) params[name] = v;
+  }
+  postRun(btn, params, []);
+}
+
+async function postRun(btn, params, consent) {
+  const box = resultBox(btn);
+  btn.disabled = true; btn.textContent = 'running…';
+  box.classList.remove('fail');
+  box.textContent = 'running…';
+  try {
+    const r = await fetch('/api/run/' + encodeURIComponent(btn.dataset.wf), {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({params: params, consent: consent})});
+    const data = await r.json();
+    if (r.status === 409 && data.ask) {
+      // The button is the ask channel: the server states the question, a
+      // human answers it, consent applies to THIS run only.
+      box.textContent = '';
+      if (confirm(data.question)) return postRun(btn, params, consent.concat([data.ask]));
+      box.textContent = 'not run: consent declined';
+      return;
+    }
+    if (!data.result) { box.classList.add('fail');
+      box.textContent = 'refused: ' + (data.error || ('HTTP ' + r.status)); return; }
+    const res = data.result;
+    const lines = [res.workflow + ': ' + res.status + ' (' + res.counts.passed + '/'
+                   + res.counts.total + ' assertions passed)'];
+    for (const a of res.assertions || [])
+      lines.push((a.pass ? 'PASS' : 'FAIL') + '  ' + a.id);
+    if (res.error) lines.push('error: ' + res.error);
+    box.textContent = lines.join('\\n');
+    if (res.status !== 'passed') {
+      box.classList.add('fail');
+      const tag = btn.closest('.proc').querySelector('[class*="trust-"]');
+      if (tag) { tag.textContent = 'broken'; tag.className = 'tag trust-broken'; }
+    }
+  } catch (err) {
+    box.classList.add('fail');
+    box.textContent = 'run failed to start: ' + err;
+  } finally {
+    btn.disabled = false; btn.textContent = '▶ run';
+  }
 }
 
 // Hovering a graph node dims everything not connected to it.
@@ -460,7 +551,11 @@ def proc_workflow(w, show_owner=False):
         bits.append(f'<span class="tag">{len(w["params"])} '
                     f'{"param" if len(w["params"]) == 1 else "params"}</span>')
     bits.append('<span class="spacer"></span>')
-    bits.append(f'<button class="run" data-cmd="{e(cmd_for(w))}" '
+    # data-wf marks the button runnable in live mode (scripts/serve.py); the
+    # static page ignores the extra attributes and stays copy-to-clipboard.
+    live = (f' data-wf="{e(w["name"])}" data-params="{e(json.dumps(w["params"]))}"'
+            if w["mode"] == "deterministic" else "")
+    bits.append(f'<button class="run" data-cmd="{e(cmd_for(w))}"{live} '
                 f'title="copy: {e(cmd_for(w))}">{e(cmd_for(w))}</button>')
 
     links = []

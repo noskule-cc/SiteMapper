@@ -45,6 +45,12 @@ that scope when `permissions.write` is unset.
 - **`ask` needs a human.** LLM host: ask in the conversation. Headless runner:
   TTY prompt, or an explicit `--yes-write` / `--yes-destructive` flag.
   Non-interactive (CI): **`ask` degrades to `deny`.**
+- **In the live dashboard, the button is the ask channel.** `scripts/serve.py`
+  keeps the gate server-side (the browser is untrusted UI): a `read-only` run
+  just runs; where policy says `ask`, the server returns the question and the
+  page's confirmation click sends consent **for that one run only** — a
+  browser click can never widen policy, and `deny` is refused server-side no
+  matter what the page sends.
 - **`trust: verified` grants nothing.** Verified means proven to run, never
   allowed to write. The two axes stay independent.
 

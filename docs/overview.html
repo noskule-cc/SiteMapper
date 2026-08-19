@@ -135,6 +135,11 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
 .tag.effect-read-only { color: var(--deterministic); }
 .tag.effect-mutating { background: var(--staging-bg); color: var(--staging-fg); }
 .tag.effect-destructive { background: var(--prod-bg); color: var(--prod-fg); }
+.live-result { background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 12px; margin: 10px 0 0;
+  font: 12.5px ui-monospace, "Cascadia Code", Consolas, monospace;
+  white-space: pre-wrap; overflow-x: auto; }
+.live-result.fail { border-color: var(--prod-fg); }
 
 .procs { margin: 16px 0 0; border-top: 1px solid var(--line); }
 .proc { padding: 12px 0 12px; border-bottom: 1px solid var(--line); }
@@ -202,7 +207,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 44px;
 <section data-group="projects"><h2>Projects</h2>
 </section>
 <section data-group="sites"><h2>Sites</h2>
-<article class="card" id="s-sitemapper-demo" data-search="sitemapper-demo sitemapper demo demo github repo for sitemapper — map issues page and create issues via workflow https://github.com/noskule-cc/sitemapper.demo  issues-list new-issue"><h3><span class="name">sitemapper-demo</span></h3><div class="meta"><a href="https://github.com/noskule-cc/SiteMapper.demo">https://github.com/noskule-cc/SiteMapper.demo</a><span><a href="../sites/sitemapper-demo/site.yaml">site.yaml</a></span></div><p class="desc">Demo GitHub repo for SiteMapper — map issues page and create issues via workflow</p><div class="meta"><span><b>2</b> pages</span><span><b>2</b> workflows</span><span><b>0</b> scripts</span><span>mapped <b>2026-05-03</b></span></div><div class="procs"><div class="proc" data-kind="workflow" data-mode="deterministic" data-search="search-issues sitemapper-demo deterministic verified read-only search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state"><div class="proc-head"><span class="tag kind-workflow">workflow</span><a class="name" href="../sites/sitemapper-demo/workflows/search-issues.yaml">search-issues</a><span class="tag mode-deterministic">deterministic</span><span class="tag trust-verified">verified 2026-08-19</span><span class="tag effect-read-only">read-only</span><span class="tag">test</span><span class="tag">10 steps</span><span class="tag">5 asserts</span><span class="spacer"></span><button class="run" data-cmd="python scripts/run.py search-issues --record" title="copy: python scripts/run.py search-issues --record">python scripts/run.py search-issues --record</button></div><p class="purpose">Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state</p><div class="links"><a href="../sites/sitemapper-demo/workflows/search-issues.md">flowchart&nbsp;.md</a> last run <a href="../sites/sitemapper-demo/results/search-issues.2026-08-19.md">2026-08-19</a></div></div><div class="proc" data-kind="workflow" data-mode="agentic" data-search="smart-issue sitemapper-demo agentic draft mutating ask what the issue is about, search for similar existing issues, present matches or create a new one topic label"><div class="proc-head"><span class="tag kind-workflow">workflow</span><a class="name" href="../sites/sitemapper-demo/workflows/smart-issue.yaml">smart-issue</a><span class="tag mode-agentic">agentic</span><span class="tag trust-draft">draft</span><span class="tag effect-mutating">mutating</span><span class="tag">12 steps</span><span class="tag">2 params</span><span class="spacer"></span><button class="run" data-cmd="/run smart-issue" title="copy: /run smart-issue">/run smart-issue</button></div><p class="purpose">Ask what the issue is about, search for similar existing issues, present matches or create a new one</p><div class="links"><a href="../sites/sitemapper-demo/workflows/smart-issue.md">flowchart&nbsp;.md</a></div></div></div><details><summary>2 mapped pages</summary><div class="pages"><a href="../sites/sitemapper-demo/pages/issues-list.yaml">issues-list</a><a href="../sites/sitemapper-demo/pages/new-issue.yaml">new-issue</a></div></details></article>
+<article class="card" id="s-sitemapper-demo" data-search="sitemapper-demo sitemapper demo demo github repo for sitemapper — map issues page and create issues via workflow https://github.com/noskule-cc/sitemapper.demo  issues-list new-issue"><h3><span class="name">sitemapper-demo</span></h3><div class="meta"><a href="https://github.com/noskule-cc/SiteMapper.demo">https://github.com/noskule-cc/SiteMapper.demo</a><span><a href="../sites/sitemapper-demo/site.yaml">site.yaml</a></span></div><p class="desc">Demo GitHub repo for SiteMapper — map issues page and create issues via workflow</p><div class="meta"><span><b>2</b> pages</span><span><b>2</b> workflows</span><span><b>0</b> scripts</span><span>mapped <b>2026-05-03</b></span></div><div class="procs"><div class="proc" data-kind="workflow" data-mode="deterministic" data-search="search-issues sitemapper-demo deterministic verified read-only search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state"><div class="proc-head"><span class="tag kind-workflow">workflow</span><a class="name" href="../sites/sitemapper-demo/workflows/search-issues.yaml">search-issues</a><span class="tag mode-deterministic">deterministic</span><span class="tag trust-verified">verified 2026-08-19</span><span class="tag effect-read-only">read-only</span><span class="tag">test</span><span class="tag">10 steps</span><span class="tag">5 asserts</span><span class="spacer"></span><button class="run" data-cmd="python scripts/run.py search-issues --record" data-wf="search-issues" data-params="[]" title="copy: python scripts/run.py search-issues --record">python scripts/run.py search-issues --record</button></div><p class="purpose">Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state</p><div class="links"><a href="../sites/sitemapper-demo/workflows/search-issues.md">flowchart&nbsp;.md</a> last run <a href="../sites/sitemapper-demo/results/search-issues.2026-08-19.md">2026-08-19</a></div></div><div class="proc" data-kind="workflow" data-mode="agentic" data-search="smart-issue sitemapper-demo agentic draft mutating ask what the issue is about, search for similar existing issues, present matches or create a new one topic label"><div class="proc-head"><span class="tag kind-workflow">workflow</span><a class="name" href="../sites/sitemapper-demo/workflows/smart-issue.yaml">smart-issue</a><span class="tag mode-agentic">agentic</span><span class="tag trust-draft">draft</span><span class="tag effect-mutating">mutating</span><span class="tag">12 steps</span><span class="tag">2 params</span><span class="spacer"></span><button class="run" data-cmd="/run smart-issue" title="copy: /run smart-issue">/run smart-issue</button></div><p class="purpose">Ask what the issue is about, search for similar existing issues, present matches or create a new one</p><div class="links"><a href="../sites/sitemapper-demo/workflows/smart-issue.md">flowchart&nbsp;.md</a></div></div></div><details><summary>2 mapped pages</summary><div class="pages"><a href="../sites/sitemapper-demo/pages/issues-list.yaml">issues-list</a><a href="../sites/sitemapper-demo/pages/new-issue.yaml">new-issue</a></div></details></article>
 </section>
 <p class="empty" id="none">Nothing matches that.</p>
 <footer>Generated by <code>scripts/inventory.py</code> from the YAML in this repository — do not edit. <code>python scripts/check.py --only overview</code> fails when it is stale. This page lists the command that starts each process; it cannot run one itself.</footer>
@@ -270,12 +275,97 @@ function copy(text) {
 }
 for (const btn of document.querySelectorAll('.run')) {
   btn.addEventListener('click', () => {
+    if (btn.dataset.live === '1') return;  // live mode: the run listener owns it
     copy(btn.dataset.cmd).then(() => {
       const was = btn.textContent;
       btn.textContent = 'copied'; btn.classList.add('copied');
       setTimeout(() => { btn.textContent = was; btn.classList.remove('copied'); }, 1200);
     });
   });
+}
+
+// Live mode (#31): when scripts/serve.py serves this page, the API answers
+// and deterministic workflows' buttons run for real. Opened as a file — or
+// as an Artifact, where CSP blocks fetch — the probe fails silently and the
+// page stays the static copy-paste version. One page, two modes.
+fetch('/api/inventory').then(r => r.ok ? r.json() : Promise.reject()).then(() => {
+  document.body.classList.add('live');
+  const foot = document.querySelector('footer');
+  if (foot) foot.append(' Live mode: run buttons execute via scripts/run.py; '
+                        + 'mutating runs still ask first.');
+  for (const btn of document.querySelectorAll('.run[data-wf]')) {
+    btn.dataset.live = '1';
+    const c = document.createElement('button');
+    c.className = 'run'; c.textContent = 'copy';
+    c.title = 'copy: ' + btn.dataset.cmd;
+    c.addEventListener('click', () => copy(btn.dataset.cmd).then(() => {
+      c.textContent = 'copied'; setTimeout(() => { c.textContent = 'copy'; }, 1200);
+    }));
+    btn.after(c);
+    btn.textContent = '▶ run';
+    btn.title = 'run now (scripts/run.py)';
+    btn.addEventListener('click', () => startRun(btn));
+  }
+}).catch(() => {});
+
+function resultBox(btn) {
+  let box = btn.closest('.proc').querySelector('.live-result');
+  if (!box) {
+    box = document.createElement('pre');
+    box.className = 'live-result';
+    btn.closest('.proc').appendChild(box);
+  }
+  return box;
+}
+
+function startRun(btn) {
+  const params = {};
+  for (const name of JSON.parse(btn.dataset.params || '[]')) {
+    const v = prompt('Parameter "' + name + '" (empty = default/skip):');
+    if (v === null) return;  // cancelled
+    if (v) params[name] = v;
+  }
+  postRun(btn, params, []);
+}
+
+async function postRun(btn, params, consent) {
+  const box = resultBox(btn);
+  btn.disabled = true; btn.textContent = 'running…';
+  box.classList.remove('fail');
+  box.textContent = 'running…';
+  try {
+    const r = await fetch('/api/run/' + encodeURIComponent(btn.dataset.wf), {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({params: params, consent: consent})});
+    const data = await r.json();
+    if (r.status === 409 && data.ask) {
+      // The button is the ask channel: the server states the question, a
+      // human answers it, consent applies to THIS run only.
+      box.textContent = '';
+      if (confirm(data.question)) return postRun(btn, params, consent.concat([data.ask]));
+      box.textContent = 'not run: consent declined';
+      return;
+    }
+    if (!data.result) { box.classList.add('fail');
+      box.textContent = 'refused: ' + (data.error || ('HTTP ' + r.status)); return; }
+    const res = data.result;
+    const lines = [res.workflow + ': ' + res.status + ' (' + res.counts.passed + '/'
+                   + res.counts.total + ' assertions passed)'];
+    for (const a of res.assertions || [])
+      lines.push((a.pass ? 'PASS' : 'FAIL') + '  ' + a.id);
+    if (res.error) lines.push('error: ' + res.error);
+    box.textContent = lines.join('\n');
+    if (res.status !== 'passed') {
+      box.classList.add('fail');
+      const tag = btn.closest('.proc').querySelector('[class*="trust-"]');
+      if (tag) { tag.textContent = 'broken'; tag.className = 'tag trust-broken'; }
+    }
+  } catch (err) {
+    box.classList.add('fail');
+    box.textContent = 'run failed to start: ' + err;
+  } finally {
+    btn.disabled = false; btn.textContent = '▶ run';
+  }
 }
 
 // Hovering a graph node dims everything not connected to it.

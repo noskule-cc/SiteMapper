@@ -46,6 +46,7 @@ lowercase = this project's own content.
 
 - [scripts/check.py](../scripts/check.py) — all mechanical consistency checks; non-zero exit on failure
 - [scripts/run.py](../scripts/run.py) — headless deterministic workflow runner (Playwright, no LLM in the loop)
+- [scripts/serve.py](../scripts/serve.py) — serves the overview live on localhost; run buttons become real, gated by PERMISSIONS.md
 - [scripts/inventory.py](../scripts/inventory.py) — generate both views below; `--check` fails when either is stale
 - [scripts/overview.py](../scripts/overview.py) — the HTML renderer, reading `inventory.py`'s collectors
 - [inventory.md](inventory.md) — **generated**: every site, project and workflow
