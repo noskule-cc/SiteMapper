@@ -14,6 +14,7 @@ script; only jobs needing judgement are skills or sub-agents.
 | Consistency checks | `python scripts/check.py` | pass/fail per check, non-zero exit on failure | script |
 | Regenerate views | `python scripts/inventory.py` | `docs/inventory.md` + `docs/overview.html` | script |
 | Staleness check | `python scripts/inventory.py --check` | non-zero exit when a generated view is stale | script |
+| Headless workflow run | `python scripts/run.py <workflow> --param k=v` | a `result` object (`--json` for machine-readable) | script |
 | Map drift check | `/verify-map <site>` | FOUND / MISSING per element | skill ([verify-map.md](skills/verify-map.md)) |
 | Deterministic UI test | `/test <workflow>` | a `result` object + `results/` record | skill ([test.md](skills/test.md)) |
 | LLM docs test | invoke `validation-llm` | knowledge-test report | sub-agent ([subagents/validation-llm.md](subagents/validation-llm.md)) |
