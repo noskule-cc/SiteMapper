@@ -79,6 +79,13 @@ When a step switches to a different site than the previous step:
 - Ensure authentication context is correct (check site's `auth_notes`)
 - Captured variables from the previous site remain available
 
+## Navigation
+
+Prefer the deep link: when a step's target page has a `url_pattern` with no
+unresolved placeholders, navigate `base_url + url_pattern` directly instead of
+click-chaining through menus — same rule the headless runner applies. Click
+chains are for pages whose URL depends on runtime data.
+
 ## Error Handling
 
 - If an element can't be found, take a screenshot and report the issue. Don't retry blindly.

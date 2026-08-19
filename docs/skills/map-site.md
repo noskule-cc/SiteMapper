@@ -46,6 +46,24 @@ For each page the user wants to map:
    baseline for visual drift that element-existence checks cannot detect.
 6. **Ask**: "Navigate to the next page you want to map, or say 'done' to finish."
 
+## Persist Corrections
+
+A user correction is a lesson the map must keep — that is the entire value of
+human-in-the-loop discovery. When the user:
+
+- **corrects a click target** ("the chevron, not the text") → write it as a
+  gotcha on that page, phrased as the rule, not the incident;
+- **rejects suggested elements** ("skip the footer links") → deprioritize
+  that element class for the rest of THIS site's session, and note it in
+  `site.yaml` if it is site-wide;
+- **hands you a direct URL** instead of navigating → record it as the page's
+  `url_pattern` — direct navigation is preferred by every executor;
+- **names a fact you almost put in memory** → it goes in the map
+  (`docs/KNOWLEDGE_PLACEMENT.md`), never in the host's memory store.
+
+Persist the lesson the moment it is given, in the same session — a correction
+repeated in the next session is a correction that was lost.
+
 ## When Done
 
 1. Update or create `sites/<site>/site.yaml` with the site config and list of mapped pages.
