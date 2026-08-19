@@ -34,18 +34,13 @@ verified one make runs fast" is wiki; "how to run `/verify-map`" is `docs/`.
 
 ## Wiki Conventions
 
-Location and access: [wiki.md](wiki.md).
+Location, access, and the authoritative pillar/prefix structure:
+[wiki.md](wiki.md). In short: two pillars — **Content** (`concepts-`,
+`features-`) and **Architecture** (`architecture-`) — and every file is named
+`<prefix>-<topic>.md`.
 
-**File naming** — section prefix + descriptive name:
-
-```
-architecture-overview.md
-concepts-site-map.md
-features-drift-detection.md
-```
-
-**Index:** `_Sidebar.md` is the wiki's navigation. Before writing a page,
-check it; after writing, update it.
+**Index:** `_Sidebar.md` is the wiki's navigation, grouped by the two pillars.
+Before writing a page, check it; after writing, update it.
 
 ### Structure: behavior first, then host
 

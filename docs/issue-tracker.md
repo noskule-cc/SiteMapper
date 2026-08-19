@@ -48,6 +48,19 @@ gh api graphql -f query='{repository(owner:"noskule-cc",name:"SiteMapper"){
   issueTypes(first:20){nodes{id name}} issue(number:N){id}}}'
 ```
 
+## Wiki Mapping
+
+Feature-area labels map to wiki page prefixes (see [wiki.md](wiki.md) for the
+wiki's structure). When closing an issue that adds significant functionality,
+update the wiki page its label maps to.
+
+| Label | Wiki target |
+|-------|-------------|
+| `runner` | `architecture-runner`, plus `features-` pages for run behavior |
+| `enhancement` touching maps or workflows | `concepts-site-map` / `concepts-workflow`, or a `features-` page |
+| `documentation` | usually `docs/` itself, not the wiki |
+| `bug` | no wiki page — unless the fix changes documented behavior |
+
 ## Differences from the aiDocs baseline
 
 - **No Projects v2 board.** The aiDocs rules "add every issue to the project" and
