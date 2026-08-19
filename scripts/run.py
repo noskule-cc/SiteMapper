@@ -98,6 +98,44 @@ class Site:
         )
 
 
+def load_persona(root: Path, site_name: str, persona_name: str | None):
+    """Resolve the persona for a site: --persona, else the site's only one,
+    else anonymous (None). Site-scoped: sites/<site>/personas/<name>.yaml."""
+    pdir = root / "sites" / site_name / "personas"
+    files = sorted(pdir.glob("*.yaml")) if pdir.is_dir() else []
+    if persona_name:
+        for f in files:
+            if f.stem == persona_name:
+                return load_yaml(f).get("persona", {})
+        raise RunError(f"site '{site_name}' has no persona '{persona_name}' "
+                       f"({[f.stem for f in files] or 'none defined'})")
+    if len(files) == 1:
+        return load_yaml(files[0]).get("persona", {})
+    if not files:
+        return None
+    raise RunError(f"site '{site_name}' has several personas "
+                   f"({[f.stem for f in files]}) — pass --persona")
+
+
+def state_path(root: Path, site_name: str, persona: dict) -> Path:
+    """Saved browser state: a credential, so always local and gitignored."""
+    custom = persona.get("storage_state")
+    if custom:
+        return Path(custom) if Path(custom).is_absolute() else root / custom
+    return root / ".runner" / "state" / f"{site_name}.{persona.get('name', 'default')}.json"
+
+
+def env_secret(ref: str, what: str) -> str:
+    import os
+    if not (ref or "").startswith("env:"):
+        raise RunError(f"persona {what} must be an env: reference, got '{ref}' — "
+                       "committed files never contain secrets (schema/persona.yaml)")
+    value = os.environ.get(ref[4:])
+    if not value:
+        raise RunError(f"environment variable '{ref[4:]}' ({what}) is not set")
+    return value
+
+
 def deep_merge(base: dict, override: dict) -> dict:
     out = dict(base or {})
     for key, val in (override or {}).items():
@@ -206,12 +244,15 @@ class Runner:
     DEFAULT_TIMEOUT_MS = 10_000
 
     def __init__(self, root: Path, wf_path: Path, workflow: dict, bindings: Bindings,
-                 headed: bool = False):
+                 headed: bool = False, persona: dict | None = None,
+                 pre_authorized: set = frozenset()):
         self.root = root
         self.wf_path = wf_path
         self.workflow = workflow
         self.bindings = bindings
         self.headed = headed
+        self.persona = persona
+        self.pre_authorized = pre_authorized
         self.sites: dict[str, Site] = {}
         self.default_site = workflow.get("site")
         self.assertions: list[dict] = []
@@ -242,8 +283,77 @@ class Runner:
             )
         self._pw = sync_playwright().start()
         self.browser = self._pw.chromium.launch(channel="chrome", headless=not self.headed)
-        self.pw_page = self.browser.new_page()
+        context_args = {}
+        site_name = None
+        if self.persona:
+            site_name = self.workflow.get("site") or (self.workflow.get("sites") or [None])[0]
+            state = state_path(self.root, site_name, self.persona)
+            if self.persona.get("auth") == "session":
+                if not state.is_file():
+                    raise RunError(
+                        f"persona '{self.persona.get('name')}' is auth: session but "
+                        f"{state} does not exist — run once with a persona whose auth "
+                        "is `human` (headed) to create it. The runner never logs in "
+                        "silently."
+                    )
+                context_args["storage_state"] = str(state)
+            elif state.is_file():  # human/automated reuse an existing state too
+                context_args["storage_state"] = str(state)
+        self.context = self.browser.new_context(**context_args)
+        self.pw_page = self.context.new_page()
         self.pw_page.set_default_timeout(self.DEFAULT_TIMEOUT_MS)
+        if self.persona and "storage_state" not in context_args:
+            self._establish_session(site_name)
+
+    def _establish_session(self, site_name: str):
+        """First-time login for auth: human | automated. Saves storage_state."""
+        persona = self.persona
+        method = persona.get("auth")
+        site = Site(self.root, site_name)
+        state = state_path(self.root, site_name, persona)
+        state.parent.mkdir(parents=True, exist_ok=True)
+        if method == "human":
+            if not self.headed:
+                raise RunError(
+                    f"persona '{persona.get('name')}' needs a first login by a human — "
+                    "re-run with --headed, log in when the browser opens"
+                )
+            login_page = (persona.get("login") or {}).get("page")
+            self.pw_page.goto(site.base_url + (site.page(login_page).get("url_pattern", "")
+                                               if login_page else ""))
+            try:
+                input("Log in in the browser window, then press Enter here... ")
+            except (EOFError, KeyboardInterrupt):
+                raise RunError("no interactive console to wait on — auth: human needs one")
+        elif method == "automated":
+            settings = resolve_settings(self.root, site, None)
+            verdict = permission_verdict(settings, "auth")
+            if verdict == "deny" or (verdict == "ask" and "auth" not in self.pre_authorized):
+                env = (settings.get("policy") or {}).get("environment", "?")
+                raise RunError(
+                    f"automated login is '{verdict}' for site '{site_name}' "
+                    f"(environment: {env})" +
+                    (" — pass --yes-auth to pre-authorize" if verdict == "ask" else
+                     ". Use a `human`-seeded session instead (docs/PERMISSIONS.md).")
+                )
+            login = persona.get("login") or {}
+            if not login.get("page"):
+                raise RunError("auth: automated needs a `login:` block (schema/persona.yaml)")
+            creds = persona.get("credential_ref") or {}
+            user = env_secret(creds.get("username"), "credential_ref.username")
+            pw = env_secret(creds.get("password"), "credential_ref.password")
+            self.pw_page.goto(site.base_url + site.page(login["page"]).get("url_pattern", ""))
+            build_locator(self.pw_page,
+                          site.element(login["page"], login["username_element"])).fill(user)
+            build_locator(self.pw_page,
+                          site.element(login["page"], login["password_element"])).fill(pw)
+            build_locator(self.pw_page,
+                          site.element(login["page"], login["submit_element"])).click()
+            self.pw_page.wait_for_load_state()
+        else:
+            raise RunError(f"persona auth method '{method}' is not session|human|automated")
+        self.context.storage_state(path=str(state))
+        print(f"session saved: {state}", file=sys.stderr)
 
     def stop(self):
         for closer in (self.browser, self._pw):
@@ -536,7 +646,7 @@ def utc_now() -> str:
 
 
 def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
-                 pre_authorized: set[str] = frozenset()):
+                 pre_authorized: set[str] = frozenset(), persona_name: str | None = None):
     wf_path, data = find_workflow(root, name)
     workflow = data.get("workflow", {})
 
@@ -560,9 +670,11 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
     if not involved:
         raise RunError("workflow names no literal site — cannot resolve a permission scope")
     gate(root, workflow, involved, pre_authorized)
+    persona = load_persona(root, involved[0], persona_name)
 
     bindings = Bindings(workflow, cli_params)
-    runner = Runner(root, wf_path, workflow, bindings, headed=headed)
+    runner = Runner(root, wf_path, workflow, bindings, headed=headed,
+                    persona=persona, pre_authorized=pre_authorized)
 
     result = {
         "workflow": workflow.get("name", name),
@@ -660,6 +772,10 @@ def main(argv=None):
                     help="pre-authorize the 'write' class where policy says ask")
     ap.add_argument("--yes-destructive", action="store_true",
                     help="pre-authorize the 'destructive' class where policy says ask")
+    ap.add_argument("--yes-auth", action="store_true",
+                    help="pre-authorize automated login where policy says ask")
+    ap.add_argument("--persona", default=None,
+                    help="persona to run as (default: the site's only persona, if any)")
     args = ap.parse_args(argv)
 
     root = Path(args.root).resolve() if args.root else FRAMEWORK_ROOT
@@ -671,11 +787,12 @@ def main(argv=None):
         cli_params[key] = value
 
     pre_authorized = {cls for cls, flag in
-                      (("write", args.yes_write), ("destructive", args.yes_destructive))
+                      (("write", args.yes_write), ("destructive", args.yes_destructive),
+                       ("auth", args.yes_auth))
                       if flag}
     try:
         result, wf_path = run_workflow(root, args.workflow, cli_params, args.headed,
-                                       pre_authorized)
+                                       pre_authorized, args.persona)
     except RunError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2

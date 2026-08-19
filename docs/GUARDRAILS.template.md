@@ -26,7 +26,7 @@ difference between "no rule" and "nobody thought about it".
 | Category | Answers | Typical content |
 |---|---|---|
 | **Privileged tool access** | Which systems may the agent touch, and how far? | Per-project/tenant scope tables for MCP servers that authenticate as the user |
-| **Credentials** | What may the agent type or store? | Never enter passwords/MFA/tokens; never commit secrets; how to reference one at run time |
+| **Credentials** | What may the agent type or store? | Never enter passwords/MFA/tokens; never commit secrets (browser storage-state files included); how to reference one at run time. Automated login is an env-scoped permission (`policy.permissions.auth`), not a blanket rule — dev/staging may allow it, production stays human-supervised (`schema/persona.yaml`, `docs/PERMISSIONS.md`) |
 | **Write authorization** | When may the agent change state? | The machine-readable flag that gates it, and why it stays off by default |
 | **Production** | Which environments are real? | Environments that look like sandboxes but are not |
 | **Destructive actions** | What may the agent delete? | Only what this run created; locate by identity, never by screen position |

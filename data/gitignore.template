@@ -8,6 +8,11 @@ __pycache__/
 # draw.io editor backups (.$<name>.drawio.bkp)
 .$*.bkp
 
+# Runner artifacts: failure screenshots AND saved browser sessions
+# (.runner/state/*.json). Browser state is a credential — it never enters
+# version control, even in a private repository.
+.runner/
+
 # ---------------------------------------------------------------------------
 # RUN OUTPUTS — ALL OF THEM
 # ---------------------------------------------------------------------------

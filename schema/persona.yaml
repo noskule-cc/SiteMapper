@@ -1,0 +1,45 @@
+# Schema: Persona
+# WHO is logged in when a workflow runs — an identity and an auth METHOD, never
+# a credential value. Site-scoped: sites/<site>/personas/<name>.yaml. The
+# headless runner (scripts/run.py) resolves --persona, or the site's only
+# persona by default; a site with no personas runs anonymously (fine for
+# public, read-only sites).
+#
+# Part of the three-layer split (#8): persona = who is logged in,
+# context = which tenant/data, workflow = what behavior. Contexts are #8's
+# scope and tracked there.
+
+persona:
+  name: ""                    # Persona name (used as: --persona <name>)
+  description: ""             # The role, not a real person's data
+
+  auth: ""                    # session | human | automated
+                              #   session   - reuse a saved browser state. The runner
+                              #               loads `storage_state` and FAILS LOUD when
+                              #               it is missing or expired — it never
+                              #               re-logs-in silently.
+                              #   human     - a person logs in: the runner opens a
+                              #               headed browser, waits for them, then saves
+                              #               storage_state so later runs can use
+                              #               `session`. The only method that touches a
+                              #               credential — and a human types it.
+                              #   automated - the runner fills the login form itself.
+                              #               Gated by the `auth` permission class
+                              #               (docs/PERMISSIONS.md): allow it on
+                              #               dev/staging scopes; production stays ask.
+
+  credential_ref:             # For auth: automated — RUNTIME references, never values.
+    username: ""              #   env:VARNAME — resolved from the environment at run time
+    password: ""              #   env:VARNAME — a committed file NEVER contains a secret
+
+  storage_state: ""           # Where the saved browser state lives. Default:
+                              #   .runner/state/<site>.<persona>.json — a LOCAL,
+                              #   gitignored path. Browser state is a credential;
+                              #   it never enters version control.
+
+  login:                      # For auth: automated (and human, as a courtesy nav) —
+                              # where login happens, referencing the page map.
+    page: ""                  #   page map name of the login page
+    username_element: ""      #   element names from that page map
+    password_element: ""
+    submit_element: ""
