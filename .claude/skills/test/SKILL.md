@@ -98,9 +98,10 @@ Workflow argument: $workflow
    per-assertion PASS/FAIL table, the machine-readable `result` JSON, and any
    findings. Routine runs need not be committed. Per-run evidence (datasets,
    logs) goes in a sibling `<workflow>.<YYYY-MM-DD>/` folder referenced from the
-   result's `evidence` list. See the `results/README.md` files, and the
-   deployment's `docs/guardrails.md` before committing anything containing
-   customer data.
+   result's `evidence` list. `results/` is gitignored as a class, so committing
+   a record is a deliberate exception (`docs/tools/jobs.md` → Results
+   retention); read the deployment's `docs/guardrails.md` before committing
+   anything containing customer data.
 
 ## Safety
 

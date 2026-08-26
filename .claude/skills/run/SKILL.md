@@ -81,8 +81,10 @@ Workflow argument: $workflow
 
 7. **Report results** — summarize what was done and whether verification passed.
    For a run worth keeping as history, write it to
-   `results/<workflow>.<YYYY-MM-DD>.md` next to the workflow (see the `results/`
-   READMEs). Routine runs need not be committed.
+   `results/<workflow>.<YYYY-MM-DD>.md` next to the workflow: run metadata, what
+   happened, and any findings. Routine runs need not be committed — `results/`
+   is gitignored as a class, so committing one is a deliberate exception (see
+   `docs/tools/jobs.md` → Results retention).
 
 ## Cross-Site Execution
 
