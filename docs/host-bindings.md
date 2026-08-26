@@ -35,22 +35,17 @@ follows the identical instructions and substitutes its own column here.
 **Fan-out is an optimization, never a requirement.** A host with no subagent
 concept runs the same work sequentially and must produce an identical `result`.
 If a workflow's correctness ever depends on parallelism, that is a bug in the
-workflow, not a missing host feature. See `INTERFACE.md` → Bindings.
+workflow, not a missing host feature. See [interface.md](interface.md) →
+Bindings.
 
 Where work is mechanical, prefer a **script** over fan-out: it is faster than
-subagents and runs on every host.
+agents and runs on every host.
 
 ## Adding a host
 
-1. Add a column to the tables above with that host's tool names.
-2. Add a pointer file at the repo root that the host reads on startup (see
-   `CLAUDE.md`, `CODEX.md`, `.cursorrules`, `.github/copilot-instructions.md`) —
-   it must do nothing but point at `docs/AGENTS.md`.
-3. If the host has a skill/agent registry, add thin bindings that point at
-   `docs/skills/` and `docs/subagents/`. Never copy instructions into them.
-4. Verify against `sites/sitemapper-demo` — the one mapped site with no
-   deployment-specific auth.
+The steps are in [extending.md](extending.md) → "Add a host". The part that
+belongs here is the column: one per host, in the tables above.
 
-**Neutral means portable, not minimal.** Do not simplify a skill doc because one
+**Neutral means portable, not minimal.** Do not simplify a skill because one
 host lacks a capability. Describe the work at full fidelity and record the
 difference here.

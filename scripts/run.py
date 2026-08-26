@@ -5,7 +5,7 @@
 
 Executes a `mode: deterministic` workflow against its mapped site(s) with no
 LLM in the loop, and emits the neutral `result` object (schema/result.yaml).
-LLM for decisions, code for work (docs/CODE_OVER_LLM.md): the map must be
+LLM for decisions, code for work (docs/code-over-llm.md): the map must be
 complete enough that no step needs judgement — if it isn't, this runner fails
 loudly and the repair loop (an LLM, on demand) fixes the map.
 
@@ -377,7 +377,7 @@ class Runner:
                     f"automated login is '{verdict}' for site '{site_name}' "
                     f"(environment: {env})" +
                     (" — pass --yes-auth to pre-authorize" if verdict == "ask" else
-                     ". Use a `human`-seeded session instead (docs/PERMISSIONS.md).")
+                     ". Use a `human`-seeded session instead (docs/permissions.md).")
                 )
             login = persona.get("login") or {}
             if not login.get("page"):
@@ -692,7 +692,7 @@ def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str])
     if verdict == "deny":
         raise RunError(
             f"permission denied: effect '{effect}' needs class '{action_class}' which is "
-            f"'deny' for {source}. This is policy, not a bug — see docs/PERMISSIONS.md."
+            f"'deny' for {source}. This is policy, not a bug — see docs/permissions.md."
         )
     if verdict == "ask":
         if action_class in pre_authorized:
@@ -768,7 +768,7 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
     if mode != "deterministic":
         raise RunError(
             f"'{name}' is mode: {mode or 'unset'} — only deterministic workflows can run "
-            "headless. An agentic workflow needs an LLM host (docs/skills/run-workflow.md)."
+            "headless. An agentic workflow needs an LLM host (the /run skill)."
         )
     for phase in ("setup", "steps", "teardown"):
         for step in workflow.get(phase) or []:

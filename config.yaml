@@ -21,7 +21,7 @@
 settings:
   policy:
     environment: production     # default-safe; dev/staging sites opt in below their own site.yaml
-    permissions:                # allow | ask | deny per action class — see docs/PERMISSIONS.md
+    permissions:                # allow | ask | deny per action class — see docs/permissions.md
       read: allow               # reading changes nothing
       write: ask                # never create/edit (incl. form submits) without asking
       auth: ask                 # automated login is an opt-in, per environment

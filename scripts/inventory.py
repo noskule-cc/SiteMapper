@@ -15,7 +15,7 @@ the Markdown table view (for agents and git diffs), `overview.py` emits the
 browsable HTML view (for humans). One walk of the YAML, two presentations.
 
 Why a script and not a skill: enumerating 16 workflows is mechanical, so an LLM
-re-parsing them on every question is the wrong executor. See docs/CODE_OVER_LLM.md.
+re-parsing them on every question is the wrong executor. See docs/code-over-llm.md.
 """
 import argparse
 import glob
@@ -130,7 +130,7 @@ def collect_workflows():
                 # A *deterministic* workflow with assert steps is a test: it is run
                 # with /test, which evaluates them and emits a result. An agentic
                 # one asserts too but needs an LLM, so it goes through /run.
-                # docs/skills/run-workflow.md step 2, docs/skills/test.md step 2.
+                # the run and test skills, step 2 (.claude/skills/{run,test}/SKILL.md).
                 "is_test": (str(w.get("mode")) == "deterministic"
                             and any(s.get("action") == "assert" for s in steps)),
                 "calls": sorted({str(s.get("script")) for s in steps if s.get("script")}),

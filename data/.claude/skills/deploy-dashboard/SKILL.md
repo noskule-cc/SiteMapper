@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 Publish **this map repository's** dashboard (not the framework's). Follow the
 map-repository half of the framework's skill instructions —
-`../SiteMapper/docs/skills/deploy-dashboard.md` — with this repo as the tree:
+`../SiteMapper/.claude/skills/deploy-dashboard/SKILL.md` — with this repo as the tree:
 
 - The build is `.runner/deploy/dashboard-artifact.html` in THIS repo, prepared
   by the dashboard's deploy button (consent already given there); otherwise

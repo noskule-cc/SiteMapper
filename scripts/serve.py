@@ -11,7 +11,7 @@ The permission gate stays server-side in Python — the browser is untrusted
 UI. The button is the `ask` channel: a `read-only` run just runs; where
 policy says `ask`, the server answers 409 with the question a TTY would have
 asked, and the page's confirmation click sends consent for THAT run only.
-`deny` is refused here no matter what the page sends. See docs/PERMISSIONS.md.
+`deny` is refused here no matter what the page sends. See docs/permissions.md.
 
 Bound to 127.0.0.1: one operator, no auth, never exposed. Stdlib only — the
 server adds no dependencies (the runner it launches needs Playwright).
@@ -80,7 +80,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/meta":
             meta = {"tree": ROOT.name, "framework": ROOT == FRAMEWORK}
             if ROOT == FRAMEWORK:
-                jobs = (FRAMEWORK / "docs" / "JOBS.md").read_text(encoding="utf-8")
+                jobs = (FRAMEWORK / "docs" / "tools" / "jobs.md").read_text(encoding="utf-8")
                 m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
                 deployed = self.deployed_state()
                 if m:  # the standing shareable URL — framework page only
@@ -214,11 +214,11 @@ class Handler(BaseHTTPRequestHandler):
         The artifact is private to the operator's account; sharing it is the
         guardrail's line, and that stays a human decision made elsewhere."""
         if ROOT == FRAMEWORK:
-            jobs = (FRAMEWORK / "docs" / "JOBS.md").read_text(encoding="utf-8")
+            jobs = (FRAMEWORK / "docs" / "tools" / "jobs.md").read_text(encoding="utf-8")
             m = re.search(r"https://claude\.ai/code/artifact/[0-9a-f-]+", jobs)
             if not m:
                 return self.send_json(500, {"error":
-                    "no standing artifact URL registered in docs/JOBS.md"})
+                    "no standing artifact URL registered in docs/tools/jobs.md"})
             url = m.group(0)
             note = ("Build ready. Publishing needs an interactive agent session "
                     "(artifact publishing is off in headless contexts by design): "
@@ -244,7 +244,7 @@ class Handler(BaseHTTPRequestHandler):
                     "publish creates one and writes `dashboard: artifact_url:` "
                     "back.") +
                     " Never share that artifact; redeploying does not scrub "
-                    "its version history (docs/PERMISSIONS.md).")
+                    "its version history (docs/permissions.md).")
         out = ROOT / ".runner" / "deploy" / "dashboard-artifact.html"
         overview.set_root(str(ROOT))
         inventory.set_root(str(ROOT))
@@ -310,7 +310,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json(403, {"error":
                 f"permission denied: '{wf.get('effect')}' needs class "
                 f"'{action_class}', which is 'deny' for {source}. Policy, not a "
-                "bug — docs/PERMISSIONS.md."})
+                "bug — docs/permissions.md."})
         if verdict == "ask" and action_class not in consent:
             return self.send_json(409, {"ask": action_class, "question":
                 f"'{name}' is {wf.get('effect')} and {source} says ask. "

@@ -5,7 +5,7 @@
 # Companion doc: every workflow YAML gets a sibling <workflow>.md in the same
 # folder — a short human-readable summary with a Mermaid `flowchart` of the steps.
 # The YAML is the source of truth; the .md is the at-a-glance view. See USAGE.md
-# ("Companion doc") and the example projects/gateway-audit/workflows/*.md.
+# ("Companion doc") and the worked example sites/sitemapper-demo/workflows/*.md.
 #
 # A workflow is a callable unit: it takes inputs (parameters/fixtures), runs steps
 # against the mapped site(s), and emits a neutral `result` object (see
@@ -43,7 +43,7 @@ workflow:
                               #              an agentic workflow is never `verified`.
                               #   broken   - a run failed or a page fingerprint drifted;
                               #              the runner downgrades to this automatically.
-                              #              Repair (docs/skills/) restores it.
+                              #              Repair (the repair skill) restores it.
   verified_at: ""             # ISO date of the reviewed green run behind
                               # `trust: verified`. Distinct from site.yaml's
                               # verified_at, which dates the MAP's last drift check.
@@ -137,7 +137,7 @@ workflow:
                               #   (see `script` below). Prefer this whenever the data is
                               #   reachable from the site's API - it is faster, headless and
                               #   does not break when the UI changes. This is one case of a
-                              #   governing principle; see docs/CODE_OVER_LLM.md for the
+                              #   governing principle; see docs/code-over-llm.md for the
                               #   boundary (what still needs an LLM) and the ratchet
                               #   (promoting a stable agentic workflow into a script).
       site: ""                # Which site this step runs on (required for cross-site

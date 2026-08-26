@@ -1,77 +1,122 @@
-# INDEX.md — Documentation Map
+# Documentation Index
 
-UPPERCASE = framework files, kept as-is across projects.
-lowercase = this project's own content.
+Quick navigation to all docs. Read only what you need, when you need it.
 
-## Entry Point
 
-- [AGENTS.md](AGENTS.md) — start here (situational references, available skills)
-- [GUARDRAILS.template.md](GUARDRAILS.template.md) — how to write the standing rules a deployment follows
-- [../data/](../data/) — copyable skeleton for your own private map repository
+## LLM Entry Point
 
-## Getting Started
+**[AGENTS.md](AGENTS.md)** - Start here
 
-- [USAGE.md](../USAGE.md) — how to map sites, write workflows, run them
-- [config.yaml](../config.yaml) — global settings (contact, default policy)
+- Mandatory reading order (with reading-order diagram)
+- Situational References
+- Skills and Agents (full listing: [skills-and-agents.md](skills-and-agents.md), template: `skills-and-agents.template.md`)
 
-## Product
+**[README.md](README.md)** - Human entry point: orientation routing table (fixed; identity lives in the root README, wiki location in `wiki.md`)
 
-- [PRD.md](../PRD.md) — product requirements
-- [Concept.md](../Concept.md) — original design rationale
-- [INTERFACE.md](INTERFACE.md) — how a host invokes SiteMapper and consumes its results; the bindings model
-- [HOST_BINDINGS.md](HOST_BINDINGS.md) — capability → tool mapping per host
 
-## Skills and Sub-Agents
+## Development Process
 
-- [subagents/README.md](subagents/README.md) — skills vs. sub-agents; how to add one
-- [subagents/workflow-companion.md](subagents/workflow-companion.md) — writes a workflow's companion `.md`
-- [subagents/validation-llm.md](subagents/validation-llm.md) — tests the docs on a fresh LLM
-- [subagents/verify-map.md](subagents/verify-map.md) — background drift sweep of a site, read-only
-- [subagents/map-site-scout.md](subagents/map-site-scout.md) — read-only page-map draft for human review
-- [map-site.md](skills/map-site.md) — discovery session for mapping a site
-- [run-workflow.md](skills/run-workflow.md) — execute a named workflow
-- [test.md](skills/test.md) — execute a deterministic test workflow, emit a result
-- [list-workflows.md](skills/list-workflows.md) — list available workflows
-- [verify-map.md](skills/verify-map.md) — drift check for mapped sites
-- [repair.md](skills/repair.md) — fix the map after a headless runner failure
-- [deploy-dashboard.md](skills/deploy-dashboard.md) — publish the framework dashboard to its standing URL
+**[coding-guidelines.md](coding-guidelines.md)** - Development workflow (template: `coding-guidelines.template.md`)
 
-## Schemas
+- Development Workflow (10 steps)
+- Data Persistence
 
-- [page.yaml](../schema/page.yaml) — page map format
-- [site.yaml](../schema/site.yaml) — site configuration format
-- [workflow.yaml](../schema/workflow.yaml) — workflow definition format
-- [project.yaml](../schema/project.yaml) — cross-site project format
-- [settings.yaml](../schema/settings.yaml) — layered settings (contact, policy/permissions, form defaults)
-- [result.yaml](../schema/result.yaml) — the neutral result object a run emits
-- [persona.yaml](../schema/persona.yaml) — who is logged in: auth method, never a credential
-- [context.yaml](../schema/context.yaml) — which tenant + which data fill a workflow's roles
+**[DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md)** - What/where to document
 
-## Tooling
+- Information Minimalism Test
+- Documentation Levels (Code, /docs, Wiki)
+- Doc-System Layer Model (content axes, layers, verification diagram)
+- Diagrams (Mermaid conventions, when to use, placement)
+- Documenting in Code
+- Documenting in /docs (File Tree)
+- Documenting in Wiki
 
-- [scripts/check.py](../scripts/check.py) — all mechanical consistency checks; non-zero exit on failure
-- [scripts/run.py](../scripts/run.py) — headless deterministic workflow runner (Playwright, no LLM in the loop)
-- [scripts/serve.py](../scripts/serve.py) — serves the overview live on localhost; run buttons become real, gated by PERMISSIONS.md
-- [scripts/inventory.py](../scripts/inventory.py) — generate both views below; `--check` fails when either is stale
-- [scripts/overview.py](../scripts/overview.py) — the HTML renderer, reading `inventory.py`'s collectors
-- [inventory.md](inventory.md) — **generated**: every site, project and workflow
-- [overview.html](overview.html) — **generated**: the same, browsable — open it in a browser
 
-## Guidelines
+## Reference
 
-- [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — whether to document at all
-- [KNOWLEDGE_PLACEMENT.md](KNOWLEDGE_PLACEMENT.md) — where a fact belongs: repo vs. agent memory
-- [DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md) — which level it goes on: artifact, `docs/`, or wiki
-- [CODE_OVER_LLM.md](CODE_OVER_LLM.md) — who executes: prefer a script over an LLM
-- [PERMISSIONS.md](PERMISSIONS.md) — what a run may do: action classes × allow/ask/deny
-- [JOBS.md](JOBS.md) — registry of runnable maintenance jobs
-- [EXTENDING.md](EXTENDING.md) — how to add a skill, sub-agent, workflow action, schema key or site script
-- [MAINTENANCE.md](MAINTENANCE.md) — the health routine: checks, drift, results retention
-- [wiki.md](wiki.md) — where the wiki lives; how SiteMapper *functions* is documented there
-- a deployment's own `docs/guardrails.md` lives with its maps, in its own repository — never here
-- [issue-tracker.md](issue-tracker.md) — issue conventions; where open decisions live
+**[CREATING_AGENTS.md](CREATING_AGENTS.md)** - Creating specialized AI skills and agents
 
-## Proposals
+- Skills vs. Agents
+- Agent File Format
+- Creating and registering
 
-Proposals and open decisions live in **GitHub Issues**, not in this repo — see
-[issue-tracker.md](issue-tracker.md) for the conventions.
+**[INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md)** - 3-question test
+
+- The Test (3 questions)
+- Examples
+- When to Document
+
+
+## Design
+
+**[design-sync.md](design-sync.md)** - Bidirectional design ↔ code sync (template: `design-sync.template.md`)
+
+- File Map (Pencil frames → source files)
+- Token Translation Tables (colors, typography, shapes)
+- Component Mapping (frame → UI element parameters)
+- Sync Rules (design→code, code→design, tokens)
+
+
+## Tools
+
+**[tools/jobs.md](tools/jobs.md)** - Runnable jobs registry (template: `tools/jobs.template.md`)
+
+- Available jobs with commands and trigger classes (per-change / cycle-end)
+- Cycle-end binding; `/maintain` dispatches from this table
+
+**[tools/evals.md](tools/evals.md)** - Triage eval cases (template: `tools/evals.template.md`)
+
+- Bug-report-phrased questions with expected entry points; run by `validation-llm`
+
+
+## Platform Specific
+
+**[installation.md](installation.md)** - First time setup
+
+**[architecture-rules.md](architecture-rules.md)** - Enforceable design principles
+
+- Layer Boundaries, Reuse Rules, Anti-Patterns, Extension Points
+
+**[development.md](development.md)** - Writing code
+
+- Tech Stack, Architecture, Code Patterns, File Organization
+- Data Retention, Build Commands, Common Tasks
+
+**[feature-map.md](feature-map.md)** - Feature → code routing for triage (template: `feature-map.template.md`)
+
+- Per feature: entry point, gotchas, failure-mode hints; behavior links to the wiki
+
+**[testing.md](testing.md)** - Running/writing tests
+
+**[release.md](release.md)** - Publishing
+
+
+## Project Management
+
+**[issue-tracker.md](issue-tracker.md)** - GitHub Issues and Projects v2 (template: `issue-tracker.template.md`)
+
+- Conventions (types, labels, sub-issues, project, estimates)
+- Issue Structure (required sections per type)
+- Wiki Mapping
+
+**[changelog.md](changelog.md)** - Release history → GitHub Releases (template: `changelog.template.md`)
+
+
+## Wiki (External)
+
+**[wiki.md](wiki.md)** - Wiki location and access (template: `wiki.template.md`)
+
+**Wiki** - What software does
+
+- Fundamentals (domain concepts)
+- Architecture (system design)
+- Features (user-facing functionality)
+- Devices (hardware-specific findings)
+
+
+## Project-Specific Additions
+
+**[project-index.md](project-index.md)** - Docs beyond the standard set (create when needed)
+
+
+**This index is a fixed standard file — do not edit.** It covers the standard docs by their standardized names. List additional project docs in `project-index.md`; skills and agents belong in `skills-and-agents.md`.

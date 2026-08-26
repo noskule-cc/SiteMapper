@@ -4,7 +4,7 @@ Project management using GitHub Issues. Adopted from the aiDocs framework.
 
 **Proposals, open decisions and planned work live here — not in the repo.** There
 is no `docs/proposals/` folder: a decision not yet made is an issue, so it has one
-home, a discussion thread and a close state. See `KNOWLEDGE_PLACEMENT.md`.
+home, a discussion thread and a close state. See `knowledge-placement.md`.
 
 ## Conventions
 
@@ -17,6 +17,12 @@ Types, labels and fields are discoverable via the GitHub API. These rules aren't
 5. **Set the estimate** — Fibonacci (1, 2, 3, 5, 8, 13), stated in the body
 6. **Title format** — imperative verb + concise description
 7. **Epic estimate** — sum of its sub-issue estimates
+8. **Update the wiki** when closing an issue that adds significant
+   functionality — see the Wiki Mapping table below
+9. **Sign as an agent** — if you are an AI agent, add your name at the bottom of
+   any issue you create or comment you post (e.g. a final
+   `*Filed by <agent/model name> (AI agent)*` line), so automated authorship is
+   explicit
 
 ### Estimate scale
 
@@ -61,11 +67,18 @@ update the wiki page its label maps to.
 | `documentation` | usually `docs/` itself, not the wiki |
 | `bug` | no wiki page — unless the fix changes documented behavior |
 
+## Epics are the unit of work
+
+There are no milestones, sprints or releases in this repo. Work is grouped into
+**EPIC issues** with sub-issues (e.g. #18, the headless runner; #27, the
+dashboard). An epic closing is this project's cycle-end event — it is what
+`/maintain full` binds to, see [tools/jobs.md](tools/jobs.md).
+
 ## Differences from the aiDocs baseline
 
 - **No Projects v2 board.** The aiDocs rules "add every issue to the project" and
   "set sprint status to Backlog" do not apply until one exists. Estimates go in
   the issue body instead of a project field.
-- **No wiki.** The aiDocs rule "update wiki when closing issues that add
-  significant functionality" maps here to updating the affected map, workflow
-  companion `.md`, or `results/` record.
+- **Labels are the GitHub defaults plus `runner`.** Do not invent a label in an
+  issue body; check `gh label list` first and add the label to the repo
+  deliberately if one is genuinely missing.

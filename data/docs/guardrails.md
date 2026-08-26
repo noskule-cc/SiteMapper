@@ -1,7 +1,7 @@
 # Guardrails — <your deployment>
 
 Standing rules every session follows, whichever agent is driving. Written from
-[GUARDRAILS.template.md](../../docs/GUARDRAILS.template.md) in the framework
+[guardrails-template.md](../../docs/guardrails-template.md) in the framework
 repo, which explains the categories and how to write a rule that holds.
 
 Deliberately **not** named `SECURITY.md`: GitHub claims that filename for
@@ -35,7 +35,7 @@ references a run-time secret (`credential_ref: env:…`), never the value.
 ## Writing through a UI is gated by `settings.policy.permissions`
 
 The machine-readable authorization model (allow/ask/deny per action class —
-see the framework's `docs/PERMISSIONS.md`), resolved through the layered
+see the framework's `docs/permissions.md`), resolved through the layered
 `settings:` block; form submission is a `write`-class action (the old
 `safe_to_submit_forms: true` still acts as `write: allow`). Do not flip a
 permission to unblock a workflow — it is set per scope for a reason, and

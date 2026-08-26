@@ -2,7 +2,7 @@
 # The neutral, sink-agnostic object a workflow run emits. SiteMapper RETURNS this
 # to the caller; it never pushes it anywhere. The host (an LLM agent or a Python
 # program) routes it to a destination (Azure DevOps, Jira, a file, a DB) via its
-# own adapter. See docs/INTERFACE.md.
+# own adapter. See docs/interface.md.
 
 result:
   workflow: ""                # Name of the workflow that ran
@@ -43,7 +43,7 @@ result:
   error: ""                   # Populated when status == error: what went wrong
 
   failure:                    # Populated by the headless runner when status == error —
-                              # everything the repair loop (docs/skills/) needs to fix
+                              # everything the repair loop (the repair skill) needs to fix
                               # the map without re-exploring. Absent on passed/failed.
     phase: ""                 #   setup | steps | teardown
     step_index: 0             #   0-based index of the failing step in that phase

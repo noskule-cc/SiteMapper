@@ -14,7 +14,7 @@ per map repo that drifts out of sync.
 
 Every check here exists because the thing it catches actually happened. None of
 them need an LLM: they are enumeration and comparison, which is code's job (see
-docs/CODE_OVER_LLM.md). What this CANNOT check is whether prose is still true —
+docs/code-over-llm.md). What this CANNOT check is whether prose is still true —
 that still needs a human reading it.
 
 Add a check when you find a class of drift that a script could have caught.
@@ -69,7 +69,20 @@ SKIPPED = set()
 
 WORKFLOW_GLOBS = ["sites/*/workflows/*.yaml", "projects/*/workflows/*.yaml"]
 DOC_GLOBS = ["README.md", "USAGE.md", "PRD.md", "Concept.md", "CLAUDE.md",
-             "CODEX.md", "docs/**/*.md"]
+             "AGENTS.md", "docs/**/*.md"]
+
+# Standardized aiDocs per-project docs. The fixed standard files (INDEX.md,
+# AGENTS.md, README.md) link to all of them; a project legitimately declines
+# the ones it has no surface for and records the decision in project-index.md.
+# A link to a declined file is a note, not a failure — same rule as
+# docs/tools/check-docs.py, so the two tools never disagree.
+PER_PROJECT_DOCS = {
+    "installation.md", "development.md", "testing.md", "release.md",
+    "changelog.md", "coding-guidelines.md", "architecture-rules.md",
+    "issue-tracker.md", "wiki.md", "design-sync.md", "project-index.md",
+    "skills-and-agents.md", "tools/jobs.md", "feature-map.md",
+    "tools/evals.md",
+}
 
 
 def norm(p):
@@ -252,6 +265,11 @@ def check_links():
                 continue
             target = os.path.join(base, t.split("#")[0])
             if not os.path.exists(os.path.normpath(target)):
+                docs_rel = norm(os.path.relpath(os.path.normpath(target), "docs"))
+                if docs_rel in PER_PROJECT_DOCS:
+                    NOTES.append(f"{f}: '{t}' is a standardized per-project doc "
+                                 "this project declined — see docs/project-index.md")
+                    continue
                 fails.append(f"{f}: broken link -> {t}")
             elif not exists_cased(target):
                 fails.append(f"{f}: link case does not match the file -> {t} "
@@ -264,51 +282,66 @@ def check_links():
 
 
 def check_bindings():
-    """Neutral docs are registered, and host bindings point at one that exists.
+    """Every project doc is navigable, and every skill/agent is registered.
 
     Catches both halves of the orphan problem: a doc nobody can navigate to
-    (INTERFACE.md was orphaned for weeks) and a binding pointing at nothing.
+    (interface.md was orphaned for weeks) and a skill or agent that exists but
+    appears in no registry, so no host can route to it.
+
+    Since the aiDocs migration, a skill/agent file carries its COMPLETE
+    instructions — there is no second neutral copy under docs/ to point at, so
+    a near-empty file is now the defect (it used to be the requirement).
     """
-    # Framework-only. A map repository has no docs/skills/ and no .claude/
-    # bindings — those belong to the tool, not to the maps — so running this
-    # against --root would check nothing and report success, which is worse than
-    # saying so out loud.
+    # Framework-only. A map repository has no docs/ set and no .claude/ files —
+    # those belong to the tool, not to the maps — so running this against
+    # --root would check nothing and report success, which is worse than saying
+    # so out loud.
     if external():
         SKIPPED.add("bindings")
-        NOTES.append("bindings: framework-only — docs/skills and .claude bindings "
+        NOTES.append("bindings: framework-only — the docs set and .claude/ "
                      "belong to the tool, not to a map repository")
         return []
 
     fails = []
-    index = open("docs/INDEX.md", encoding="utf-8").read() if os.path.exists("docs/INDEX.md") else ""
-    agents = open("docs/AGENTS.md", encoding="utf-8").read() if os.path.exists("docs/AGENTS.md") else ""
-    reachable = index + agents
+    reachable = ""
+    for nav in ("docs/INDEX.md", "docs/AGENTS.md", "docs/README.md",
+                "docs/project-index.md", "docs/skills-and-agents.md"):
+        if os.path.exists(nav):
+            reachable += open(nav, encoding="utf-8").read()
 
-    for f in files(["docs/*.md", "docs/skills/*.md", "docs/subagents/*.md"]):
-        name = os.path.basename(f)
-        if name in ("INDEX.md", "AGENTS.md", "inventory.md"):
+    # Entry points and generated views are never orphans.
+    NON_ORPHANS = {"INDEX.md", "AGENTS.md", "README.md", "project-index.md",
+                   "skills-and-agents.md", "inventory.md"}
+    for f in files(["docs/*.md", "docs/tools/*.md"]):
+        rel_name = norm(os.path.relpath(f, "docs"))
+        if os.path.basename(f) in NON_ORPHANS:
             continue
-        if name not in reachable:
-            fails.append(f"{f}: not referenced from docs/INDEX.md or docs/AGENTS.md")
+        if rel_name not in reachable and os.path.basename(f) not in reachable:
+            fails.append(f"{f}: not referenced from docs/INDEX.md, docs/AGENTS.md, "
+                         "docs/README.md, docs/project-index.md or "
+                         "docs/skills-and-agents.md")
 
-    # a binding must point at a neutral doc that exists, and carry no instructions
+    registry = "docs/skills-and-agents.md"
+    if not os.path.exists(registry):
+        fails.append(f"{registry}: missing — skills and agents have no registry")
+        return fails
+    reg = open(registry, encoding="utf-8").read()
+
     for f in files([".claude/skills/*/SKILL.md", ".claude/agents/*.md"]):
+        if ".template" in os.path.basename(f):
+            continue
+        name = (os.path.basename(os.path.dirname(f)) if f.endswith("SKILL.md")
+                else os.path.basename(f)[:-3])
+        if name not in reg:
+            fails.append(f"{f}: '{name}' is not listed in {registry}")
         body = open(f, encoding="utf-8").read()
-        refs = re.findall(r"docs/(?:skills|subagents)/[\w.-]+\.md", body)
-        if not refs:
-            fails.append(f"{f}: binding does not point at a docs/ instruction file")
-        for r in refs:
-            if not os.path.exists(r):
-                fails.append(f"{f}: points at {r}, which does not exist")
-        if len(body.splitlines()) > 25:
-            fails.append(f"{f}: {len(body.splitlines())} lines — a binding should be "
-                         "frontmatter plus a pointer, not instructions")
-
-    for f in files(["docs/skills/*.md"]):
-        stem = os.path.basename(f)[:-3]
-        alt = {"run-workflow": "run"}.get(stem, stem)
-        if not os.path.exists(f".claude/skills/{alt}/SKILL.md"):
-            fails.append(f"{f}: no .claude/skills/{alt}/SKILL.md binding")
+        if len(body.splitlines()) < 20:
+            fails.append(f"{f}: {len(body.splitlines())} lines — a skill or agent "
+                         "carries its complete instructions, not a pointer")
+        for host_tool in re.findall(r"\b(?:tabs_context_mcp|read_page|get_page_text|"
+                                    r"form_input|read_console_messages)\b", body):
+            fails.append(f"{f}: names the host tool '{host_tool}' — tool names "
+                         "belong in docs/host-bindings.md only")
     return fails
 
 

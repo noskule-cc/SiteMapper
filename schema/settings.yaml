@@ -80,4 +80,4 @@ settings:
 #   refined per-site; `form_defaults` is typically page-level.
 # - `policy.permissions` is the machine-readable authorization model. Keep
 #   `write`/`destructive` at ask/deny on production scopes; dev/staging sites
-#   opt in below their own site.yaml. See docs/PERMISSIONS.md.
+#   opt in below their own site.yaml. See docs/permissions.md.

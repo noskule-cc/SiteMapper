@@ -51,21 +51,23 @@ UI test workflows should be `deterministic` so they run headless and feed a host
 The three verbs are the contract. **How** a host exposes and executes them is a
 binding, and bindings are replaceable.
 
-| Layer | Neutral (every host) | Claude Code binding |
+| Layer | Where it lives | How a host consumes it |
 |---|---|---|
-| Skills | `docs/skills/<name>.md` | `.claude/skills/<name>/SKILL.md` — frontmatter + a pointer |
-| Sub-agents | `docs/subagents/<name>.md` | `.claude/agents/<name>.md` — frontmatter + a pointer |
-| Capabilities | named in the skill docs (navigate, click, …) | mapped to tools in [HOST_BINDINGS.md](HOST_BINDINGS.md) |
-| Entry point | `docs/AGENTS.md` | `CLAUDE.md` points at it (as do `CODEX.md`, `.cursorrules`, `.github/copilot-instructions.md`) |
+| Skills | `.claude/skills/<name>/SKILL.md` — frontmatter + the full instructions | Claude Code registers it as a slash command; every other tool reads the same file and follows it inline |
+| Agents | `.claude/agents/<name>.md` — frontmatter + the full instructions | Claude Code runs it forked; every other tool reads the file inline |
+| Registry | [skills-and-agents.md](skills-and-agents.md) | the routing table any tool starts from |
+| Capabilities | named in the skill (navigate, click, …) | mapped to tools in [host-bindings.md](host-bindings.md) |
+| Entry point | `docs/AGENTS.md` | root `AGENTS.md` points at it (as do `CLAUDE.md`, `.cursorrules`, `.github/copilot-instructions.md`) |
 
-**A binding contains no instructions.** It carries registration metadata and a
-pointer to the neutral doc. The moment instructions live in a binding, that
-host's behaviour diverges from every other host's — silently, because it still
-works on the machine where it was written.
+**One capability, one file.** Instructions live in exactly one place and are
+written in capability terms, never host tool names — that is what keeps them
+portable. A second copy per host is the thing to avoid: it diverges silently,
+because it still works on the machine where it was written. (`.claude/` is a
+directory name, not a dependency; nothing inside it may name a host's tools.)
 
-### Sub-agents are an execution strategy, never part of the contract
+### Agents are an execution strategy, never part of the contract
 
-A sub-agent is one way to *carry out* `run_workflow`. It is not one of the verbs.
+An agent is one way to *carry out* `run_workflow`. It is not one of the verbs.
 Every workflow must produce an identical `result` on a host with no sub-agent
 concept at all — fan-out buys speed and context isolation, never behaviour.
 

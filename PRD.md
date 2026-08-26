@@ -110,7 +110,7 @@ Defined in each site's `workflows/` folder. Loaded when the user activates a sit
 ## MVP Scope
 
 1. Define YAML schema for pages and workflows (separate task).
-2. Build the discovery skill (`/map-site`) — neutral instructions in `docs/skills/`, thin per-host binding (what shipped; there is deliberately no discovery subagent — discovery is human-in-the-loop by design, see `docs/CODE_OVER_LLM.md`).
+2. Build the discovery skill (`/map-site`) — instructions in `.claude/skills/<name>/SKILL.md`, written in capability terms so any host can follow them (what shipped; there is deliberately no discovery subagent — discovery is human-in-the-loop by design, see `docs/code-over-llm.md`).
 3. Build workflow runner (`/run`) with dropdown parameter selection.
 4. Map one pilot site (sitemapper-demo) end-to-end.
 5. Capture reference screenshots during discovery.
@@ -178,7 +178,7 @@ A page that overrides `settings.contact.email` still inherits `contact.name` and
 - **`contact`** — form-fill / identity values (`name`, `salutation`, `email`, `phone`). Usually defined globally; any field may be overridden per-site or per-page.
 - **`policy`** — executor behavior:
   - `environment`: `dev | staging | production`
-  - `permissions`: `allow | ask | deny` per action class (`read`, `write`, `auth`, `destructive`) — the machine-readable authorization model, checked up front against a workflow's declared `effect`. See `docs/PERMISSIONS.md`. (`safe_to_submit_forms` survives as a legacy alias of `permissions.write`.)
+  - `permissions`: `allow | ask | deny` per action class (`read`, `write`, `auth`, `destructive`) — the machine-readable authorization model, checked up front against a workflow's declared `effect`. See `docs/permissions.md`. (`safe_to_submit_forms` survives as a legacy alias of `permissions.write`.)
 - **`form_defaults`** — per-page field prefills, keyed by the element `name` from the page map (e.g. `geraetestatus-select: "Ausser Betrieb"`). Typically page-level.
 
 ### Example
@@ -212,9 +212,9 @@ settings:
 ## Architecture
 
 An agent host (Claude Code is one; the docs are host-neutral, see
-`docs/INTERFACE.md`) is the orchestration layer for LLM-driven work. It has:
+`docs/interface.md`) is the orchestration layer for LLM-driven work. It has:
 - **File system access** — reads/writes site maps, workflows, and screenshots from this repo.
-- **Browser control** — via the host's browser tools (mapped per host in `docs/HOST_BINDINGS.md`).
+- **Browser control** — via the host's browser tools (mapped per host in `docs/host-bindings.md`).
 
 For deterministic workflows there is a second, LLM-free execution path:
 `scripts/run.py` (Playwright), with `scripts/serve.py` offering the same runs

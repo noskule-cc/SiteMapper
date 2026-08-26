@@ -22,7 +22,7 @@ support it (GitHub, Claude Artifacts).
 
 It cannot RUN anything: a page opened from disk has no way to execute a
 workflow, and workflows have no headless runner anyway (an agent drives them —
-docs/skills/run-workflow.md). Each process therefore offers its invocation to
+.claude/skills/run/SKILL.md). Each process therefore offers its invocation to
 copy, and a human runs it. See issue #14 for the levels beyond that.
 """
 import argparse

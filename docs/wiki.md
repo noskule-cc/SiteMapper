@@ -5,6 +5,12 @@ architecture, domain concepts — is maintained in the repository's GitHub wiki.
 What belongs in the wiki vs. `docs/` is defined in
 [DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md).
 
+**The dividing line, stated for this project:** the wiki documents how the
+software **functions**; `docs/` documents how the framework is **operated**.
+"What is a site map, and why does a verified one make runs fast" is wiki; "how
+to run `/verify-map`" is the skill in `.claude/`, routed from
+[skills-and-agents.md](skills-and-agents.md).
+
 ## Location
 
 ```
@@ -41,9 +47,16 @@ The wiki is organized into two pillars — **Content** (user/domain-facing) and
 **File naming:** `<prefix>-<topic>.md`. `_Sidebar.md` groups the pages under
 the two pillars.
 
-Every page follows the behavior-first structure ("What It Does" / "Why It
-Matters" / "Bindings") from
-[DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md).
+Two pages sit outside the prefixes: `Home.md` (orientation) and `manual.md` —
+the operator's index, one row per task, linking to the page or file that carries
+the how. When a skill, script or job is added, `manual.md` gets a row.
+
+Every page follows the behavior-first structure from
+[DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md): **What It Does** /
+**Why It Matters** / **Bindings**. `Bindings` is SiteMapper's name for the
+guidelines' platform-implementation section — the commands, schemas and scripts
+that realize the behaviour. Someone who reads only the first two sections has
+everything needed to implement the behaviour on any host.
 
 ## Issue Tracker Alignment
 

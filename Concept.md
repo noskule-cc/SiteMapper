@@ -1,7 +1,7 @@
 # Project Brief: LLM-Assisted Site Mapping for Web Automation
 
 > **Historical document** — the original brief, kept for the design rationale.
-> Superseded by [PRD.md](PRD.md) and [docs/INTERFACE.md](docs/INTERFACE.md).
+> Superseded by [PRD.md](PRD.md) and [docs/interface.md](docs/interface.md).
 > Where it says "discovery subagent", what shipped is the `/map-site` **skill**
 > (discovery stayed human-in-the-loop by design; a read-only `map-site-scout`
 > sub-agent drafts proposals only).

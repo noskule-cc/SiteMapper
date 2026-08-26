@@ -7,12 +7,12 @@ Persistent, structured site maps for LLM browser agents. Map a web app once with
 Three roles, each given to the executor that is good at it:
 
 1. **Discovery (LLM + human).** An agent walks through a site with you, asking targeted questions; you annotate and correct in real time. The output is YAML: pages, elements, workflows, and the gotchas only a human can contribute.
-2. **Execution (code, or an LLM following the map).** Workflows run against the map. `mode: deterministic` workflows run **headless with no LLM at all** (`scripts/run.py`, Playwright driving your installed Chrome), gated by a machine-readable [permission model](docs/PERMISSIONS.md). Agentic workflows run in an LLM session.
+2. **Execution (code, or an LLM following the map).** Workflows run against the map. `mode: deterministic` workflows run **headless with no LLM at all** (`scripts/run.py`, Playwright driving your installed Chrome), gated by a machine-readable [permission model](docs/permissions.md). Agentic workflows run in an LLM session.
 3. **Repair (LLM, on demand).** When the site drifts, runs degrade the workflow's `trust` and emit a structured failure report; the repair skill patches the map and execution is fast again.
 
 A generated [dashboard](docs/overview.html) shows the whole estate — servable locally with real run buttons (`scripts/serve.py`).
 
-See [docs/INDEX.md](docs/INDEX.md) for all documentation, the [wiki](https://github.com/noskule-cc/SiteMapper/wiki) for how it functions, and [PRD.md](PRD.md) for the product requirements.
+Start at [docs/README.md](docs/README.md) (humans) or [docs/AGENTS.md](docs/AGENTS.md) (AI agents); [docs/INDEX.md](docs/INDEX.md) maps all documentation and [docs/project-index.md](docs/project-index.md) this project's own. The [wiki](https://github.com/noskule-cc/SiteMapper/wiki) covers how it functions, [PRD.md](PRD.md) the product requirements.
 
 ## What is in this repository
 
@@ -52,8 +52,14 @@ schema/                              # Commented YAML templates — the format's
   project.yaml settings.yaml         #   Cross-site projects; layered settings + permissions
   result.yaml persona.yaml           #   The neutral run result; who is logged in
 
-docs/                                # Everything agents and maintainers read — start at docs/INDEX.md
-  skills/  subagents/                #   Neutral instructions; .claude/ holds the thin bindings
+docs/                                # Everything agents and maintainers read
+  AGENTS.md  INDEX.md                #   LLM entry point; documentation map
+  README.md  project-index.md        #   Human entry point; this project's own docs
+  skills-and-agents.md               #   Registry of every skill and agent
+  tools/                             #   jobs.md (what to run when), check-docs.py
+
+.claude/                             # Skills and agents, each with its COMPLETE instructions
+  skills/  agents/                   #   Written in capability terms, so any host can follow them
 
 scripts/
   check.py                           #   All mechanical consistency checks (also in CI)

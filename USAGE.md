@@ -1,10 +1,11 @@
 # Usage Guide
 
 **Host-agnostic by design.** The instructions behind every command live in
-`docs/skills/*.md` in terms of capabilities, not tool names; the slash
-commands below are one host's *bindings* of them (`docs/INTERFACE.md`). On a
-host without slash commands, read the skill doc and follow it directly —
-`docs/HOST_BINDINGS.md` maps capabilities to concrete tools per host.
+`.claude/skills/<name>/SKILL.md` in terms of capabilities, not tool names; the
+slash commands below are one host's *bindings* of them (`docs/interface.md`).
+On a host without slash commands, read that same file and follow it directly —
+`docs/host-bindings.md` maps capabilities to concrete tools per host, and
+`docs/skills-and-agents.md` lists what exists.
 Deterministic workflows additionally need no agent host at all — see
 "Running headless" below.
 
@@ -83,7 +84,7 @@ comments are the reference; this is the orientation:
 - **`mode`** — `deterministic` (every step mechanical; can run headless) or
   `agentic` (a step needs judgement; needs an LLM).
 - **`effect`** — `read-only | mutating | destructive`, declared. Checked up
-  front against the environment's permission policy (`docs/PERMISSIONS.md`).
+  front against the environment's permission policy (`docs/permissions.md`).
 - **`trust` / `verified_at`** — lifecycle for headless runs: `draft` until a
   green run is reviewed, `verified` after, `broken` automatically on
   failure or fingerprint drift.
@@ -96,7 +97,7 @@ comments are the reference; this is the orientation:
   assertion list. Prefer them over prose `verify:` bullets.
 - **`action: script`** — call a site script (declared in `site.yaml`
   `scripts:`) instead of driving the browser; prefer it whenever the data is
-  reachable from an API (`docs/CODE_OVER_LLM.md`).
+  reachable from an API (`docs/code-over-llm.md`).
 - **`action: key`** — press a keyboard key (e.g. `Enter` to submit a search).
 
 ### Project Workflows (cross-site)
@@ -207,7 +208,7 @@ repository. Test workflows run this way in CI on every push.
 A run worth keeping is recorded as `results/<workflow>.<YYYY-MM-DD>.md`
 beside the workflow's own directory (`sites/<site>/results/` or
 `projects/<project>/results/`). Which runs are worth committing — and which
-are noise — is `docs/MAINTENANCE.md` → Results retention.
+are noise — is `docs/tools/jobs.md` → Results retention.
 
 ## Listing Workflows
 

@@ -1,8 +1,12 @@
 # Knowledge Placement — where a fact belongs
 
-`INFORMATION_MINIMALISM.md` answers **whether** to write something down.
-This answers **where it goes**, so the same fact does not end up in three places
-disagreeing with itself.
+[INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) answers **whether** to
+write something down; the layer model in
+[DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md) answers **which kind
+of place** documentation goes (code / `docs/` / wiki, fixed / curated /
+generated). This file answers the question neither covers: **repo or agent
+memory**, and — for SiteMapper specifically — *which file in the repo*, so the
+same fact does not end up in three places disagreeing with itself.
 
 The rule is one line:
 
@@ -26,8 +30,8 @@ cloning this repo tomorrow?*
 | Contact data, environment, form-submission authorization | layered `settings:` — `config.yaml` → `site.yaml` → page |
 | What a workflow does and why its branches differ | the workflow's sibling `<workflow>.md` |
 | The shape of a YAML file | the relevant `schema/*.yaml`, as comments |
-| A standing rule every session must follow | the deployment's `docs/guardrails.md` |
-| A decision not yet made | a **GitHub issue** — see `issue-tracker.md` |
+| A standing rule every session must follow | the deployment's `docs/guardrails.md` (authoring guide: [guardrails-template.md](guardrails-template.md)) |
+| A decision not yet made | a **GitHub issue** — see [issue-tracker.md](issue-tracker.md) |
 | What a run found | `results/<workflow>.<YYYY-MM-DD>.md` |
 
 **No → the host agent's private memory store**, outside the repo (Claude Code
@@ -73,12 +77,12 @@ of the project, promote it and delete the memory — do not leave both.
 | A detail page has an "Enable new design" toggle; with it off, the mapped tabs do not exist | that page's `gotchas` | Breaks any workflow, for anyone |
 | Headless auth is blocked three ways, so the readout runs browser-driven | that site's `scripts/README.md` | Site-wide constraint + a parked-code rationale |
 | Dev forms may be submitted with the standard contact | `settings.policy.permissions.write` | Machine-readable beats prose |
-| `ado` is installed at user scope with `--authentication azcli`; `az` must be on the Machine PATH | memory | True of this machine only |
+| A CLI is installed at user scope and its auth helper must be on the machine PATH | memory | True of this machine only |
 | An MCP server may touch one project's wiki only | the deployment's `docs/guardrails.md` | A standing rule for every session, on every host |
 
 ## See also
 
 - [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) — whether to document at all
-- [AGENTS.md](AGENTS.md) — entry point and situational references
-- [GUARDRAILS.template.md](GUARDRAILS.template.md) — how to write the standing safety rules
-- [issue-tracker.md](issue-tracker.md) — open decisions live as issues
+- [DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md) — the layer model
+- [code-over-llm.md](code-over-llm.md) — who executes: script or LLM
+- [guardrails-template.md](guardrails-template.md) — how to write the standing safety rules

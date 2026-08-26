@@ -63,7 +63,7 @@ teardown can no longer run blind in an environment whose policy says
 Publishing the dashboard page is gated by whose content it carries:
 
 - **Framework page** — public content. Deploys freely to the standing artifact
-  URL registered in `docs/JOBS.md` (automatic on push; the page's deploy
+  URL registered in `docs/tools/jobs.md` (automatic on push; the page's deploy
   button is the manual fallback).
 - **A map repository's page** — **local by default.** The deploy button is the
   `ask` channel, same as a mutating run: the server states the question, the
