@@ -12,7 +12,7 @@ Creates GitHub issues following `docs/issue-tracker.md` conventions.
 
 1. **Discover** — read issue types, labels, and project fields from the repo via GraphQL
 2. **Draft** — write title and body with sections appropriate for the type
-3. **Sign** — append the AI authorship signature as the last line of the body: `*Filed by <agent/model name> (AI agent)*` (`docs/issue-tracker.md` rule 11; applies to every issue body and comment an LLM drafts — humans never sign)
+3. **Sign** — open the body with the AI authorship signature as its **first line**, followed by a blank line: `*Filed by <agent/model name> (AI agent)*` (`docs/issue-tracker.md` rule 9; applies to every issue body and comment an LLM drafts — humans never sign)
 4. **Create** — `createIssue` mutation with `repositoryId`, `issueTypeId`, `labelIds`
 5. **Project** — add to project, set sprint status, priority, estimate
 6. **Link** — if part of an epic, `addSubIssue` mutation
