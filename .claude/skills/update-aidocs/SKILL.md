@@ -15,7 +15,7 @@ Every shipped file classifies into exactly one of:
 | Class | Files | On update |
 |-------|-------|-----------|
 | **Upstream-owned** | UPPERCASE `.md` in `docs/` (incl. `README.md`), `*.template.md` / `*.template`, upstream-shipped files under `.claude/` | apply changes |
-| **Project-owned** | Filled template copies (`coding-guidelines.md`, `issue-tracker.md`, `wiki.md`, `skills-and-agents.md`, `tools/jobs.md`, ...), `docs/project-index.md`, project's own docs/skills/agents, `docs/.aidocs-version` | never touch |
+| **Project-owned** | Filled template copies (`issue-tracker.md`, `wiki.md`, `skills-and-agents.md`, `tools/jobs.md`, ...), `docs/project-index.md`, project's own docs/skills/agents, `docs/.aidocs-version` | never touch |
 
 **Shipped-active skills** (e.g. `documentation`, `validate-docs`) are upstream-owned, but projects may customize them (platform wording, extra rules). That's allowed — the 3-way check below turns upstream changes to a customized skill into a conflict for manual merge instead of an overwrite.
 
@@ -25,7 +25,7 @@ Every shipped file classifies into exactly one of:
 
    ```text
    commit: <full sha>
-   source: https://github.com/noskule/aiDocs
+   source: https://github.com/noskule-cc/aiDocs
    updated: YYYY-MM-DD
    ```
 
@@ -40,11 +40,11 @@ Every shipped file classifies into exactly one of:
 
 3. **Fetch upstream** — clone the source into a temp dir (full history, needed for diffs and the probe). Old ref = stamp commit; new ref = `$ARGUMENTS` or upstream main HEAD.
 
-4. **Apply the migration map first** (pre-2026-08 adopters). These upstream renames must be treated as lineage, not delete+add:
+4. **Apply the migration map first.** These upstream renames and retirements must be treated as lineage, not as a plain delete+add:
 
    | Legacy name in project | Becomes |
    |------------------------|---------|
-   | `docs/CODING_GUIDELINES.md` | rename to `docs/coding-guidelines.md` — it IS the filled copy (project-owned); template added alongside |
+   | `docs/CODING_GUIDELINES.md`, `docs/coding-guidelines.md`, the `coding-workflow` / `architecture-rules` / `test-runner` / `test-recommender` skills | retired 2026-09 — see [Method-layer retirement](#method-layer-retirement) below |
    | `docs/SUBAGENTS.md` | replaced by `docs/CREATING_AGENTS.md` |
    | `docs/subagents/VALIDATION.md` + `.claude/agents/validation.md` | split into `.claude/agents/validation-docs.md` + `validation-llm.md` (full-bodied) |
    | `docs/tools/JOBS.md` | rename to `docs/tools/jobs.md` — filled copy; template added alongside |
@@ -70,8 +70,19 @@ Every shipped file classifies into exactly one of:
 
 9. **Stamp and report** — write the new commit to `docs/.aidocs-version`, then summarize: updated / added / deleted / skipped (project-owned) / conflicts / template-drift notices. Recommend `/maintain full` — it surfaces the judgment-level drift (stale filled copies, unported template changes) that the update deliberately cannot touch.
 
+## Method-layer retirement
+
+aiDocs no longer ships a development workflow; method belongs to the project's method stack (see the Method Stack table in `skills-and-agents.md`). The filled `coding-guidelines.md` and activated skills are project-owned and usually customized, so this is a **port, then delete** — never a plain delete.
+
+1. **Find the project-only lines** — diff the filled copy against the template at the stamp commit (`git show <old>:docs/coding-guidelines.template.md | diff --strip-trailing-cr -Z - docs/coding-guidelines.md`). Same for each activated skill against its `SKILL.md.template`.
+2. **Keep rules, drop steps.** A project fact moves to its home: branching and PR targets → `release.md` / `development.md`; test tiers, commands, path→category mapping → `testing.md`; constraints, ask-the-owner-first areas, done-checks, anti-patterns → `architecture-rules.md`; commands and procedures run against the system → `development.md`. Step sequences, step tracking, stop-and-wait choreography, generic ask-the-user lists and the PR template are method: drop them. Already documented elsewhere → link, don't restate.
+3. **Ops repos: order can be the safety property.** Where a sequence protects a live system (snapshot *before* change, verify *before* capture), express it as a precondition rule in `architecture-rules.md`; a numbered command procedure in `development.md` may stay. When unsure whether a line is a safety fact or method, keep it as a rule.
+4. **No invented content.** `testing.md` declined and the test skills hold only placeholders → drop them. An unmodified `SKILL.md.template` left in the project is upstream-owned: delete silently.
+5. **Forced edits in project-owned files.** The retirement leaves dead references that only the project's files carry, so this migration is the one exception to "never modify project-owned files" — limited to: the Companion-skill line in the filled `architecture-rules.md`; "coding workflow step 8.5" in the filled `tools/jobs.md` (now: pre-PR contract in `AGENTS.md`); the retired rows in `skills-and-agents.md` plus the new Method Stack section from the template. Then sweep all project files (docs, `.claude/`, root wrappers, wiki) for `coding-guidelines`, `coding-workflow`, `test-runner`, `test-recommender`, `step 8.5` and fix or report each hit. Historical changelog entries stay.
+6. **Record the port** — a table, one row per project-only line or tight group: source → new home, or "dropped: method". In a dispatched rollout (agent without a live user) the PR carrying this table is the confirmation the deletions require; the owner merges.
+
 ## Rules
 
-- Never modify project-owned files, ever — not even formatting
+- Never modify project-owned files, ever — not even formatting (sole exception: the forced edits named in a migration section)
 - Deletions are proposals, not actions: confirm each one
 - If the ownership class of a file is ambiguous, treat it as project-owned and report it

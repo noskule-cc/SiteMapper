@@ -40,13 +40,6 @@ See [extending.md](extending.md).
 |-------|---------|
 | [`/documentation`](../.claude/skills/documentation/SKILL.md) | Documentation writing rules |
 
-**Auto-triggered skills** (no slash command, invoked automatically):
-
-| Skill | Triggers when... |
-|-------|-------------------|
-| [`architecture-rules`](../.claude/skills/architecture-rules/SKILL.md) | Implementing features or writing new code |
-| [`coding-workflow`](../.claude/skills/coding-workflow/SKILL.md) | Starting a development task (tracks the workflow steps incl. 8.5) |
-
 ## Agents
 
 Full instructions in `.claude/agents/<name>.md`. Claude Code runs them forked;
@@ -65,4 +58,12 @@ strategy, never part of the contract** — see [interface.md](interface.md).
 > `agent-name.template.md` in `.claude/agents/` is the blueprint for a new
 > agent, not an agent.
 
-**Last Updated:** 2026-08-26
+## Method Stack
+
+aiDocs documents the project; it prescribes no development workflow. How work is organised, when the human is asked, code review, testing discipline and PR shape belong to the method stack. Its skills are not listed here — the stack routes itself. The one aiDocs gate it must honour is the pre-PR contract in [AGENTS.md](AGENTS.md#before-opening-a-pr).
+
+| Stack | Installed as | Entry point |
+|-------|--------------|-------------|
+| pstack | Claude Code plugin, user-level | `/poteto-mode` |
+
+**Last Updated:** 2026-09-19

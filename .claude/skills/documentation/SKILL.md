@@ -37,6 +37,10 @@ Run the 3-question Information Minimalism test (`docs/INFORMATION_MINIMALISM.md`
 3. Update the Last Updated date
 4. Check if index entries still match
 
+## Sentence Style
+
+These rules decide **whether** and **where** to write. Sentence-level style is not theirs: if a writing skill is installed (e.g. `technical-writing`, `unslop`), apply it to the prose.
+
 ## Full reference
 
 `docs/DOCUMENTATION_GUIDELINES.md`

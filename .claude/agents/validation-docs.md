@@ -44,7 +44,7 @@ Ask user: Validate `docs/`, `wiki/`, or both?
 
 - 3-question test (should be in INFORMATION_MINIMALISM.md only)
 - Test categories (should be in testing.md only)
-- Workflow steps (should be in coding-guidelines.md only)
+- Pre-PR documentation contract (should be in AGENTS.md only)
 
 ### Step 4: Content Staleness
 

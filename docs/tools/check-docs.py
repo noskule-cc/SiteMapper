@@ -18,7 +18,7 @@ from pathlib import Path
 # them is a warning (missing setup step), not a broken link.
 PER_PROJECT = {
     "installation.md", "development.md", "testing.md", "release.md",
-    "changelog.md", "coding-guidelines.md", "architecture-rules.md",
+    "changelog.md", "architecture-rules.md",
     "issue-tracker.md", "wiki.md", "design-sync.md", "project-index.md",
     "skills-and-agents.md", "tools/jobs.md", "feature-map.md",
     "tools/evals.md",

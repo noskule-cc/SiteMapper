@@ -78,7 +78,7 @@ DOC_GLOBS = ["README.md", "USAGE.md", "PRD.md", "Concept.md", "CLAUDE.md",
 # docs/tools/check-docs.py, so the two tools never disagree.
 PER_PROJECT_DOCS = {
     "installation.md", "development.md", "testing.md", "release.md",
-    "changelog.md", "coding-guidelines.md", "architecture-rules.md",
+    "changelog.md", "architecture-rules.md",
     "issue-tracker.md", "wiki.md", "design-sync.md", "project-index.md",
     "skills-and-agents.md", "tools/jobs.md", "feature-map.md",
     "tools/evals.md",
