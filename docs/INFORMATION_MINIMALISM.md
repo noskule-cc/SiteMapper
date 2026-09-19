@@ -76,7 +76,7 @@ This test operationalizes **Information Minimalism**: each piece of documentatio
 
 **For projects:**
 
-- Add this test to your coding-guidelines.md or CONTRIBUTING guide
+- Add this test to your CONTRIBUTING guide
 - Use during code reviews: "Does this pass the 3-question test?"
 - Apply to existing docs during refactoring
 
@@ -88,4 +88,4 @@ This test operationalizes **Information Minimalism**: each piece of documentatio
 
 
 **License:** Public Domain (CC0) - use freely
-**Last Updated:** 2026-01-07
+**Last Updated:** 2026-09-19

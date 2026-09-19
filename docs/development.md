@@ -10,6 +10,7 @@ them) is [../USAGE.md](../USAGE.md).
 - **Required dependency:** PyYAML, and nothing else for the framework's own checks and views
 - **Optional dependency:** Playwright (`pip install playwright`), needed only by the headless runner; it drives your installed Chrome (`channel="chrome"`), so there is no browser download
 - **Serving:** `http.server` from the standard library — `scripts/serve.py` deliberately adds no web framework
+- **Standard library first.** A new third-party dependency needs a reason in the PR
 - **CI:** GitHub Actions (`.github/workflows/check.yml`) — the consistency checks plus a real headless run on every push
 
 ## The Five Scripts
@@ -52,7 +53,8 @@ data/       # Copyable skeleton for a private map repository
 
 **Add a check.** Write a function returning a list of failure strings, register
 it in `CHECKS`, and give it a docstring whose first line is what it catches.
-`--list` prints those docstrings. If the check cannot run against a `--root`
+`--list` prints those docstrings. Every check exists because the thing it
+catches actually happened, and the docstring says which. If the check cannot run against a `--root`
 tree, add its name to `SKIPPED` and a `NOTES` line — a check that did not run
 must never read like one that passed.
 
@@ -62,6 +64,10 @@ key-set diff in `check.py` means the template update *is* the check update.
 **Add a workflow action.** [extending.md](extending.md) → "Add a workflow
 action". Four places, all of them enforced or documented; `key` and `script`
 shipped without two of them once and went undocumented for weeks.
+
+**Change the runner.** Run the acceptance workflow for real:
+`python scripts/run.py search-issues --json`. CI's `runner-smoke` job runs the
+same command.
 
 **Change a generated view.** Edit the renderer, then re-run
 `python scripts/inventory.py`. Never edit `docs/inventory.md` or
@@ -80,4 +86,4 @@ shipped without two of them once and went undocumented for weeks.
   shell's cwd captured *before* the chdir; if you added code that resolves paths
   after it, that is the bug.
 
-**Last Updated:** 2026-08-26
+**Last Updated:** 2026-09-19

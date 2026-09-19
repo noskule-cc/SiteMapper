@@ -8,7 +8,7 @@ Dispatch maintenance from the jobs registry — `docs/tools/jobs.md`, falling ba
 
 Report one consolidated result at the end: which jobs ran, which were skipped and why, and failures with their output. No silent skips.
 
-## Scope: change (default from the coding workflow)
+## Scope: change (default, before each PR)
 
 Diff-scoped, cheap, deterministic. Never run cycle-end jobs here.
 

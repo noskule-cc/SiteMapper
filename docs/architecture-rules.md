@@ -1,9 +1,6 @@
 # SiteMapper Architecture Rules
 
-Enforceable design principles. The `architecture-rules` skill auto-reads this
-file before writing new code.
-
-> **Companion skill:** `.claude/skills/architecture-rules/SKILL.md` auto-triggers during coding.
+Enforceable design principles. Read before writing new code (`AGENTS.md` routes here).
 
 ## Layer Boundaries
 
@@ -45,8 +42,33 @@ repo, its wiki, or the generated dashboard.
   signal the system has.
 - **Generated files are never hand-edited.** `docs/inventory.md` and
   `docs/overview.html` are rendered; a staleness check fails the build.
+- **A credential never enters the repository.** Not in a map, not in a persona,
+  not in a saved browser state (`.runner/state/` is gitignored). Identity values
+  are referenced by key from layered `settings:` and resolved from private
+  config. A deployment's standing rules live in its own `docs/guardrails.md`;
+  how to write them is [guardrails-template.md](guardrails-template.md).
 - **One capability, one file.** A skill or agent carries its complete
   instructions in exactly one place. A second copy per host diverges silently.
+
+## Ask the Owner First
+
+- The change breaks a contract (`schema/*.yaml`, the `result` object, the three
+  verbs in [interface.md](interface.md)) or adds a dependency.
+- A permission, trust or guardrail rule would have to bend to make it work.
+  That is the signal to stop, not the workaround.
+
+## Done Checks
+
+There is no unit-test suite (see [project-index.md](project-index.md) for why).
+Coverage means mechanical checks and a real run. Commands:
+[tools/jobs.md](tools/jobs.md).
+
+| Change | Done when |
+|--------|-----------|
+| A new class of drift | a check in `scripts/check.py` exits non-zero on it |
+| A new schema key | the commented template entry exists, which *is* the check |
+| A runner or workflow change | a real headless run of the acceptance workflow passed ([development.md](development.md)) |
+| Documentation only | no tests |
 
 ## Reuse Rules
 
@@ -111,4 +133,4 @@ that `scripts/check.py` enforces.
 |------|-----------|--------|
 | — | — | — |
 
-**Last Updated:** 2026-08-26
+**Last Updated:** 2026-09-19

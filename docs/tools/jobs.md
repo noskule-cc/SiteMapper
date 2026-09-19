@@ -37,7 +37,7 @@ calendar date:
 **Trigger classes:**
 
 - **per-change** — diff-conditional; dispatched by `/maintain change` before each
-  PR (coding workflow step 8.5)
+  PR (pre-PR contract in `AGENTS.md`)
 - **cycle-end** — judgment and eval battery; dispatched by `/maintain full` at
   the bound event, scoped to changes since the last-run stamp
   (`docs/.maintain-last-run`)

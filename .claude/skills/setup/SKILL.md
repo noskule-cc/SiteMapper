@@ -12,7 +12,6 @@ Check what already exists and skip questions that are already answered:
 
 - `docs/` copied? Git repo? GitHub remote?
 - Which `*.template.md` files are still unfilled (placeholders like `[Your Project Name]`, `[Platform]`)?
-- Which `.claude/skills/*/SKILL.md.template` files are not yet activated?
 
 ## Step 1 — Interview
 
@@ -23,27 +22,28 @@ Ask in this order (skip what preflight already answered):
 3. **AI tools in use** — Claude Code, Copilot, Cursor, Codex? (decides which root wrapper templates to activate: `CLAUDE.md.template`, `copilot-instructions.md.template`, `.cursorrules.template`, `CODEX.md.template`)
 4. **Wiki** — GitHub Wiki, docs folder, external (Confluence/Notion), or none
 5. **Issue tracking** — GitHub Issues with Projects v2 board, plain issues, or none
-6. **Testing** — test categories and commands (feeds `testing.md` and the test-runner skill)
+6. **Testing** — test categories, commands, and which source paths map to which category (feeds `testing.md`)
 7. **Feature map** — is the codebase organized by feature folders (feature→code mapping obvious from structure → decline) or by layers (instantiate `feature-map`, see `docs/feature-map.template.md`)?
-8. **Cycle-end event** — which real event triggers full maintenance (`/maintain full`): sprint end, milestone close, or pre-release? (fills the Cycle-End Binding in `tools/jobs.md`)
+8. **Method stack** — which workflow/method stack drives development (e.g. the pstack plugin), or none? aiDocs ships no development workflow; the answer fills the Method Stack table in `skills-and-agents.md`
+9. **Cycle-end event** — which real event triggers full maintenance (`/maintain full`): sprint end, milestone close, or pre-release? (fills the Cycle-End Binding in `tools/jobs.md`)
 
 ## Step 2 — Apply
 
 For each answer, make the corresponding change:
 
 - Ensure the root `README.md` states the project name and description — the fixed `docs/README.md` routes humans there
-- Instantiate templates by **renaming** them (drop the `.template` suffix): `coding-guidelines`, `architecture-rules`, `development`, `changelog`, `issue-tracker`, `wiki`, `skills-and-agents`, `tools/jobs`, plus `feature-map` and `tools/evals` when the user opted in — the template file must not remain next to its filled copy (the template lives upstream; `/update-aidocs` reports drift from there). Create `installation.md`, `testing.md`, `release.md` with real content where the user provided it, otherwise minimal TODO stubs. Delete shipped templates the project declines (e.g. `design-sync.template.md` when not using Pencil, `feature-map.template.md` and `tools/evals.template.md` when structure already reveals the mapping)
+- Instantiate templates by **renaming** them (drop the `.template` suffix): `architecture-rules`, `development`, `changelog`, `issue-tracker`, `wiki`, `skills-and-agents`, `tools/jobs`, plus `feature-map` and `tools/evals` when the user opted in — the template file must not remain next to its filled copy (the template lives upstream; `/update-aidocs` reports drift from there). Create `installation.md`, `testing.md`, `release.md` with real content where the user provided it, otherwise minimal TODO stubs. Delete shipped templates the project declines (e.g. `design-sync.template.md` when not using Pencil, `feature-map.template.md` and `tools/evals.template.md` when structure already reveals the mapping)
 - Fill the instantiated `docs/wiki.md` with the chosen wiki location, or instantiate it with a "no wiki" note
 - Fill the Cycle-End Binding in the instantiated `docs/tools/jobs.md` with the chosen event
 - If using a Projects v2 board: fill the IDs section in `.claude/agents/issue-writer.md` (discover via `gh api graphql`); if plain issues: note that in the instantiated `docs/issue-tracker.md`
 - Activate the chosen root wrapper templates (rename, point them at `docs/AGENTS.md`)
-- Rename applicable `.claude/skills/*/SKILL.md.template` to `SKILL.md` and fill project specifics (test commands, architecture rules)
+- Fill the Method Stack table in the instantiated `docs/skills-and-agents.md`
 - Update the instantiated `docs/skills-and-agents.md` (and `docs/project-index.md` if extra docs exist) to match what actually exists now — `INDEX.md` itself is a fixed standard file
 - Write the version stamp `docs/.aidocs-version` recording the adopted upstream commit:
 
   ```text
   commit: <full sha of the aiDocs commit these files came from>
-  source: https://github.com/noskule/aiDocs
+  source: https://github.com/noskule-cc/aiDocs
   updated: YYYY-MM-DD
   ```
 

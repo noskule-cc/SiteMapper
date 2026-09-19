@@ -9,17 +9,13 @@ Quick navigation to all docs. Read only what you need, when you need it.
 
 - Mandatory reading order (with reading-order diagram)
 - Situational References
+- Before Opening a PR (documentation contract)
 - Skills and Agents (full listing: [skills-and-agents.md](skills-and-agents.md), template: `skills-and-agents.template.md`)
 
 **[README.md](README.md)** - Human entry point: orientation routing table (fixed; identity lives in the root README, wiki location in `wiki.md`)
 
 
 ## Development Process
-
-**[coding-guidelines.md](coding-guidelines.md)** - Development workflow (template: `coding-guidelines.template.md`)
-
-- Development Workflow (10 steps)
-- Data Persistence
 
 **[DOCUMENTATION_GUIDELINES.md](DOCUMENTATION_GUIDELINES.md)** - What/where to document
 
