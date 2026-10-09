@@ -11,30 +11,30 @@ page:
     - name: "new-issue-button"
       type: link
       locator:
-        strategy: css
-        value: "a[href$='/issues/new/choose']"
-      description: "Opens the new issue form"
+        strategy: text
+        value: "New issue"
+      description: "Opens the new issue form. Signed out it links to /login?return_to=<the issues URL>, so the href is not a usable handle - the label is"
 
     - name: "search-input"
       type: input
       locator:
         strategy: css
-        value: "input[placeholder='Search Issues']"
-      description: "Search and filter issues"
+        value: "#issues-index-filter-input"
+      description: "Search and filter issues. Prefilled with 'is:issue state:open'; the runner's input action fills the field, which replaces that"
 
     - name: "open-tab"
       type: link
       locator:
         strategy: css
-        value: "a[href$='/issues']"
-      description: "Show open issues"
+        value: ""
+      description: "Show open issues. Rendered only on the unfiltered list and only as <a href='#'> - see the gotcha; derive the locator from the live page"
 
     - name: "closed-tab"
       type: link
       locator:
         strategy: css
-        value: "a[href*='state%3Aclosed']"
-      description: "Show closed issues"
+        value: ""
+      description: "Show closed issues. Same client-side <a href='#'> as open-tab - see the gotcha"
 
     - name: "issues-list"
       type: container
@@ -48,10 +48,29 @@ page:
       locator:
         strategy: text
         value: "No results"
-      description: "Empty state shown inside the results area when a search matches nothing"
+      description: "Empty state shown inside the results area when a search matches nothing. Full text is 'No results matched your search'"
 
   gotchas:
-    - "New issue button links to /issues/new/choose but may redirect to /issues/new if no templates exist"
     - "Empty state shows 'No results' instead of issue rows"
     - "Typing in the search box does NOT filter by itself - the query is applied on Enter, which navigates to ?q=<term>"
     - "networkidle never settles here (GitHub keeps connections open) - wait on elements, not on the network"
+    - >
+      GITHUB REBUILT THIS PAGE between 2026-09-19 (last green smoke run) and 2026-10-09,
+      and four of the six locators died with it. The search box lost the placeholder
+      "Search Issues" - it is "Search issues" now, lower-case i, and a CSS attribute
+      selector compares that value case-sensitively, so the old locator matched nothing
+      and the smoke run failed on its fingerprint anchor. It gained a real id,
+      #issues-index-filter-input, which is what the map uses now. "New issue" is no
+      longer an <a href$='/issues/new/choose'>; signed out it points at /login. Open and
+      Closed are no longer links carrying state%3Aclosed in the href but client-side
+      <a href="#"> controls whose only classes are hashed CSS-module names - nothing
+      worth pinning, so both are mapped with an empty locator rather than a guess.
+      Re-read live on 2026-10-09, signed out, which is the state CI runs in.
+    - >
+      THE SEARCH BOX IS PREFILLED with "is:issue state:open" and the component puts that
+      value BACK after anything sets it in one shot. A Playwright fill() is reverted, so
+      Enter re-applies the default filter, the list never filters, and an assertion read
+      off that unfiltered list passes for the wrong reason - which is how this page
+      produced three false green assertions before 2026-10-09. The runner now checks the
+      value stuck and retypes with real keystrokes when it did not. Driving the field by
+      hand: focus it, let the prefill land, select all, then type.

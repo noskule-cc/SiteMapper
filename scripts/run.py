@@ -26,6 +26,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import yaml
@@ -544,6 +545,34 @@ class Runner:
                 self.pw_page.get_by_text(value, exact=True).first.click()
         else:
             locator.fill(value)
+            self._ensure_value(locator, value)
+
+    def _ensure_value(self, locator, value):
+        """fill() is not enough for a framework-controlled field.
+
+        A React/Angular combobox re-asserts its own state after fill(), so the
+        page goes on filtering on the old value while the run reads a green
+        assertion off an unfiltered list. Observed on GitHub's rebuilt issues
+        index, 2026-10-09. Real keystrokes do land, so retype when the value
+        did not stick.
+        """
+        try:
+            self.pw_page.wait_for_timeout(300)
+            if locator.input_value() == value:
+                return
+            locator.click()
+            self.pw_page.keyboard.press("Control+a")
+            locator.press_sequentially(value, delay=50)
+            self.pw_page.wait_for_timeout(300)
+            if locator.input_value() != value:
+                raise RunError(
+                    f"field did not accept '{value}' "
+                    f"(reads '{locator.input_value()}') - fill and typing were both reverted"
+                )
+        except RunError:
+            raise
+        except Exception:
+            pass  # not a value-bearing element; fill() was the whole job
 
     def do_read(self, step):
         site = self.site(step)
@@ -603,8 +632,9 @@ class Runner:
 
     def _evaluate(self, site: Site, step: dict, expect):
         if isinstance(expect, dict) and "url_matches" in expect:
-            url = self.pw_page.url
-            return url, re.search(self.bindings.resolve(expect["url_matches"]), url) is not None
+            pattern = self.bindings.resolve(expect["url_matches"])
+            return self._poll(lambda: self.pw_page.url,
+                              lambda url: re.search(pattern, url) is not None)
         element = self._element(step, site)
         locator = build_locator(self.pw_page, element)
         if expect == "absent":
@@ -624,18 +654,38 @@ class Runner:
             return ("enabled" if enabled else "disabled"), (enabled == (expect == "enabled"))
         if isinstance(expect, dict):
             if "count" in expect:
-                n = self._count_all(element)  # all matches, not .first
-                return n, n == expect["count"]
-            text = locator.inner_text().strip()
+                return self._poll(lambda: self._count_all(element),  # all matches, not .first
+                                  lambda n: n == expect["count"])
             if "contains" in expect:
                 needle = self.bindings.resolve(expect["contains"])
-                return text, needle in text
+                return self._poll(lambda: locator.inner_text().strip(),
+                                  lambda text: needle in text)
             if "equals" in expect:
-                return text, text == self.bindings.resolve(expect["equals"])
+                wanted = self.bindings.resolve(expect["equals"])
+                return self._poll(lambda: locator.inner_text().strip(),
+                                  lambda text: text == wanted)
             if "value" in expect:
-                val = locator.input_value()
-                return val, val == self.bindings.resolve(expect["value"])
+                wanted = self.bindings.resolve(expect["value"])
+                return self._poll(locator.input_value, lambda val: val == wanted)
         raise RunError(f"unknown expect condition: {expect!r}")
+
+    def _poll(self, read, ok):
+        """Re-read until the condition holds or the timeout runs out.
+
+        `visible` and `absent` have always waited; the content and URL checks
+        read once, which on a single-page app asserts against whatever the
+        frame happened to hold that millisecond. A route push or a list render
+        landing a beat later then reads as a failure, and the inverse - a stale
+        pass off the PREVIOUS state - is the expensive one. Reports the last
+        reading either way, so a real mismatch still says what it saw.
+        """
+        deadline = time.monotonic() + self.DEFAULT_TIMEOUT_MS / 1000
+        while True:
+            actual = read()
+            passed = ok(actual)
+            if passed or time.monotonic() >= deadline:
+                return actual, passed
+            self.pw_page.wait_for_timeout(250)
 
     def _count_all(self, element: dict) -> int:
         strategy = (element.get("locator") or {}).get("strategy")

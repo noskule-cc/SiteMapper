@@ -4,9 +4,10 @@ workflow:
   site: "sitemapper-demo"
 
   mode: deterministic     # every step is navigate/input/key/assert — no judgement
-  trust: verified         # green headless run 2026-08-19 reviewed: URL carried ?q=,
-                          # filtered list contained the issue, empty state on nonsense
-  verified_at: "2026-08-19"
+  trust: verified         # green headless run 2026-10-09 reviewed: 5/5, URL carried
+                          # ?q= for both terms, filtered list contained the issue,
+                          # empty state on nonsense
+  verified_at: "2026-10-09"
   effect: read-only       # searching changes nothing
 
   # Pinned to the demo repo's standing issue #1 ("...blows up and everything is
