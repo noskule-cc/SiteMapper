@@ -19,10 +19,11 @@ Types, labels and fields are discoverable via the GitHub API. These rules aren't
 7. **Epic estimate** — sum of its sub-issue estimates
 8. **Update the wiki** when closing an issue that adds significant
    functionality — see the Wiki Mapping table below
-9. **Sign as an agent** — if you are an AI agent, add your name at the bottom of
-   any issue you create or comment you post (e.g. a final
-   `*Filed by <agent/model name> (AI agent)*` line), so automated authorship is
-   explicit
+9. **Sign as an agent, on the first line** — if you are an AI agent, open every
+   issue body and every comment with your name
+   (`*Filed by <agent/model name> (AI agent)*`, for a comment `*Posted by …*`), then a
+   blank line. At the top, because a reader should know who wrote a text before
+   reading it, not after scrolling to the end. Humans never sign
 
 ### Estimate scale
 

@@ -6,6 +6,18 @@
 It is faster, it is deterministic, it costs no tokens, it runs on every host, and
 it does not break when a UI changes.
 
+**And it keeps the LLM free to orchestrate.** Every step an LLM executes by hand
+fills its context and its attention with mechanics: clicks, waits, retries,
+output to re-read. That is attention it no longer has for the parts only it can
+do: noticing a wrong assumption, weighing a decision, asking the human the right
+question. The less manual work an LLM carries, the better it orchestrates.
+
+Evidence (2026-09-15, a helpdesk triage run in a deployment's map repository):
+closing ~30 tickets by hand took ~30 near-identical browser calls, most of the
+session's context. The mistakes of that run were in the manual parts (guessed
+locators, a misread DOM value, an overstated check), while the decisions that
+needed judgement fit into a handful of messages.
+
 This is SiteMapper's third governing principle, alongside
 [INFORMATION_MINIMALISM.md](INFORMATION_MINIMALISM.md) (*whether* to write
 something down) and [knowledge-placement.md](knowledge-placement.md) (*where* it
@@ -39,6 +51,13 @@ correction and no gotchas — losing the one surface
 
 New work starts `agentic` because nobody knows the shape yet. Once it stabilises,
 promote the mechanical parts into a script and downgrade the `mode`.
+
+**The trigger is repetition, not a feeling that the work has settled.** The LLM
+may do something by hand the first time, to find its shape: a script written
+before the first run is built on guesses. From the second time the same
+manual sequence comes up (the second record in a loop, the second run of a
+workflow) it is a script, and the LLM calls the script and handles only what
+the script reports as a deviation. Explore and decide by LLM; repeat by code.
 
 The mechanism is `action: script` (`schema/workflow.yaml`): a step declares a
 script from `sites/<site>/scripts/`, the runner executes it and captures its
