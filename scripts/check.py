@@ -233,6 +233,12 @@ def check_listings():
         for s in p.get("sites") or []:
             if not os.path.isdir(f"sites/{s}"):
                 fails.append(f"{py}: sites references '{s}', which is not a directory under sites/")
+        declared = {x.get("name") for x in (p.get("scripts") or []) if isinstance(x, dict)}
+        on_disk = {os.path.basename(f) for f in glob.glob(f"{pd_}/scripts/*")
+                   if os.path.isfile(f) and os.path.basename(f) not in
+                   ("README.md", "requirements.txt")}
+        for m in sorted(declared - on_disk):
+            fails.append(f"{py}: scripts declares '{m}' but the file does not exist")
 
     # workflow -> site references (this is what iot-portal broke)
     for f in files(WORKFLOW_GLOBS):

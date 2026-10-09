@@ -149,6 +149,8 @@ workflow:
       page: ""                # Page name (references a page YAML file)
       element: ""             # Element name from the page map
       script: ""              # For action: script — a script in sites/<site>/scripts/
+                              # or projects/<project>/scripts/, declared in that
+                              # site.yaml or project.yaml
                               #   (declared in that site's site.yaml `scripts:` list).
                               #   `value` carries its CLI arguments; `capture` stores its
                               #   parsed stdout (JSON when the script is run with --json).
