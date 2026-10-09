@@ -10,6 +10,25 @@
 #   parameter / captured variable. Treat opaque ids (UUIDs) as runtime data, not
 #   as map identity.
 #
+# File name:
+#   Name the file after the page's place in the SITE'S OWN NAVIGATION, not after its
+#   URL: <area>-<label>, lower case, hyphens, umlauts transliterated - the nav area
+#   the page sits under, then the label the menu gives it (kontakt-stoerung-melden,
+#   admin-benutzerverwaltung, shop-produkte). A page with no nav area - a public page
+#   outside the app shell - takes the bare label (signin, signup).
+#   THE SAME PAGE MUST CARRY THE SAME FILE NAME IN EVERY ENVIRONMENT of one
+#   application. Two names for one page is the drift that makes a dev/stg/prod
+#   comparison meaningless: it reports the page as missing on both sides and is right
+#   about neither. When the names already disagree, rename to the one the production
+#   map uses - production is the environment every other one is measured against.
+#
+# Overlays (dialogs and wizards with no URL of their own):
+#   A modal or wizard that opens over a page, carries no route, and is substantial
+#   enough to drive on its own gets its OWN file, with the host page's url_pattern
+#   repeated. Name it after what it does and say in `purpose` which page opens it and
+#   through which element. Two files sharing one url_pattern is therefore expected and
+#   is not a duplicate - the url_pattern is where the surface lives, not its identity.
+#
 # Structural variants:
 #   When the same url_pattern renders different elements depending on the record's
 #   type/capabilities (e.g. a coffee machine vs different dishwasher models that
