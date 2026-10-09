@@ -91,7 +91,8 @@ weeks — that is the failure mode this list exists for.
 
 ## Add a site script
 
-1. `sites/<site>/scripts/<name>` (+ a `scripts/README.md` beside it for auth
+1. `sites/<site>/scripts/<name>` — or `projects/<project>/scripts/<name>` when the script
+   serves no single site (+ a `scripts/README.md` beside it for auth
    notes and parked-code rationale).
 2. Declare it in that site's `site.yaml` `scripts:` list — declaration is what
    makes it addressable from `action: script` steps.

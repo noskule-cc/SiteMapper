@@ -68,7 +68,7 @@ Rules that follow:
 
 | Capability | What it must do | Claude Code |
 |---|---|---|
-| **run script** | Execute a site script from `sites/<site>/scripts/`, capture stdout (JSON with `--json`) | `Bash` / `PowerShell` |
+| **run script** | Execute a declared script from `sites/<site>/scripts/` or `projects/<project>/scripts/`, capture stdout (JSON with `--json`) | `Bash` / `PowerShell` |
 | **read/write files** | Read and write maps, workflows and results | `Read`, `Write`, `Edit`, `Glob`, `Grep` |
 | **fan out** | Run independent read-only work in parallel *(optional — see below)* | `Agent` / subagents |
 

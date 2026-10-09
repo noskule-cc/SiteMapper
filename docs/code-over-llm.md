@@ -60,7 +60,8 @@ workflow) it is a script, and the LLM calls the script and handles only what
 the script reports as a deviation. Explore and decide by LLM; repeat by code.
 
 The mechanism is `action: script` (`schema/workflow.yaml`): a step declares a
-script from `sites/<site>/scripts/`, the runner executes it and captures its
+script from `sites/<site>/scripts/` — or `projects/<project>/scripts/` when it is not
+about one site — the runner executes it and captures its
 `--json` stdout. A DOM sweep an agent explored by hand becomes one API call —
 same answer, without a browser, and it survives the next UI redesign.
 

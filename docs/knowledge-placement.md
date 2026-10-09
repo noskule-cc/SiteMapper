@@ -25,7 +25,7 @@ cloning this repo tomorrow?*
 |---|---|
 | How one page behaves; a trap that breaks automation | `sites/<site>/pages/<page>.yaml` → `gotchas` |
 | An element that exists, and when it doesn't | that page's `elements` (+ `states: [capability-dependent]`) |
-| An API, its auth, why a path is blocked or parked | `sites/<site>/scripts/README.md` |
+| An API, its auth, why a path is blocked or parked | `sites/<site>/scripts/README.md`, or `projects/<project>/scripts/README.md` when the script is not about one site |
 | Base URL, auth model, which scripts a site has | `sites/<site>/site.yaml` |
 | Contact data, environment, form-submission authorization | layered `settings:` — `config.yaml` → `site.yaml` → page |
 | What a workflow does and why its branches differ | the workflow's sibling `<workflow>.md` |

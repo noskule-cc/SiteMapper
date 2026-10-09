@@ -11,3 +11,19 @@ project:
                               # workflows read, e.g. regionen.yaml (PLZ -> team).
                               # Project-scoped lookup tables that are neither a map
                               # nor a workflow live here.
+
+  scripts:                    # Optional: scripts in projects/<project>/scripts/ that
+                              # this project's workflows call with `action: script`.
+                              # Same contract as a site's scripts block; declaring
+                              # them here is what makes them addressable.
+                              #
+                              # A SCRIPT BELONGS TO A PROJECT WHEN IT IS NOT ABOUT ONE
+                              # SITE. A mailbox reader serving three providers, a
+                              # comparison across two environments - these have no
+                              # honest home under sites/, and parking one in whichever
+                              # site happened to be mapped first makes the directory
+                              # lie about what the file is for. Scope it to the project
+                              # that asks the question instead.
+    - name: ""                #   Filename, e.g. "read_signup_mail.py"
+      description: ""         #   What it returns and which workflow node it backs.
+                              #   Record parked/blocked scripts here too, with why.
