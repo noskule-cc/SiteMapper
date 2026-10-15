@@ -34,3 +34,6 @@ jobs:
       # path has hung CI before, so never run it unconditionally.
       - run: google-chrome --version || playwright install chrome --with-deps
       - run: python scripts/run.py search-issues --json
+      # The same flow as a project workflow on a tier of the demo app (#46):
+      # proves tier resolution and tier-keyed fixtures end to end.
+      - run: python scripts/run.py search-issues-on-tier --param environment=prod --json

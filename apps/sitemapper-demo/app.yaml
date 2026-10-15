@@ -1,0 +1,15 @@
+app:
+  name: "SiteMapper Demo"
+  description: >
+    The demo issue tracker as one application with two tiers. prod is the demo
+    repository's issues (the standing issue #1 every acceptance run is pinned to);
+    dev is the framework repository's own issues, the same UI over other data. The
+    worked example for everything an app declares: the tier map, page-map parity,
+    and a project workflow that runs on both tiers (projects/demo-checks).
+  tiers:
+    prod: sitemapper-demo         # settings.policy.environment: production (config.yaml default)
+    dev: sitemapper-demo-dev      # settings.policy.environment: dev
+  parity:
+    reference: prod
+    gaps: []                      # both tiers carry both page maps
+  scripts: []

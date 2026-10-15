@@ -1,0 +1,18 @@
+project:
+  name: "Demo checks"
+  description: >
+    The worked example of a project: a QUESTION with a verdict, run on every tier
+    of the demo app. search-issues-on-tier is the site workflow search-issues
+    written the way a test that must pass on several tiers is written: one file,
+    the tier picked by the `environment` parameter, fixtures keyed by tier, steps
+    naming the site by its role ($tracker). Nothing in the framework repo depends
+    on it; the acceptance workflow for the runner stays sites/sitemapper-demo's
+    search-issues.
+  kind: test
+  app: sitemapper-demo
+  sites: []                       # the tiers' sites come from the app
+  workflows:
+    - search-issues-on-tier.yaml
+  data: []
+  state: []
+  keep: 7d

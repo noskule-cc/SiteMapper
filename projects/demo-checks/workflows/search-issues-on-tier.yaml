@@ -1,0 +1,107 @@
+workflow:
+  name: "search-issues-on-tier"
+  description: >
+    Search the issues list of one tier of the demo app and assert the filtered
+    result state: a matching term shows the pinned issue, a non-matching term shows
+    the empty state. The same flow as sites/sitemapper-demo's search-issues, as a
+    project workflow that exists on both tiers: `environment` picks the tier, the
+    app maps it to a site, and the fixtures block of that tier supplies the terms.
+
+  mode: deterministic     # every step is navigate/input/key/assert — no judgement
+  trust: draft            # a green run on both tiers awaits a review (promotion is a decision)
+  effect: read-only       # searching changes nothing
+
+  tiers:
+    required: [prod, dev]   # must exist and pass on both tiers of the app
+    allowed: [prod, dev]
+    absent: {}
+
+  parameters:
+    - name: environment
+      type: select
+      description: "Which tier of the demo app to search"
+      required: true
+      options: [prod, dev]
+      default: prod
+
+  # Keyed by tier: `$tracker` resolves to that tier's site, so no step names a
+  # site literally. `common` carries what both tiers share.
+  fixtures:
+    common:
+      non_matching_term: "zzznothingmatchesthis"
+    prod:
+      tracker: sitemapper-demo
+      matching_term: "blows"          # the demo repo's standing issue #1
+      matching_issue: "blows up"
+    dev:
+      tracker: sitemapper-demo-dev
+      matching_term: "headless"       # the framework's own open issue on headless runs
+      matching_issue: "headless"
+
+  steps:
+    - action: navigate
+      site: "$tracker"
+      page: "issues-list"
+      description: "Open the tier's issues list (deep-link via url_pattern)"
+
+    - action: assert
+      site: "$tracker"
+      page: "issues-list"
+      element: "search-input"
+      expect: visible
+      description: "The search box is there (fingerprint anchor, asserted explicitly)"
+
+    - action: input
+      site: "$tracker"
+      page: "issues-list"
+      element: "search-input"
+      value: "$matching_term"
+      description: "Type a term that matches a standing issue on this tier"
+
+    - action: key
+      site: "$tracker"
+      page: "issues-list"
+      value: "Enter"
+      description: "Apply the search — typing alone does not filter (page gotcha)"
+
+    - action: assert
+      site: "$tracker"
+      page: "issues-list"
+      expect: { url_matches: "\\?q=" }
+      description: "The query was actually submitted: URL carries ?q="
+
+    - action: assert
+      site: "$tracker"
+      page: "issues-list"
+      element: "issues-list"
+      expect: { contains: "$matching_issue" }
+      description: "The filtered list shows the matching issue"
+
+    - action: input
+      site: "$tracker"
+      page: "issues-list"
+      element: "search-input"
+      value: "$non_matching_term"
+      description: "Replace the query with a term that matches nothing"
+
+    - action: key
+      site: "$tracker"
+      page: "issues-list"
+      value: "Enter"
+      description: "Apply the search"
+
+    - action: assert
+      site: "$tracker"
+      page: "issues-list"
+      expect: { url_matches: "q=$non_matching_term" }
+      description: "The SECOND query was applied too — not a stale first-query URL"
+
+    - action: assert
+      site: "$tracker"
+      page: "issues-list"
+      element: "no-results-message"
+      expect: visible
+      description: "The empty state renders instead of issue rows (page gotcha)"
+
+  verify:
+    - "On the chosen tier, a matching search shows its pinned issue and a non-matching search shows 'No results'"

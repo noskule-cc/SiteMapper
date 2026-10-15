@@ -48,5 +48,7 @@ the Enter-to-apply / empty-state behaviour live in the page map — see below.
 
 - [`search-issues.yaml`](search-issues.yaml)
 - Page map: [`../pages/issues-list.yaml`](../pages/issues-list.yaml)
-- Latest result: [`../results/search-issues.2026-08-19.md`](../results/search-issues.2026-08-19.md)
-  — the reviewed green headless run behind `trust: verified`.
+- The same flow on every tier of the demo app:
+  [`../../../projects/demo-checks/workflows/search-issues-on-tier.md`](../../../projects/demo-checks/workflows/search-issues-on-tier.md)
+- The reviewed green run behind `trust: verified` is dated by `verified_at`;
+  run folders live in the runs store (`schema/run.yaml`), not in the tree.

@@ -1,0 +1,19 @@
+site:
+  name: "SiteMapper Demo (dev tier)"
+  base_url: "https://github.com/noskule-cc/SiteMapper"
+  description: >
+    The second tier of the demo app (apps/sitemapper-demo): the same GitHub issues
+    UI, served for the framework's own repository instead of the demo repository.
+    It exists to show how one application mapped as several sites is declared and
+    tested per tier — the page maps are the ones of sitemapper-demo, because the UI
+    is the same; what differs is the data behind it, so the tiered workflow keys its
+    fixtures by tier.
+  auth_notes: "Requires GitHub sign-in to create issues; reading is public"
+  mapped_at: "2026-10-15"
+  pages:
+    - issues-list.yaml
+    - new-issue.yaml
+  workflows: []
+  settings:
+    policy:
+      environment: dev
