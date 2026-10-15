@@ -33,10 +33,17 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import inventory  # noqa: E402
 import overview  # noqa: E402
 import run as runner  # noqa: E402
+import tree  # noqa: E402
 
 FRAMEWORK = Path(__file__).resolve().parent.parent
 ROOT = FRAMEWORK
+PROJECTS = Path(tree.projects_root(str(ROOT)))
 RUN_TIMEOUT_S = 900
+
+
+def point_collectors():
+    overview.set_root(str(ROOT), str(PROJECTS))
+    inventory.set_root(str(ROOT), str(PROJECTS))
 
 TEXT_TYPES = {".html": "text/html", ".md": "text/plain", ".yaml": "text/plain",
               ".yml": "text/plain", ".txt": "text/plain", ".py": "text/plain",
@@ -46,8 +53,9 @@ BIN_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".svg": "image/svg+xml",
 
 
 def collect():
-    inventory.set_root(str(ROOT))
+    point_collectors()
     return {"sites": inventory.collect_sites(),
+            "apps": inventory.collect_apps(),
             "projects": inventory.collect_projects(),
             "workflows": inventory.collect_workflows()}
 
@@ -96,27 +104,21 @@ class Handler(BaseHTTPRequestHandler):
                     meta["share_url"] = art["url"]
                 meta["artifact"] = art
             return self.send_json(200, meta)
-        if path == "/api/results":
-            data = collect()["workflows"]
-            return self.send_json(200, [
-                {"name": w["name"], "owner": w["owner"], "trust": w["trust"],
-                 "effect": w["effect"], "verified_at": w["verified_at"],
-                 "results": w["results"]} for w in data])
         return self.static(path)
 
     def page(self):
-        overview.set_root(str(ROOT))
-        inventory.set_root(str(ROOT))
+        point_collectors()
         html_text = overview.render()  # fresh from the collectors, never stale
         # The page lives at /docs/overview.html so its ../ links resolve; a
         # request for / just gets the same content at that path semantics.
         self.send(200, html_text.encode("utf-8"), "text/html; charset=utf-8")
 
     def static(self, path: str):
-        """Read-only file serving inside ROOT, so the page's relative links
-        (../sites/..., ../projects/...) work. Traversal-guarded."""
+        """Read-only file serving inside ROOT and the projects tree, so the
+        page's relative links (../sites/..., ../projects/...) work. Traversal-guarded."""
         target = (ROOT / path.lstrip("/")).resolve()
-        if not str(target).startswith(str(ROOT.resolve())) or not target.is_file():
+        allowed = (str(ROOT.resolve()), str(PROJECTS.resolve()))
+        if not str(target).startswith(allowed) or not target.is_file():
             return self.send_json(404, {"error": f"not found: {path}"})
         ext = target.suffix.lower()
         if ext in TEXT_TYPES:
@@ -141,7 +143,7 @@ class Handler(BaseHTTPRequestHandler):
                 Handler._fetch_at = time.time()
             dirty = subprocess.run(
                 ["git", "-C", str(ROOT), "status", "--porcelain", "--",
-                 "sites", "projects", "schema", "scripts", "docs", "config.yaml"],
+                 "sites", "apps", str(PROJECTS), "schema", "scripts", "docs", "config.yaml"],
                 capture_output=True, text=True, timeout=20).stdout.strip()
             head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"],
                                   capture_output=True, text=True, timeout=20).stdout
@@ -189,8 +191,7 @@ class Handler(BaseHTTPRequestHandler):
         m = re.search(r"published_hash:\s*(sha256:[0-9a-f]+)", text)
         if m:
             try:
-                overview.set_root(str(ROOT))
-                inventory.set_root(str(ROOT))
+                point_collectors()
                 fresh = overview.render(base=overview.github_base(),
                                         fragment=True)
                 art["current"] = overview.content_hash(fresh) == m.group(1)
@@ -246,8 +247,7 @@ class Handler(BaseHTTPRequestHandler):
                     " Never share that artifact; redeploying does not scrub "
                     "its version history (docs/permissions.md).")
         out = ROOT / ".runner" / "deploy" / "dashboard-artifact.html"
-        overview.set_root(str(ROOT))
-        inventory.set_root(str(ROOT))
+        point_collectors()
         info = overview.deploy_build(str(out))  # stamped page + build-info.json
         return self.send_json(200, {
             "prepared": str(out),
@@ -279,7 +279,7 @@ class Handler(BaseHTTPRequestHandler):
         # the ask BEFORE anything launches. The subprocess enforces it again —
         # the server never widens what run.py itself would allow.
         try:
-            wf_path, data = runner.find_workflow(ROOT, name)
+            wf_path, data, owner = runner.find_workflow(ROOT, PROJECTS, name)
         except runner.RunError as exc:
             return self.send_json(404, {"error": str(exc)})
         wf = (data or {}).get("workflow", {})
@@ -293,9 +293,10 @@ class Handler(BaseHTTPRequestHandler):
                 f"effect: {wf.get('effect') or 'undeclared'} — declare "
                 "read-only | mutating | destructive (schema/workflow.yaml)"})
         verdict, source = "allow", ""
-        involved = [s for s in ([wf.get("site")] if wf.get("site") else
-                                list(wf.get("sites") or []))
-                    if isinstance(s, str) and not s.startswith("$")]
+        try:  # the same scope the runner gates on: every site a step touches
+            _, _, involved = runner.resolve_scope(ROOT, wf, owner, params)
+        except runner.RunError as exc:
+            return self.send_json(400, {"error": str(exc)})
         for site_name in involved:
             try:
                 settings = runner.resolve_settings(
@@ -320,6 +321,8 @@ class Handler(BaseHTTPRequestHandler):
         cmd = [sys.executable, str(FRAMEWORK / "scripts" / "run.py"), name, "--json"]
         if ROOT != FRAMEWORK:
             cmd += ["--root", str(ROOT)]
+        if PROJECTS != Path(tree.projects_root(str(ROOT))):
+            cmd += ["--projects", str(PROJECTS)]
         if is_test:
             cmd.append("--record")
         for key, value in params.items():
@@ -343,17 +346,19 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global ROOT
+    global ROOT, PROJECTS
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--root", help="serve this map repository instead of the framework")
+    ap.add_argument("--projects", help="the projects tree, when it is not inside --root")
     ap.add_argument("--port", type=int, default=8765)
     args = ap.parse_args()
     if args.root:
         ROOT = Path(args.root).resolve()
         if not (ROOT / "sites").is_dir():
             sys.exit(f"{ROOT} has no sites/ — not a map repository?")
+    PROJECTS = Path(tree.projects_root(str(ROOT), args.projects))
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"dashboard: http://127.0.0.1:{args.port}/  (tree: {ROOT})")
+    print(f"dashboard: http://127.0.0.1:{args.port}/  (tree: {ROOT}, projects: {PROJECTS})")
     print("Ctrl+C stops it. Localhost only, by design.")
     try:
         server.serve_forever()

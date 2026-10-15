@@ -6,11 +6,14 @@ Usage:
     python scripts/check.py --only links       # run one check
     python scripts/check.py --list             # show check names
     python scripts/check.py --root ../my-maps  # check a separate map repository
+    python scripts/check.py --root data/SiteMapper --projects data/projects
 
 `--root` exists because the maps this was written to protect usually live in a
 different (private) repository. Schemas and bindings still come from THIS repo —
 see the two-roots note below — so there is one tool and one schema, not a copy
-per map repo that drifts out of sync.
+per map repo that drifts out of sync. `--projects` points at the projects tree
+when it is not inside the root (scripts/tree.py says how it is found without
+the flag).
 
 Every check here exists because the thing it catches actually happened. None of
 them need an LLM: they are enumeration and comparison, which is code's job (see
@@ -30,6 +33,9 @@ try:
 except ImportError:
     sys.exit("PyYAML not installed. Run: python -m pip install pyyaml")
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tree  # noqa: E402
+
 # TWO ROOTS, DELIBERATELY.
 #
 # HOME is this script's own repository: the framework. It owns schema/*.yaml,
@@ -41,8 +47,12 @@ except ImportError:
 # schemas next to the maps, and a FORKED SCHEMA IS WORSE THAN NO CHECK: the copy
 # drifts, the maps validate green against a contract nobody updated, and the
 # check reports health it cannot know about. One tool, many trees.
+#
+# PROJECTS is the third: the projects tree, inside ROOT or beside it
+# (scripts/tree.py). Paths under it are reported relative to ROOT.
 HOME = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ROOT = HOME
+PROJECTS = tree.projects_root(ROOT)
 
 # Where the user actually stood when they typed the command. Captured BEFORE the
 # chdir below, because a relative --root has to resolve against the shell's cwd,
@@ -67,7 +77,6 @@ NOTES = []
 # that did not run must not read like one that passed.
 SKIPPED = set()
 
-WORKFLOW_GLOBS = ["sites/*/workflows/*.yaml", "projects/*/workflows/*.yaml"]
 DOC_GLOBS = ["README.md", "USAGE.md", "PRD.md", "Concept.md", "CLAUDE.md",
              "AGENTS.md", "docs/**/*.md"]
 
@@ -89,6 +98,11 @@ def norm(p):
     return p.replace("\\", "/")
 
 
+def show(p):
+    """How a path is reported: relative to ROOT, even when it lies beside it."""
+    return norm(os.path.relpath(p, ROOT))
+
+
 def files(patterns):
     out = []
     for p in patterns:
@@ -104,6 +118,121 @@ def load(path):
 def top_keys(path, top):
     d = load(path)
     return set((d.get(top) or {}).keys())
+
+
+def projects():
+    """(rel, dir, project dict) for every project under PROJECTS."""
+    out = []
+    for rel, pd_ in tree.iter_projects(PROJECTS):
+        py = os.path.join(pd_, "project.yaml")
+        try:
+            out.append((rel, norm(pd_), load(py).get("project") or {}))
+        except yaml.YAMLError:
+            continue  # check_yaml reports it
+    return out
+
+
+def site_workflows():
+    return files(["sites/*/workflows/*.yaml"])
+
+
+def project_workflows():
+    """(path, project rel, project dict) for every project workflow."""
+    out = []
+    for rel, pd_, p in projects():
+        for f in sorted(glob.glob(os.path.join(pd_, "workflows", "*.yaml"))):
+            out.append((norm(f), rel, p))
+    return out
+
+
+def all_workflows():
+    return site_workflows() + [f for f, _, _ in project_workflows()]
+
+
+def apps():
+    """(name, dir, app dict) for every app under ROOT/apps."""
+    out = []
+    for name, ad in tree.iter_apps(ROOT):
+        try:
+            out.append((name, norm(ad), load(os.path.join(ad, "app.yaml")).get("app") or {}))
+        except yaml.YAMLError:
+            continue
+    return out
+
+
+def site_environment(site_name):
+    """settings.policy.environment as the runner resolves it: framework
+    config.yaml, then the tree's config.yaml, then site.yaml — most specific
+    wins (schema/settings.yaml). A site that sets nothing is the config's
+    default tier, usually production."""
+    sy = f"sites/{site_name}/site.yaml"
+    if not os.path.exists(sy):
+        return None
+    env = None
+    for cfg in (home("config.yaml"), "config.yaml"):
+        if os.path.exists(cfg):
+            env = ((((load(cfg).get("settings") or {}).get("policy")) or {})
+                   .get("environment") or env)
+    policy = ((load(sy).get("site") or {}).get("settings") or {}).get("policy") or {}
+    return policy.get("environment") or env
+
+
+def app_of_site(site_name):
+    """(app name, tier) for a site that is a tier of an app, else (None, None)."""
+    for name, _, a in apps():
+        for tier, site in (a.get("tiers") or {}).items():
+            if site == site_name:
+                return name, tier
+    return None, None
+
+
+def steps_of(w):
+    out = []
+    for phase in ("snapshot", "setup", "steps", "teardown"):
+        out += [s for s in (w.get(phase) or []) if isinstance(s, dict)]
+    return out
+
+
+def tier_keys(w, tiers=None):
+    """The fixture blocks that are keyed by tier: `common` and every dict-valued
+    key that names a tier (of the given app, else any known tier name). A
+    dict-valued fixture that is simply structured data (a table of expected
+    rows) is not a block."""
+    names = set(tiers or []) | set(tree.TIER_SYNONYMS)
+    return {k for k, v in (w.get("fixtures") or {}).items()
+            if isinstance(v, dict) and (k == "common" or k in names)}
+
+
+def step_sites(w):
+    """Every site a workflow's steps resolve to, literal or through fixtures.
+
+    A `$role` site resolves against every fixtures block (common and per tier),
+    so an environment-parameterised workflow reports each tier's site. Returns
+    (sites, unresolved) where unresolved lists the $names no fixture answers."""
+    default = w.get("site")
+    fixtures = w.get("fixtures") or {}
+    values = {}
+    for k, v in fixtures.items():
+        if isinstance(v, dict):
+            for kk, vv in v.items():
+                values.setdefault(kk, set()).add(str(vv))
+        else:
+            values.setdefault(k, set()).add(str(v))
+    sites, unresolved = set(), set()
+    for s in steps_of(w):
+        ref = s.get("site") or default
+        if not ref:
+            continue
+        ref = str(ref)
+        if ref.startswith("$"):
+            name = ref[1:]
+            if name in values:
+                sites |= values[name]
+            else:
+                unresolved.add(ref)
+        else:
+            sites.add(ref)
+    return sites, unresolved
 
 
 def exists_cased(path):
@@ -141,24 +270,32 @@ def strip_fences(text):
 def check_yaml():
     """Every YAML file parses."""
     fails = []
-    for f in files(["config.yaml", "schema/*.yaml", "sites/**/*.yaml",
-                    "projects/**/*.yaml", "data/**/*.yaml"]):
+    targets = files(["config.yaml", "schema/*.yaml", "sites/**/*.yaml",
+                     "apps/**/*.yaml", "data/**/*.yaml"])
+    targets += [norm(f) for f in glob.glob(os.path.join(PROJECTS, "**", "*.yaml"),
+                                           recursive=True)]
+    for f in sorted(set(targets)):
         try:
             load(f)
         except yaml.YAMLError as e:
             mark = getattr(e, "problem_mark", None)
             line = mark.line + 1 if mark else "?"
-            fails.append(f"{f}:{line}  {getattr(e, 'problem', e)}")
+            fails.append(f"{show(f)}:{line}  {getattr(e, 'problem', e)}")
     return fails
 
 
-# (top-level key, schema file — always in HOME, globs — always under ROOT)
-SCHEMA_MAP = [
-    ("site", "schema/site.yaml", ["sites/*/site.yaml"]),
-    ("project", "schema/project.yaml", ["projects/*/project.yaml"]),
-    ("page", "schema/page.yaml", ["sites/*/pages/*.yaml"]),
-    ("workflow", "schema/workflow.yaml", WORKFLOW_GLOBS),
-]
+def schema_map():
+    """(top-level key, schema file in HOME, files under ROOT or PROJECTS)."""
+    return [
+        ("site", "schema/site.yaml", files(["sites/*/site.yaml"])),
+        ("app", "schema/app.yaml", files(["apps/*/app.yaml"])),
+        ("project", "schema/project.yaml",
+         [norm(os.path.join(d, "project.yaml")) for _, d, _ in projects()]),
+        ("group", "schema/group.yaml",
+         [norm(os.path.join(d, "group.yaml")) for _, d, has in tree.iter_groups(PROJECTS) if has]),
+        ("page", "schema/page.yaml", files(["sites/*/pages/*.yaml"])),
+        ("workflow", "schema/workflow.yaml", all_workflows()),
+    ]
 
 
 def check_schema():
@@ -169,7 +306,7 @@ def check_schema():
     without forcing a rewrite to JSON Schema that would gut them.
     """
     fails = []
-    for top, schema, pats in SCHEMA_MAP:
+    for top, schema, paths in schema_map():
         # The schema is the framework's; the files are the checked tree's.
         schema = home(schema)
         if not os.path.exists(schema):
@@ -177,13 +314,13 @@ def check_schema():
             continue
         allowed = top_keys(schema, top)
         used = set()
-        for f in files(pats):
+        for f in paths:
             extra = top_keys(f, top) - allowed
             used |= top_keys(f, top)
             if extra:
-                fails.append(f"{f}: key(s) not in {schema}: {sorted(extra)}")
+                fails.append(f"{show(f)}: key(s) not in {schema}: {sorted(extra)}")
         unused = allowed - used
-        if unused:
+        if unused and paths:
             # Not a failure: an optional key written by tooling (verified_at) is
             # legitimately absent until that tooling has run. Worth surfacing so a
             # schema documenting something that never existed still gets noticed.
@@ -191,8 +328,18 @@ def check_schema():
     return fails
 
 
+def declared_scripts(d):
+    return {x.get("name") for x in (d.get("scripts") or []) if isinstance(x, dict)}
+
+
+def scripts_on_disk(folder):
+    return {os.path.basename(f) for f in glob.glob(f"{folder}/scripts/*")
+            if os.path.isfile(f) and os.path.basename(f) not in
+            ("README.md", "requirements.txt")}
+
+
 def check_listings():
-    """site.yaml / project.yaml agree with what is on disk, and refs resolve."""
+    """site.yaml / project.yaml / app.yaml agree with what is on disk, and refs resolve."""
     fails = []
     for sd in sorted(glob.glob("sites/*")):
         sd = norm(sd)
@@ -208,56 +355,377 @@ def check_listings():
                 fails.append(f"{sy}: {key} lists '{m}' but the file does not exist")
             for m in sorted(actual - listed):
                 fails.append(f"{sy}: {sub}/{m} exists but is not listed under {key}")
-        declared = {x.get("name") for x in (s.get("scripts") or []) if isinstance(x, dict)}
-        on_disk = {os.path.basename(f) for f in glob.glob(f"{sd}/scripts/*")
-                   if os.path.isfile(f) and os.path.basename(f) not in
-                   ("README.md", "requirements.txt")}
-        for m in sorted(declared - on_disk):
+        for m in sorted(declared_scripts(s) - scripts_on_disk(sd)):
             fails.append(f"{sy}: scripts declares '{m}' but the file does not exist")
         if not s.get("mapped_at"):
             fails.append(f"{sy}: no mapped_at")
 
-    for pd_ in sorted(glob.glob("projects/*")):
-        pd_ = norm(pd_)
+    for name, ad, a in apps():
+        ay = f"{ad}/app.yaml"
+        for m in sorted(declared_scripts(a) - scripts_on_disk(ad)):
+            fails.append(f"{show(ay)}: scripts declares '{m}' but the file does not exist")
+
+    for rel, pd_, p in projects():
         py = f"{pd_}/project.yaml"
-        if not os.path.exists(py):
-            fails.append(f"{pd_}: no project.yaml")
-            continue
-        p = load(py).get("project") or {}
         listed = set(p.get("workflows") or [])
         actual = {os.path.basename(f) for f in glob.glob(f"{pd_}/workflows/*.yaml")}
         for m in sorted(listed - actual):
-            fails.append(f"{py}: workflows lists '{m}' but the file does not exist")
+            fails.append(f"{show(py)}: workflows lists '{m}' but the file does not exist")
         for m in sorted(actual - listed):
-            fails.append(f"{py}: workflows/{m} exists but is not listed")
+            fails.append(f"{show(py)}: workflows/{m} exists but is not listed")
         for s in p.get("sites") or []:
             if not os.path.isdir(f"sites/{s}"):
-                fails.append(f"{py}: sites references '{s}', which is not a directory under sites/")
-        declared = {x.get("name") for x in (p.get("scripts") or []) if isinstance(x, dict)}
-        on_disk = {os.path.basename(f) for f in glob.glob(f"{pd_}/scripts/*")
-                   if os.path.isfile(f) and os.path.basename(f) not in
-                   ("README.md", "requirements.txt")}
-        for m in sorted(declared - on_disk):
-            fails.append(f"{py}: scripts declares '{m}' but the file does not exist")
+                fails.append(f"{show(py)}: sites references '{s}', which is not a directory under sites/")
+        for m in sorted(declared_scripts(p) - scripts_on_disk(pd_)):
+            fails.append(f"{show(py)}: scripts declares '{m}' but the file does not exist")
+        # People's input is in the folder; what runs learned is in the store.
+        for d in p.get("data") or []:
+            if not os.path.exists(os.path.join(pd_, str(d))):
+                fails.append(f"{show(py)}: data lists '{d}' but the file does not exist")
+        for st in p.get("state") or []:
+            if os.path.exists(os.path.join(pd_, str(st))):
+                fails.append(f"{show(py)}: state names '{st}', which exists in the project "
+                             "folder — a run-written file lives in the state store, not in git")
+        if p.get("kind") not in tree.PROJECT_KINDS:
+            fails.append(f"{show(py)}: kind is '{p.get('kind') or ''}' — must be one of "
+                         f"{', '.join(tree.PROJECT_KINDS)} (schema/project.yaml)")
+        if p.get("kind") == "producer" and not p.get("dataset"):
+            fails.append(f"{show(py)}: kind: producer but no `dataset` — a producer names what it writes")
+        sched = p.get("schedule") or {}
+        if sched and not (sched.get("every") and sched.get("instance")):
+            fails.append(f"{show(py)}: schedule needs both `every` and `instance` "
+                         "(the one machine that runs it)")
+        if p.get("app") and p["app"] not in {n for n, _, _ in apps()}:
+            fails.append(f"{show(py)}: app '{p['app']}' has no apps/{p['app']}/app.yaml")
 
     # workflow -> site references (this is what iot-portal broke)
-    for f in files(WORKFLOW_GLOBS):
+    for f in all_workflows():
         w = load(f).get("workflow") or {}
         for s in (w.get("sites") or ([w.get("site")] if w.get("site") else [])):
             s = str(s)
             if s.startswith("$"):
                 continue  # environment-parameterised; resolved at run time
             if not os.path.isdir(f"sites/{s}"):
-                fails.append(f"{f}: site '{s}' is not a directory under sites/")
+                fails.append(f"{show(f)}: site '{s}' is not a directory under sites/")
         if not w.get("mode"):
-            fails.append(f"{f}: no `mode` — a runner cannot tell if this needs an LLM")
+            fails.append(f"{show(f)}: no `mode` — a runner cannot tell if this needs an LLM")
     return fails
 
 
 def check_companions():
     """Every workflow YAML has its sibling .md (USAGE.md + schema require it)."""
-    return [f"{f}: no companion {os.path.basename(f)[:-5]}.md"
-            for f in files(WORKFLOW_GLOBS) if not os.path.exists(f[:-5] + ".md")]
+    return [f"{show(f)}: no companion {os.path.basename(f)[:-5]}.md"
+            for f in all_workflows() if not os.path.exists(f[:-5] + ".md")]
+
+
+def check_apps():
+    """An app's tiers are real sites whose environment agrees with the tier key.
+
+    Three GG+connect tiers were three unrelated sites for a year; nothing could
+    say they were one application. The app is that fact's one home, so it has
+    to be right: every tier names an existing site, the site's own
+    settings.policy.environment says the same tier, no site is a tier of two
+    apps, and an app script is not also a site's script.
+    """
+    fails = []
+    seen = {}
+    site_scripts = {}
+    for sd in glob.glob("sites/*"):
+        s = load(f"{sd}/site.yaml").get("site") or {} if os.path.exists(f"{sd}/site.yaml") else {}
+        for name in declared_scripts(s):
+            site_scripts.setdefault(name, []).append(os.path.basename(sd))
+    for name, ad, a in apps():
+        ay = show(f"{ad}/app.yaml")
+        tiers = a.get("tiers") or {}
+        if not tiers:
+            fails.append(f"{ay}: no tiers — an app is the map from tier to site")
+        for tier, site in tiers.items():
+            if not os.path.isdir(f"sites/{site}"):
+                fails.append(f"{ay}: tier '{tier}' names '{site}', not a directory under sites/")
+                continue
+            if site in seen:
+                fails.append(f"{ay}: site '{site}' is already a tier of app '{seen[site]}'")
+            seen[site] = name
+            env = site_environment(site)
+            if tree.tier_name(env) != tree.tier_name(tier):
+                fails.append(f"{ay}: tier '{tier}' is sites/{site}, whose "
+                             f"settings.policy.environment is '{env or ''}' — the two must agree")
+        ref = (a.get("parity") or {}).get("reference")
+        if ref and ref not in tiers:
+            fails.append(f"{ay}: parity.reference '{ref}' is not a tier of this app")
+        for sc in declared_scripts(a):
+            for site in site_scripts.get(sc, []):
+                fails.append(f"{ay}: script '{sc}' is also declared by sites/{site}/site.yaml "
+                             "— a name has one home")
+    return fails
+
+
+def check_placement():
+    """A site workflow is a building block; what makes it a project workflow is not valid there.
+
+    Five dev UI tests and a copy of a project's staging test sat under sites
+    because nothing said where a test goes. The keys that express "on these
+    tiers", "reads these maps" and "per tier" exist only for project
+    workflows, so a test filed under a site cannot say what it needs and the
+    author moves it. The same rule forbids a site workflow from naming
+    another site to reach a script.
+    """
+    fails = []
+    for f in site_workflows():
+        w = load(f).get("workflow") or {}
+        own = norm(f).split("/")[1]
+        for key in ("tiers", "sites"):
+            if w.get(key):
+                fails.append(f"{show(f)}: `{key}` is a project-workflow key — a site workflow "
+                             "is a building block of one site (schema/site.yaml)")
+        if tier_keys(w, [t for _, _, a in apps() for t in (a.get("tiers") or {})]):
+            fails.append(f"{show(f)}: tier-keyed fixtures belong to a project workflow with "
+                         "`tiers` — a site workflow has one site")
+        sites, _ = step_sites(w)
+        for s in sorted(sites - {own}):
+            fails.append(f"{show(f)}: a step runs on '{s}', but this workflow belongs to "
+                         f"'{own}' — a workflow that touches two sites is a project workflow")
+    return fails
+
+
+def check_tiers():
+    """A workflow's `tiers` are the app's, complete, and the environment parameter matches.
+
+    "Must exist and pass on every tier" was undeclarable: a workflow missing
+    on one environment could be intent or accident. Now required ⊆ allowed ⊆
+    the app's tiers, every other tier is in `absent` with a reason, the
+    `environment` select offers exactly the allowed tiers, and a tier-keyed
+    fixtures block exists for each of them.
+    """
+    fails = []
+    app_tiers = {n: set((a.get("tiers") or {}).keys()) for n, _, a in apps()}
+    for f, rel, p in project_workflows():
+        w = load(f).get("workflow") or {}
+        t = w.get("tiers")
+        if not t:
+            continue
+        if not isinstance(t, dict):
+            fails.append(f"{show(f)}: tiers must be a mapping with required/allowed/absent")
+            continue
+        app = p.get("app")
+        if not app or app not in app_tiers:
+            fails.append(f"{show(f)}: declares tiers but project '{rel}' names no existing `app`")
+            continue
+        required = set(t.get("required") or [])
+        allowed = set(t.get("allowed") or required)
+        absent = t.get("absent") or {}
+        if not required:
+            fails.append(f"{show(f)}: tiers.required is empty — name at least one tier")
+        for x in sorted(required - allowed):
+            fails.append(f"{show(f)}: tier '{x}' is required but not allowed")
+        for x in sorted(allowed - app_tiers[app]):
+            fails.append(f"{show(f)}: tier '{x}' is not a tier of app '{app}' "
+                         f"({', '.join(sorted(app_tiers[app]))})")
+        for x in sorted(app_tiers[app] - allowed - set(absent)):
+            fails.append(f"{show(f)}: tier '{x}' of app '{app}' is neither allowed nor "
+                         "declared absent with a reason — a missing counterpart is a decision")
+        for x, why in absent.items():
+            if x in allowed:
+                fails.append(f"{show(f)}: tier '{x}' is both allowed and absent")
+            if not why:
+                fails.append(f"{show(f)}: tiers.absent.{x} has no reason")
+        params = {p_.get("name"): p_ for p_ in (w.get("parameters") or []) if isinstance(p_, dict)}
+        env = params.get("environment")
+        if not env or env.get("type") != "select":
+            fails.append(f"{show(f)}: declares tiers but has no `environment` select parameter")
+        elif set(env.get("options") or []) != allowed:
+            fails.append(f"{show(f)}: environment options {sorted(env.get('options') or [])} "
+                         f"differ from tiers.allowed {sorted(allowed)}")
+        keyed = tier_keys(w, app_tiers[app]) - {"common"}
+        if keyed:
+            for x in sorted(allowed - keyed):
+                fails.append(f"{show(f)}: no fixtures.{x} block, but tier '{x}' is allowed")
+            for x in sorted(keyed - allowed):
+                fails.append(f"{show(f)}: fixtures.{x} exists, but '{x}' is not an allowed tier")
+    return fails
+
+
+def check_scripts():
+    """A script is declared in exactly one home, and every caller is covered by it.
+
+    `read_signup_mail.py` served three mail providers from one provider's
+    folder; `ggplus_auth.py` served three tiers from the prod site, so a dev
+    workflow listed prod just to reach it. The home is derived from the
+    callers: a site's script is only called by steps on that site; a
+    project's script only by that project's workflows (another project's call
+    is a note); an app's script only by steps on its tiers or by projects of
+    that app. An undeclared script fails; a declared script nobody calls is a
+    note.
+    """
+    fails = []
+    site_decl, proj_decl, app_decl = {}, {}, {}
+    for sd in glob.glob("sites/*"):
+        sy = f"{sd}/site.yaml"
+        if os.path.exists(sy):
+            for n in declared_scripts(load(sy).get("site") or {}):
+                site_decl.setdefault(n, set()).add(os.path.basename(sd))
+    for rel, _, p in projects():
+        for n in declared_scripts(p):
+            proj_decl.setdefault(n, set()).add(rel)
+    app_sites = {}
+    for name, _, a in apps():
+        for n in declared_scripts(a):
+            app_decl.setdefault(n, set()).add(name)
+        app_sites[name] = set((a.get("tiers") or {}).values())
+    for n in set(proj_decl) & set(app_decl):
+        fails.append(f"script '{n}' is declared by project(s) {sorted(proj_decl[n])} and "
+                     f"app(s) {sorted(app_decl[n])} — a name has one home")
+
+    called = set()
+    for f in all_workflows():
+        w = load(f).get("workflow") or {}
+        is_site = norm(f).startswith("sites/")
+        owner = norm(f).split("/")[1] if is_site else None
+        proj = next((rel for ff, rel, _ in project_workflows() if ff == f), None)
+        papp = next((p.get("app") for ff, _, p in project_workflows() if ff == f), None)
+        default = w.get("site")
+        fixtures = w.get("fixtures") or {}
+        values = {}
+        for k, v in fixtures.items():
+            if isinstance(v, dict):
+                for kk, vv in v.items():
+                    values.setdefault(kk, set()).add(str(vv))
+            else:
+                values.setdefault(k, set()).add(str(v))
+        for s in steps_of(w):
+            name = s.get("script")
+            if not name:
+                continue
+            called.add(name)
+            ref = str(s.get("site") or default or "")
+            sites = values.get(ref[1:], set()) if ref.startswith("$") else ({ref} if ref else set())
+            homes = []
+            ok = False
+            if name in site_decl:
+                homes.append(f"site(s) {sorted(site_decl[name])}")
+                ok = ok or bool(sites) and sites <= site_decl[name]
+            if name in proj_decl:
+                homes.append(f"project(s) {sorted(proj_decl[name])}")
+                if proj in proj_decl[name]:
+                    ok = True
+                elif proj is not None:
+                    NOTES.append(f"{show(f)}: calls '{name}' of project(s) "
+                                 f"{sorted(proj_decl[name])} — a second project using a "
+                                 "script is the sign it may belong to an app or the lib")
+                    ok = True
+            if name in app_decl:
+                homes.append(f"app(s) {sorted(app_decl[name])}")
+                for an in app_decl[name]:
+                    if papp == an or (sites and sites <= app_sites[an]):
+                        ok = True
+            if not homes:
+                fails.append(f"{show(f)}: step calls script '{name}', declared by no site, "
+                             "project or app")
+            elif not ok:
+                where = f"on site(s) {sorted(sites)}" if sites else "with no site"
+                fails.append(f"{show(f)}: calls '{name}' {where}"
+                             f"{' from project ' + proj if proj else ''}, but it is declared by "
+                             f"{'; '.join(homes)} — the home must cover every caller "
+                             "(schema/project.yaml)")
+    for n in sorted((set(site_decl) | set(proj_decl) | set(app_decl)) - called):
+        NOTES.append(f"script '{n}' is declared but no workflow step calls it")
+    return fails
+
+
+def check_parity():
+    """Every page map of an app's reference tier exists on its other tiers, or is a declared gap.
+
+    Staging had no map for the pages the signup suite drives while prod had
+    one; nobody noticed for two months. The reference tier's page list is
+    compared with every other tier's, both ways; a difference is a defect
+    unless app.yaml declares it with a reason, and a declared gap that no
+    longer differs is stale and fails too.
+    """
+    fails = []
+    for name, ad, a in apps():
+        ay = show(f"{ad}/app.yaml")
+        tiers = a.get("tiers") or {}
+        parity = a.get("parity") or {}
+        ref = parity.get("reference")
+        if not ref or ref not in tiers:
+            continue  # check_apps reports a bad reference
+        gaps = {}
+        for g in parity.get("gaps") or []:
+            if not isinstance(g, dict) or not g.get("tier") or not g.get("page"):
+                fails.append(f"{ay}: a parity gap needs tier, page and why")
+                continue
+            if not g.get("why"):
+                fails.append(f"{ay}: gap {g.get('tier')}/{g.get('page')} has no reason")
+            gaps.setdefault(g["tier"], set()).add(g["page"])
+        ref_pages = {os.path.basename(f) for f in glob.glob(f"sites/{tiers[ref]}/pages/*.yaml")}
+        for tier, site in tiers.items():
+            if tier == ref:
+                continue
+            pages = {os.path.basename(f) for f in glob.glob(f"sites/{site}/pages/*.yaml")}
+            differs = ref_pages ^ pages
+            declared = gaps.get(tier, set())
+            for pg in sorted(differs - declared):
+                side = "missing on" if pg in ref_pages else "only on"
+                fails.append(f"{ay}: page '{pg}' is {side} tier '{tier}' ({site}) and not "
+                             "declared under parity.gaps")
+            for pg in sorted(declared - differs):
+                fails.append(f"{ay}: gap {tier}/{pg} is stale — the page no longer differs "
+                             f"from '{ref}'")
+        for tier in gaps:
+            if tier not in tiers or tier == ref:
+                fails.append(f"{ay}: parity.gaps names tier '{tier}', which is not a compared tier")
+    return fails
+
+
+def check_rollback():
+    """A workflow that writes says how its change could be undone.
+
+    The only copy of the state before a production role sync lived in a
+    session scratchpad. A mutating or destructive workflow now declares
+    `rollback: snapshot` (and a `snapshot:` phase that captures the pre-state)
+    or `rollback: none` with a reason.
+    """
+    fails = []
+    for f in all_workflows():
+        w = load(f).get("workflow") or {}
+        if w.get("effect") in (None, "", "read-only"):
+            if w.get("snapshot"):
+                fails.append(f"{show(f)}: has a snapshot phase but effect is read-only")
+            continue
+        rb = w.get("rollback")
+        if rb not in tree.ROLLBACK_VALUES:
+            fails.append(f"{show(f)}: effect '{w.get('effect')}' needs rollback: "
+                         f"snapshot | none (schema/workflow.yaml)")
+        elif rb == "none" and not w.get("rollback_reason"):
+            fails.append(f"{show(f)}: rollback: none needs a rollback_reason")
+        elif rb == "snapshot":
+            caps = [s.get("capture") for s in (w.get("snapshot") or []) if isinstance(s, dict)]
+            if not any(caps):
+                fails.append(f"{show(f)}: rollback: snapshot needs a `snapshot:` phase with at "
+                             "least one capture — that capture is the pre-state")
+    return fails
+
+
+def check_produced():
+    """Nothing a run wrote is in the tree: no results/ or state/ under sites or projects.
+
+    164 run files were committed as 'exceptions' to a gitignore, including
+    171 MB of device logs. Run output has one home, the runs store
+    (schema/run.yaml); learned state has the state store. A folder of either
+    name under a site or a project is the old layout and fails.
+    """
+    fails = []
+    for sd in sorted(glob.glob("sites/*")):
+        for bad in ("results", "state"):
+            if os.path.isdir(f"{sd}/{bad}"):
+                fails.append(f"{norm(sd)}/{bad}/: run-written files do not live in the tree "
+                             "— runs go to the runs store, learned state to the state store")
+    for rel, pd_, _ in projects():
+        for bad in ("results", "state"):
+            if os.path.isdir(f"{pd_}/{bad}"):
+                fails.append(f"{show(pd_)}/{bad}/: run-written files do not live in the tree "
+                             "— runs go to the runs store, learned state to the state store")
+    return fails
 
 
 def check_links():
@@ -357,9 +825,8 @@ def generated_is_stale(module, out_attr="OUT"):
     # silently regenerates the framework's own views instead.
     sys.path.insert(0, os.path.join(HOME, "scripts"))
     mod = __import__(module)
-    if external():
-        mod.set_root(ROOT)
-        __import__("inventory").set_root(ROOT)
+    mod.set_root(ROOT, PROJECTS)
+    __import__("inventory").set_root(ROOT, PROJECTS)
     out = getattr(mod, out_attr)
     cur = open(out, encoding="utf-8").read() if os.path.exists(out) else ""
     if cur != mod.render():
@@ -384,6 +851,13 @@ CHECKS = {
     "schema": check_schema,
     "listings": check_listings,
     "companions": check_companions,
+    "apps": check_apps,
+    "placement": check_placement,
+    "tiers": check_tiers,
+    "scripts": check_scripts,
+    "parity": check_parity,
+    "rollback": check_rollback,
+    "produced": check_produced,
     "links": check_links,
     "bindings": check_bindings,
     "inventory": check_inventory,
@@ -398,15 +872,20 @@ def main():
     ap.add_argument("--root", help="check this tree instead of the script's own repo "
                                    "(e.g. a private map repository). Schemas and "
                                    "bindings still come from the framework.")
+    ap.add_argument("--projects", help="the projects tree, when it is not inside --root "
+                                       "(default: <root>/projects, else <root>/../projects)")
     args = ap.parse_args()
 
+    global ROOT, PROJECTS
     if args.root:
-        global ROOT
         ROOT = os.path.abspath(os.path.join(INVOCATION_CWD, args.root))
         if not os.path.isdir(ROOT):
             sys.exit(f"--root is not a directory: {ROOT}")
         os.chdir(ROOT)
-        print(f"checking {norm(ROOT)}  (schemas from {norm(HOME)})")
+    PROJECTS = tree.projects_root(
+        ROOT, os.path.join(INVOCATION_CWD, args.projects) if args.projects else None)
+    if args.root or args.projects:
+        print(f"checking {norm(ROOT)}  (projects: {show(PROJECTS)}, schemas from {norm(HOME)})")
         print()
 
     if args.list:

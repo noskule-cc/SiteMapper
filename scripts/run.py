@@ -1,7 +1,7 @@
 """Headless deterministic workflow runner (#18/#20).
 
     python scripts/run.py <workflow> [--param key=value ...] [--root PATH]
-                          [--json] [--headed] [--record]
+                          [--projects PATH] [--runs PATH] [--json] [--headed] [--record]
 
 Executes a `mode: deterministic` workflow against its mapped site(s) with no
 LLM in the loop, and emits the neutral `result` object (schema/result.yaml).
@@ -15,7 +15,9 @@ workflows carry no generic sleeps. Playwright is imported lazily — every other
 script in this repo still needs nothing beyond PyYAML.
 
 `--root` points at a separate (usually private) map repository, same
-semantics as check.py / inventory.py.
+semantics as check.py / inventory.py. `--projects` and `--runs` point at the
+projects tree and the runs store when they are not inside the root
+(scripts/tree.py says how both are found without the flags).
 """
 
 from __future__ import annotations
@@ -23,7 +25,9 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -31,11 +35,16 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tree  # noqa: E402
+
 FRAMEWORK_ROOT = Path(__file__).resolve().parent.parent
 
 # Actions a deterministic workflow may contain. `verify` needs judgement, so
 # its presence (or mode: agentic) makes the workflow un-runnable here.
 MECHANICAL_ACTIONS = {"navigate", "click", "input", "read", "assert", "wait", "key", "script"}
+
+PHASES = ("setup", "snapshot", "steps")
 
 
 class RunError(Exception):
@@ -50,20 +59,40 @@ def load_yaml(path: Path):
         return yaml.safe_load(f)
 
 
-def find_workflow(root: Path, name: str):
-    """Locate a workflow YAML by name (filename stem or workflow.name)."""
-    candidates = list(root.glob("sites/*/workflows/*.yaml"))
-    candidates += list(root.glob("projects/*/workflows/*.yaml"))
-    for path in candidates:
+class Owner:
+    """Where a workflow lives: a site or a project. Carries what the runner
+    needs from that home — its name for the run record, its project.yaml
+    (scripts, app, keep) when it is a project."""
+
+    def __init__(self, kind: str, name: str, directory: Path, project: dict | None = None):
+        self.kind = kind            # site | project
+        self.name = name            # site name, or the project's path under projects/
+        self.dir = directory
+        self.project = project or {}
+
+
+def find_workflow(root: Path, projects: Path, name: str):
+    """Locate a workflow YAML by name (filename stem or workflow.name) under
+    the sites tree and, recursively, the projects tree.
+    Returns (path, data, owner)."""
+    candidates: list[tuple[Path, Owner]] = []
+    for path in sorted(root.glob("sites/*/workflows/*.yaml")):
+        candidates.append((path, Owner("site", path.parent.parent.name, path.parent.parent)))
+    for rel, pd_ in tree.iter_projects(str(projects)):
+        pdir = Path(pd_)
+        project = (load_yaml(pdir / "project.yaml") or {}).get("project", {})
+        for path in sorted((pdir / "workflows").glob("*.yaml")):
+            candidates.append((path, Owner("project", rel, pdir, project)))
+    for path, owner in candidates:
         if path.stem == name:
-            return path, load_yaml(path)
-    for path in candidates:  # fall back to the name: field
+            return path, load_yaml(path), owner
+    for path, owner in candidates:  # fall back to the name: field
         data = load_yaml(path)
         wf = (data or {}).get("workflow", {})
         if wf.get("name") == name:
-            return path, data
+            return path, data, owner
     raise RunError(
-        f"no workflow named '{name}' under {root}/sites/*/workflows or projects/*/workflows"
+        f"no workflow named '{name}' under {root}/sites/*/workflows or {projects}"
     )
 
 
@@ -97,6 +126,23 @@ class Site:
         raise RunError(
             f"page '{page_name}' ({self.name}) maps no element '{element_name}'"
         )
+
+
+def load_apps(root: Path) -> dict[str, dict]:
+    """name -> app dict, with the app's directory under '_dir'."""
+    out = {}
+    for name, ad in tree.iter_apps(str(root)):
+        app = (load_yaml(Path(ad) / "app.yaml") or {}).get("app", {})
+        app["_dir"] = Path(ad)
+        out[name] = app
+    return out
+
+
+def app_of_site(apps: dict[str, dict], site_name: str):
+    for name, app in apps.items():
+        if site_name in (app.get("tiers") or {}).values():
+            return name, app
+    return None, None
 
 
 def load_persona(root: Path, site_name: str, persona_name: str | None):
@@ -162,7 +208,6 @@ def state_path(root: Path, site_name: str, persona: dict) -> Path:
 
 
 def env_secret(ref: str, what: str) -> str:
-    import os
     if not (ref or "").startswith("env:"):
         raise RunError(f"persona {what} must be an env: reference, got '{ref}' — "
                        "committed files never contain secrets (schema/persona.yaml)")
@@ -286,12 +331,14 @@ class Runner:
     DEFAULT_TIMEOUT_MS = 10_000
 
     def __init__(self, root: Path, wf_path: Path, workflow: dict, bindings: Bindings,
-                 headed: bool = False, persona: dict | None = None,
+                 owner: Owner, headed: bool = False, persona: dict | None = None,
                  pre_authorized: set = frozenset()):
         self.root = root
         self.wf_path = wf_path
         self.workflow = workflow
         self.bindings = bindings
+        self.owner = owner
+        self.apps = load_apps(root)
         self.headed = headed
         self.persona = persona
         self.pre_authorized = pre_authorized
@@ -299,6 +346,7 @@ class Runner:
         self.default_site = workflow.get("site")
         self.assertions: list[dict] = []
         self.evidence: list[str] = []
+        self.snapshot: dict = {}  # captures of the snapshot phase, the pre-state
         self.current: dict = {}  # {phase, index, step} of the step in flight
         self.fingerprints: dict[str, str] = {}  # page -> ok | mismatch (watch, #24)
         self._last_page: str | None = None
@@ -316,7 +364,7 @@ class Runner:
         return self.sites[name]
 
     # -- browser lifecycle -------------------------------------------------
-    def start(self):
+    def start(self, primary_site: str):
         try:
             from playwright.sync_api import sync_playwright
         except ImportError:
@@ -328,10 +376,8 @@ class Runner:
         self._pw = sync_playwright().start()
         self.browser = self._pw.chromium.launch(channel="chrome", headless=not self.headed)
         context_args = {}
-        site_name = None
         if self.persona:
-            site_name = self.workflow.get("site") or (self.workflow.get("sites") or [None])[0]
-            state = state_path(self.root, site_name, self.persona)
+            state = state_path(self.root, primary_site, self.persona)
             if self.persona.get("auth") == "session":
                 if not state.is_file():
                     raise RunError(
@@ -347,7 +393,7 @@ class Runner:
         self.pw_page = self.context.new_page()
         self.pw_page.set_default_timeout(self.DEFAULT_TIMEOUT_MS)
         if self.persona and "storage_state" not in context_args:
-            self._establish_session(site_name)
+            self._establish_session(primary_site)
 
     def _establish_session(self, site_name: str):
         """First-time login for auth: human | automated. Saves storage_state."""
@@ -423,6 +469,10 @@ class Runner:
         getattr(self, f"do_{action}")(step)
         if page_name:
             self._last_page = page_name
+        # The snapshot phase's captures are the pre-state: kept apart so the
+        # record can write them before anything else is looked at.
+        if phase == "snapshot" and step.get("capture"):
+            self.snapshot[step["capture"]] = self.bindings.captures.get(step["capture"])
 
     # -- watch (#24) --------------------------------------------------------
     def check_fingerprint(self, site: Site, page_name: str):
@@ -595,19 +645,34 @@ class Runner:
     def do_key(self, step):
         self.pw_page.keyboard.press(self.bindings.resolve(step.get("value", "")))
 
+    def script_path(self, step, site: Site) -> Path:
+        """Resolve a script name to its one home: the step's site, this
+        workflow's project, or the app the site is a tier of — in that order
+        (schema/workflow.yaml). A name declared nowhere is an error here, so a
+        workflow never lists a foreign site to reach a script."""
+        name = step.get("script")
+        if name in {s.get("name") for s in site.config.get("scripts") or []}:
+            return site.dir / "scripts" / name
+        if self.owner.kind == "project" and name in {
+                s.get("name") for s in self.owner.project.get("scripts") or []}:
+            return self.owner.dir / "scripts" / name
+        app_name, app = app_of_site(self.apps, site.name)
+        if app and name in {s.get("name") for s in app.get("scripts") or []}:
+            return app["_dir"] / "scripts" / name
+        raise RunError(
+            f"script '{name}' is declared neither by site '{site.name}', "
+            f"nor by {('project ' + self.owner.name) if self.owner.kind == 'project' else 'a project'}, "
+            f"nor by {('app ' + app_name) if app_name else 'an app the site is a tier of'}"
+        )
+
     def do_script(self, step):
         site = self.site(step)
-        script_name = step.get("script")
-        declared = {s.get("name") for s in site.config.get("scripts") or []}
-        if script_name not in declared:
-            raise RunError(
-                f"script '{script_name}' is not declared in {site.name}/site.yaml scripts:"
-            )
+        path = self.script_path(step, site)
         args = self.bindings.resolve(step.get("value") or "")
-        cmd = [sys.executable, str(site.dir / "scripts" / script_name)] + args.split()
+        cmd = [sys.executable, str(path)] + args.split()
         proc = subprocess.run(cmd, capture_output=True, text=True, cwd=self.root)
         if proc.returncode != 0:
-            raise RunError(f"script '{script_name}' failed:\n{proc.stderr.strip()}")
+            raise RunError(f"script '{step.get('script')}' failed:\n{proc.stderr.strip()}")
         if step.get("capture"):
             out = proc.stdout.strip()
             try:
@@ -703,6 +768,63 @@ class Runner:
 
 
 # ---------------------------------------------------------------------------
+# Scope: which tier, which sites
+
+def steps_of(workflow: dict):
+    out = []
+    for phase in PHASES + ("teardown",):
+        out += [s for s in (workflow.get(phase) or []) if isinstance(s, dict)]
+    return out
+
+
+def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
+    """The tier this run targets and every site its steps touch.
+
+    A workflow with `tiers` picks its tier with the `environment` parameter;
+    the app maps the tier to a site, and that site leads. Every other site a
+    step names, literally or through a fixture, is in scope too, because the
+    permission gate is per step: the policy of each site a step runs on
+    applies, never the policy of a site listed only to be read.
+    Returns (tier, primary_site, sites)."""
+    bindings = Bindings(workflow, cli_params)  # params and fixtures; context comes later
+    tier, primary = "-", None
+    tiers = workflow.get("tiers") or {}
+    if tiers:
+        app_name = owner.project.get("app")
+        apps = load_apps(root)
+        if owner.kind != "project" or app_name not in apps:
+            raise RunError("workflow declares tiers but its project names no existing app")
+        tier = bindings.params.get("environment")
+        allowed = tiers.get("allowed") or tiers.get("required") or []
+        if tier not in allowed:
+            raise RunError(f"parameter 'environment' must be one of {allowed}, got '{tier}'")
+        primary = (apps[app_name].get("tiers") or {}).get(tier)
+        if not primary:
+            raise RunError(f"app '{app_name}' maps no site for tier '{tier}'")
+    sites = []
+    for step in steps_of(workflow):
+        ref = step.get("site") or workflow.get("site")
+        if not ref:
+            continue
+        try:
+            name = bindings.resolve(str(ref))
+        except RunError:
+            continue  # a context role: bound after the context loads, gated by its site then
+        if name and name not in sites:
+            sites.append(name)
+    for s in [workflow.get("site")] + list(workflow.get("sites") or []):
+        if isinstance(s, str) and not s.startswith("$") and s not in sites:
+            sites.append(s)
+    if primary is None:
+        if not sites:
+            raise RunError("workflow names no literal site — cannot resolve a permission scope")
+        primary = sites[0]
+    elif primary not in sites:
+        sites.insert(0, primary)
+    return tier, primary, sites
+
+
+# ---------------------------------------------------------------------------
 # Permissions (#22) — action classes x allow/ask/deny, gated UP FRONT.
 
 EFFECT_CLASS = {"read-only": "read", "mutating": "write", "destructive": "destructive"}
@@ -721,7 +843,7 @@ def permission_verdict(settings: dict, action_class: str) -> str:
 def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str]):
     """Refuse or ask BEFORE the browser opens. `trust` grants nothing here.
 
-    Cross-site workflows are gated against every involved site; the strictest
+    Gated against every site a step runs on (resolve_scope); the strictest
     verdict wins. `ask` resolves via --yes-<class>, then a TTY prompt, and
     degrades to deny when non-interactive (CI has no human to ask).
     """
@@ -808,10 +930,10 @@ def utc_now() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
+def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed: bool,
                  pre_authorized: set[str] = frozenset(), persona_name: str | None = None,
                  context_name: str | None = None):
-    wf_path, data = find_workflow(root, name)
+    wf_path, data, owner = find_workflow(root, projects, name)
     workflow = data.get("workflow", {})
 
     mode = workflow.get("mode")
@@ -820,30 +942,31 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
             f"'{name}' is mode: {mode or 'unset'} — only deterministic workflows can run "
             "headless. An agentic workflow needs an LLM host (the /run skill)."
         )
-    for phase in ("setup", "steps", "teardown"):
+    for phase in PHASES + ("teardown",):
         for step in workflow.get(phase) or []:
             if step.get("action") == "verify":
                 raise RunError(
                     f"step in `{phase}` uses action: verify (judgement) — the workflow "
                     "cannot be deterministic; fix its mode or the step"
                 )
+    if workflow.get("rollback") == "snapshot" and not any(
+            s.get("capture") for s in (workflow.get("snapshot") or []) if isinstance(s, dict)):
+        raise RunError("rollback: snapshot declared, but the snapshot phase captures nothing "
+                       "— there would be no pre-state to keep (schema/workflow.yaml)")
 
-    involved = [s for s in ([workflow.get("site")] if workflow.get("site") else
-                            list(workflow.get("sites") or [])) if isinstance(s, str)
-                and not s.startswith("$")]
-    if not involved:
-        raise RunError("workflow names no literal site — cannot resolve a permission scope")
+    tier, primary, involved = resolve_scope(root, workflow, owner, cli_params)
     gate(root, workflow, involved, pre_authorized)
-    persona = load_persona(root, involved[0], persona_name)
-    context = load_context(root, involved[0], context_name, workflow)
+    persona = load_persona(root, primary, persona_name)
+    context = load_context(root, primary, context_name, workflow)
 
     bindings = Bindings(workflow, cli_params, context)
-    runner = Runner(root, wf_path, workflow, bindings, headed=headed,
+    runner = Runner(root, wf_path, workflow, bindings, owner, headed=headed,
                     persona=persona, pre_authorized=pre_authorized)
 
     result = {
         "workflow": workflow.get("name", name),
-        "site": workflow.get("site") or (workflow.get("sites") or [""])[0],
+        "site": primary,
+        "tier": tier,
         "status": "passed",
         "started_at": utc_now(),
         "finished_at": "",
@@ -857,8 +980,8 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
 
     phase = "setup"
     try:
-        runner.start()
-        for phase in ("setup", "steps"):
+        runner.start(primary)
+        for phase in PHASES:
             for index, step in enumerate(workflow.get(phase) or []):
                 runner.run_step(step, phase, index)
     except RunError as exc:
@@ -883,6 +1006,7 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
         runner.evidence.append(result["failure"]["screenshot"])
 
     result["captures"] = bindings.captures
+    result["snapshot"] = runner.snapshot
     result["assertions"] = runner.assertions
     result["evidence"] = runner.evidence
     result["fingerprints"] = runner.fingerprints
@@ -893,35 +1017,46 @@ def run_workflow(root: Path, name: str, cli_params: dict, headed: bool,
     result["counts"] = {"total": total, "passed": passed, "failed": total - passed}
     result["finished_at"] = utc_now()
     update_trust(wf_path, workflow, result)
-    return result, wf_path
+    return result, wf_path, owner
 
 
-def write_record(result: dict, wf_path: Path):
-    """results/<workflow>.<YYYY-MM-DD>.md next to the workflow's site/project."""
-    results_dir = wf_path.parent.parent / "results"
-    results_dir.mkdir(exist_ok=True)
-    date = result["finished_at"][:10]
-    path = results_dir / f"{result['workflow']}.{date}.md"
-    lines = [
-        f"# {result['workflow']} — run {date}",
-        "",
-        f"- **Status:** {result['status']}",
-        f"- **Started:** {result['started_at']}  **Finished:** {result['finished_at']}",
-        f"- **Runner:** scripts/run.py (headless, no LLM)",
-        f"- **Parameters:** `{json.dumps(result['parameters'])}`",
-        "",
-        "| # | Assertion | Expect | Actual | Pass |",
-        "|---|-----------|--------|--------|------|",
-    ]
-    for i, a in enumerate(result["assertions"], 1):
-        lines.append(
-            f"| {i} | {a['id']} | `{a['expect']}` | `{a['actual']}` | "
-            f"{'✅' if a['pass'] else '❌'} |"
-        )
-    if result["error"]:
-        lines += ["", f"**Error:** {result['error']}"]
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return path
+def write_run(result: dict, runs: Path, owner: Owner, workflow: dict) -> Path:
+    """One folder per run in the runs store (schema/run.yaml): the record, the
+    full result, the snapshot captures as the pre-state, the evidence files.
+    Never inside the tree, never committed."""
+    stamp = result["started_at"].replace(":", "")
+    run_id = f"{result['workflow']}.{stamp}.{result.get('tier') or '-'}.{tree.instance_name()}"
+    folder = runs / tree.LIB / owner.name / run_id
+    folder.mkdir(parents=True, exist_ok=True)
+    files = ["run.yaml", "result.json"]
+    for name, value in (result.get("snapshot") or {}).items():
+        (folder / "snapshot").mkdir(exist_ok=True)
+        (folder / "snapshot" / f"{name}.json").write_text(
+            json.dumps(value, indent=2, ensure_ascii=False), encoding="utf-8")
+        files.append(f"snapshot/{name}.json")
+    for src in result.get("evidence") or []:
+        p = Path(src)
+        if p.is_file():
+            (folder / "evidence").mkdir(exist_ok=True)
+            shutil.copy2(p, folder / "evidence" / p.name)
+            files.append(f"evidence/{p.name}")
+    (folder / "result.json").write_text(
+        json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+    record = {"run": {
+        "lib": tree.LIB,
+        "owner": owner.name,
+        "workflow": result["workflow"],
+        "tier": result.get("tier") or "-",
+        "instance": tree.instance_name(),
+        "started_at": result["started_at"],
+        "finished_at": result["finished_at"],
+        "status": result["status"],
+        "keep": str(owner.project.get("keep") or tree.DEFAULT_KEEP),
+        "files": files,
+    }}
+    (folder / "run.yaml").write_text(
+        yaml.safe_dump(record, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    return folder
 
 
 def main(argv=None):
@@ -931,10 +1066,15 @@ def main(argv=None):
                     help="workflow parameter (repeatable)")
     ap.add_argument("--root", default=None,
                     help="map repository to run against (default: this repo)")
+    ap.add_argument("--projects", default=None,
+                    help="the projects tree, when it is not inside --root")
+    ap.add_argument("--runs", default=None,
+                    help="the runs store, when it is not inside --root or beside it")
     ap.add_argument("--json", action="store_true", help="print the full result as JSON")
     ap.add_argument("--headed", action="store_true", help="show the browser window")
     ap.add_argument("--record", action="store_true",
-                    help="write the results/<workflow>.<date>.md record")
+                    help="write the run folder to the runs store (schema/run.yaml); "
+                         "always on for a workflow with rollback: snapshot")
     ap.add_argument("--yes-write", action="store_true",
                     help="pre-authorize the 'write' class where policy says ask")
     ap.add_argument("--yes-destructive", action="store_true",
@@ -949,6 +1089,8 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     root = Path(args.root).resolve() if args.root else FRAMEWORK_ROOT
+    projects = Path(tree.projects_root(str(root), args.projects))
+    runs = Path(tree.runs_root(str(root), args.runs))
     cli_params = {}
     for item in args.param:
         if "=" not in item:
@@ -961,14 +1103,16 @@ def main(argv=None):
                        ("auth", args.yes_auth))
                       if flag}
     try:
-        result, wf_path = run_workflow(root, args.workflow, cli_params, args.headed,
-                                       pre_authorized, args.persona, args.context)
+        result, wf_path, owner = run_workflow(root, projects, args.workflow, cli_params,
+                                              args.headed, pre_authorized, args.persona,
+                                              args.context)
     except RunError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    if args.record:
-        record = write_record(result, wf_path)
+    workflow = (load_yaml(wf_path) or {}).get("workflow", {})
+    if args.record or workflow.get("rollback") == "snapshot":
+        record = write_run(result, runs, owner, workflow)
         print(f"record: {record}", file=sys.stderr)
 
     if args.json:
