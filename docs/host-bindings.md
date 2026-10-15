@@ -68,8 +68,8 @@ Rules that follow:
 
 | Capability | What it must do | Claude Code |
 |---|---|---|
-| **run script** | Execute a declared script from `sites/<site>/scripts/` or `projects/<project>/scripts/`, capture stdout (JSON with `--json`) | `Bash` / `PowerShell` |
-| **read/write files** | Read and write maps, workflows and results | `Read`, `Write`, `Edit`, `Glob`, `Grep` |
+| **run script** | Execute a script declared by the step's site, the workflow's project or the site's app (`sites/<site>/scripts/`, `<project>/scripts/`, `apps/<app>/scripts/`), capture stdout (JSON with `--json`) | `Bash` / `PowerShell` |
+| **read/write files** | Read and write maps and workflows; write a run folder to the runs store | `Read`, `Write`, `Edit`, `Glob`, `Grep` |
 | **fan out** | Run independent read-only work in parallel *(optional — see below)* | `Agent` / subagents |
 
 ## Optional capabilities

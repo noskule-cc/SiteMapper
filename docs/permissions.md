@@ -40,8 +40,12 @@ that scope when `permissions.write` is unset.
 
 - **Up front, fail fast.** The gate runs before the browser opens; a denied
   run names the class, the policy source and the environment. Never mid-flow.
-- **Strictest wins.** Cross-site workflows are gated against every involved
-  site.
+- **Strictest wins, per step.** A run is gated against every site a step runs
+  on — a literal `site:`, or a `$role` the chosen tier's fixtures resolve — plus
+  the sites listed under `sites:`. A workflow with `tiers` resolves its tier
+  first (`environment` → the app's site), so the tier's policy is what applies;
+  listing a site only to reach a script is no longer needed and no longer
+  widens or narrows anything.
 - **`ask` needs a human.** LLM host: ask in the conversation. Headless runner:
   TTY prompt, or an explicit `--yes-write` / `--yes-destructive` flag.
   Non-interactive (CI): **`ask` degrades to `deny`.**

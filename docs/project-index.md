@@ -34,7 +34,10 @@ format; this table says which to open.
 |---------|-----------|
 | **Site map** — YAML per page template: elements with semantic locators, gotchas, a fingerprint | `schema/page.yaml`, `schema/site.yaml` · wiki: [Site maps](https://github.com/noskule-cc/SiteMapper/wiki/concepts-site-map) |
 | **Workflow** — a named step sequence with a sibling `<workflow>.md` companion | `schema/workflow.yaml` · wiki: [Workflows](https://github.com/noskule-cc/SiteMapper/wiki/concepts-workflow) |
-| **Cross-site workflow** — lives in `projects/<project>/workflows/`, spans sites via capture variables | `schema/project.yaml` |
+| **Project** — a question whose run is the deliverable (test, producer, tool, migration, spike); its workflows live in `<project>/workflows/` under the projects root, grouped in folders | `schema/project.yaml`, `schema/group.yaml` · [extending.md](extending.md) → Add a project |
+| **App** — one application mapped as several tier sites: the tier map, page-map parity with declared gaps, tier-taking scripts | `schema/app.yaml` |
+| **`tiers`** — on which tiers of an app a project workflow must exist and pass, and why it is absent elsewhere; the tier is picked by the `environment` parameter | `schema/workflow.yaml` |
+| **Run record** — one folder per recorded run in the runs store, never in the tree; `rollback: snapshot` records the pre-state | `schema/run.yaml`, `schema/workflow.yaml` |
 | **`mode`** — `deterministic` (runnable with no LLM) or `agentic` (needs judgement); tests should be deterministic | [interface.md](interface.md) · [code-over-llm.md](code-over-llm.md) |
 | **`effect` and `trust`** — what a run does to the site, and whether it has been proven; independent axes | `schema/workflow.yaml` · [permissions.md](permissions.md) |
 | **Layered settings** — `config.yaml` → `site.yaml` → page, merged most-specific-wins; `policy.permissions` gates what a run may do | `schema/settings.yaml` · [permissions.md](permissions.md) |
@@ -54,9 +57,12 @@ the documentation.
 | `../schema/page.yaml` | page map: purpose, `url_pattern`, elements, gotchas, fingerprint |
 | `../schema/site.yaml` | site config: base URL, auth notes, page/workflow/script listings |
 | `../schema/workflow.yaml` | workflow: parameters, fixtures, steps, `mode`, `effect`, `trust`, `requires` |
-| `../schema/project.yaml` | cross-site project |
+| `../schema/project.yaml` | project: kind, app, schedule, dataset, people's data vs runs' state, scripts |
+| `../schema/group.yaml` | a manual node in the project tree: name, description, order |
+| `../schema/app.yaml` | app: tier → site map, page-map parity and declared gaps, tier-taking scripts |
 | `../schema/settings.yaml` | layered settings: contact, policy/permissions, form defaults |
 | `../schema/result.yaml` | the neutral result object a run emits |
+| `../schema/run.yaml` | the run record the runner writes to the runs store |
 | `../schema/persona.yaml` | who is logged in: auth method, never a credential |
 | `../schema/context.yaml` | which tenant + which data fill a workflow's roles |
 
@@ -69,6 +75,7 @@ the documentation.
 | `../scripts/serve.py` | serves the overview live on localhost; run buttons become real, gated by [permissions.md](permissions.md) |
 | `../scripts/inventory.py` | generates both views below; `--check` fails when either is stale |
 | `../scripts/overview.py` | the HTML renderer, reading `inventory.py`'s collectors |
+| `../scripts/tree.py` | where the three roots are (lib tree, projects, runs) and what lives under them; shared by the four above |
 
 Working on these: [development.md](development.md). What to run when:
 [tools/jobs.md](tools/jobs.md).

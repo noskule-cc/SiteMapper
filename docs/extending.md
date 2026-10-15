@@ -89,14 +89,41 @@ weeks — that is the failure mode this list exists for.
 3. If an executor must act on the key (runner, skills), update it in the same
    change — a key nobody reads is documentation-shaped decoration.
 
-## Add a site script
+## Add a script
 
-1. `sites/<site>/scripts/<name>` — or `projects/<project>/scripts/<name>` when the script
-   serves no single site (+ a `scripts/README.md` beside it for auth
-   notes and parked-code rationale).
-2. Declare it in that site's `site.yaml` `scripts:` list — declaration is what
-   makes it addressable from `action: script` steps.
+1. Put it in the narrowest home that covers every caller, and declare it there
+   (`scripts:` block of that file) — declaration is what makes it addressable
+   from `action: script` steps:
+   - `sites/<site>/scripts/<name>` when only steps on that site call it;
+   - `projects/<project>/scripts/<name>` when only that project's workflows do;
+   - `apps/<app>/scripts/<name>` when it takes a tier argument (a login, an API
+     client, a comparison across tiers) — it serves every tier, so no site
+     owns it.
+   A `scripts/README.md` beside it carries auth notes and parked-code rationale.
+2. `check.py`'s `scripts` check derives the callers from the steps and fails a
+   home that does not cover them; a project calling another project's script
+   is a note, the sign that the script may belong to an app or to the lib.
 3. Prefer `--json` output so step `capture` gets structured data.
+
+## Add a project, a group or an app
+
+- **A project** is a question: a folder with `project.yaml` anywhere under the
+  projects root (`scripts/tree.py` says where that is). It needs a `kind`;
+  `check.py` fails without one. A workflow that must exist on several tiers of
+  an app names them under `tiers:` and takes the tier from its `environment`
+  parameter — never a copy per site.
+- **A group** is a folder under the projects root without a `project.yaml`,
+  optionally with a `group.yaml` for its name and order. The tooling only
+  descends into it; a UI renders it.
+- **An app** is `apps/<app>/app.yaml`: the one home of which site is which tier,
+  the page-map parity rule with declared gaps, and the tier-taking scripts. Add
+  the site's `settings.policy.environment` first; the `apps` check requires the
+  two to agree.
+
+What makes something a project workflow rather than a site workflow is not its
+site count: it is that its run is the deliverable. The keys that say so
+(`tiers`, `sites:`, tier-keyed fixtures, a schedule) are valid only in a project,
+and the `placement` check fails them under a site.
 
 ## Add a host
 

@@ -16,8 +16,9 @@ Site argument: $site
 ## Steps
 
 1. **Refresh the inventory** — run `python scripts/inventory.py`. It walks every
-   `sites/*/workflows/*.yaml` and `projects/*/workflows/*.yaml` and regenerates
-   `docs/inventory.md`. It is fast, deterministic, and costs no tokens.
+   `sites/*/workflows/*.yaml` and every project under the projects root
+   (recursively; `--projects` when that tree is not inside the root) and
+   regenerates `docs/inventory.md`. It is fast, deterministic, and costs no tokens.
 
 2. **Read `docs/inventory.md`** and present its Workflows table.
 

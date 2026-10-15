@@ -14,24 +14,24 @@ __pycache__/
 .runner/
 
 # ---------------------------------------------------------------------------
-# RUN OUTPUTS — ALL OF THEM
+# WHAT A RUN WRITES — ALL OF IT, NO EXCEPTIONS
 # ---------------------------------------------------------------------------
 # Even in a private repository this is worth keeping deliberate. A run output is
 # the most sensitive thing here and the least reviewed: nobody reads a 40 MB
 # device log before committing it, and git keeps it forever in every clone.
 #
-# Commit a run when it is EVIDENCE someone will come back to — the record behind
-# a published number, a reproduction of a bug. Force that to be a decision by
-# excluding the class and adding the exception, rather than the reverse.
+# A recorded run is a folder in the runs store (schema/run.yaml); what runs
+# learn for the next run is in the state store; a contracted dataset is in the
+# datasets store. All three sit beside the lib's tree in a shared data tree or
+# inside this one, and none of them is ever committed: the framework's check.py
+# fails a results/ or state/ folder under a site or a project. The evidence
+# behind a published number is kept by the project's `keep` and cited by its
+# run id, not by a commit.
 #
 # Blanket, and with no negations: git cannot re-include a file whose parent
-# directory is excluded, so "results/" plus "!results/README.md" silently drops
-# the README. Layout docs belong beside the workflow instead.
+# directory is excluded. Layout docs belong beside the workflow instead.
+runs/
+state/
+datasets/
 results/
 **/results/
-
-# Oversized raw logs, if you keep any results at all. A device that is entirely
-# off the network repeats one failure with a full stack trace for the whole
-# window — tens of MB with a few thousand unique lines. Commit the sibling
-# <id>.md summary; leave the raw file local.
-# projects/<project>/results/<run>/logs/<id>.log

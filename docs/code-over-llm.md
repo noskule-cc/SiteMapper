@@ -59,10 +59,11 @@ manual sequence comes up (the second record in a loop, the second run of a
 workflow) it is a script, and the LLM calls the script and handles only what
 the script reports as a deviation. Explore and decide by LLM; repeat by code.
 
-The mechanism is `action: script` (`schema/workflow.yaml`): a step declares a
-script from `sites/<site>/scripts/` — or `projects/<project>/scripts/` when it is not
-about one site — the runner executes it and captures its
-`--json` stdout. A DOM sweep an agent explored by hand becomes one API call —
+The mechanism is `action: script` (`schema/workflow.yaml`): a step names a
+script declared by its site, by the workflow's project, or by the app the site
+is a tier of (the narrowest home that covers every caller —
+[extending.md](extending.md) → Add a script); the runner executes it and
+captures its `--json` stdout. A DOM sweep an agent explored by hand becomes one API call —
 same answer, without a browser, and it survives the next UI redesign.
 
 Record the promotion in the workflow's companion `.md`, so the next person can
