@@ -1,0 +1,33 @@
+# Schema: Run Record
+# What the headless runner writes when a run is recorded (--record, or always
+# when the workflow declares `rollback: snapshot`). One folder per run:
+#
+#   <runs>/SiteMapper/<owner>/<workflow>.<YYYY-MM-DDTHHMMSSZ>.<tier>.<instance>/
+#     run.yaml          this record
+#     result.json       the full `result` object (schema/result.yaml)
+#     snapshot/         captures of the `snapshot:` phase, one JSON file each
+#     evidence/         screenshots and files the run produced
+#
+# <runs> is the runs root (scripts/tree.py): `runs/` beside the lib's tree in a
+# deployment's data tree, or inside the framework repo. It is produced data —
+# gitignored as a class, never committed. <owner> is the project's path under
+# projects/ or the site's name. <tier> is `-` when the workflow declares no
+# tiers. The instance in the folder name is what keeps two machines' runs
+# apart; a sync copies folders and never merges them.
+#
+# A reader (a UI, a sweep) needs only this file. The folder is deleted after
+# `keep` unless something cites it.
+
+run:
+  lib: ""                     # Always "SiteMapper" here; the runs root is shared by libs
+  owner: ""                   # Project path under projects/, or the site name
+  workflow: ""                # Workflow name
+  tier: ""                    # The tier the run targeted, or "-"
+  instance: ""                # Machine the run happened on (hostname or SITEMAPPER_INSTANCE)
+  started_at: ""              # ISO-8601 UTC
+  finished_at: ""             # ISO-8601 UTC
+  status: ""                  # passed | failed | error (mirrors result.json)
+  keep: ""                    # How long the folder lives: "1d" unless the
+                              # project sets `keep:`; a run a report cites is
+                              # kept by setting it here ("keep")
+  files: []                   # Relative paths of everything in the folder

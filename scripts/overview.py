@@ -35,15 +35,20 @@ import subprocess
 import sys
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import tree  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECTS = tree.projects_root(ROOT)
 OUT = os.path.join(ROOT, "docs", "overview.html")
 
 
-def set_root(root):
+def set_root(root, projects=None):
     """Render another tree. See inventory.set_root(); the collectors live there,
     so callers must set both — inventory.main() and check.py both do."""
-    global ROOT, OUT
+    global ROOT, PROJECTS, OUT
     ROOT = os.path.abspath(root)
+    PROJECTS = tree.projects_root(ROOT, projects)
     OUT = os.path.join(ROOT, "docs", "overview.html")
     return ROOT
 
@@ -178,6 +183,7 @@ h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em;
 .tag.mode-deterministic { color: var(--deterministic); }
 .tag.kind-workflow, .tag.kind-script { font-weight: 600; }
 .tag.kind-script { color: var(--warn); }
+h3.group { margin: 18px 0 6px; font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 /* trust = has it been proven; effect = what it does. Both from the YAML. */
 .tag.trust-verified { background: var(--dev-bg); color: var(--dev-fg); }
 .tag.trust-broken { background: var(--prod-bg); color: var(--prod-fg); }
@@ -571,7 +577,7 @@ def build_stamp():
         except (OSError, subprocess.TimeoutExpired):
             return ""
     return {"commit": git("rev-parse", "--short", "HEAD") or "?",
-            "dirty": bool(git("status", "--porcelain", "--", "sites", "projects",
+            "dirty": bool(git("status", "--porcelain", "--", "sites", "apps", PROJECTS,
                               "schema", "scripts", "docs", "config.yaml")),
             "built_at": datetime.now().strftime("%Y-%m-%d %H:%M")}
 
@@ -604,7 +610,7 @@ def deploy_build(out_path):
 def cmd_for(w):
     """The invocation a human types. Deterministic workflows get the headless
     runner (code over LLM — no agent needed); tests add --record so the run
-    lands in results/. Agentic workflows need an LLM host, so they keep /run.
+    lands in the runs store. Agentic workflows need an LLM host, so they keep /run.
     When this page is rendered for a map repository (--root), the command is
     stated from that repo, reaching the framework by its real relative path on
     this machine — regenerating recomputes it."""
@@ -741,14 +747,17 @@ def proc_workflow(w, show_owner=False):
         links.append(f'<a href="{e(href(w["doc_path"]))}">flowchart&nbsp;.md</a>')
     if w["calls"]:
         links.append("calls " + ", ".join(f"<code>{e(c)}</code>" for c in w["calls"]))
-    # Run history: only records that exist in the rendered tree are collected,
-    # so nothing dangles and a map repo's run dates never leak into a page
-    # rendered from another tree.
-    if w["results"]:
-        newest = w["results"][0]
-        more = f" (+{len(w['results']) - 1} more)" if len(w["results"]) > 1 else ""
-        links.append(f'last run <a href="{e(href(newest["path"]))}">'
-                     f'{e(newest["date"])}</a>{e(more)}')
+    if w["tiers"]:
+        t = w["tiers"]
+        parts = ["required " + ", ".join(t["required"])]
+        extra = [x for x in t["allowed"] if x not in t["required"]]
+        if extra:
+            parts.append("allowed " + ", ".join(extra))
+        for tier, why in t["absent"].items():
+            parts.append(f'<span title="{e(why)}">absent {e(tier)}</span>')
+        links.append("tiers: " + " · ".join(parts))
+    # No run history here: runs live in the runs store, outside the tree, and
+    # a page rendered from one tree must never carry another tree's run dates.
 
     search = " ".join([w["name"], w["owner"], w["mode"], w["trust"], w["effect"],
                        w["purpose"]] + w["params"]).lower()
@@ -791,14 +800,24 @@ def project_card(p, workflows):
         data = ('<div class="links">reference data ' + " ".join(
             f'<a href="{e(href(d["path"]))}"><code>{e(d["name"])}</code></a>'
             for d in p["data"]) + "</div>")
-    search = " ".join([p["dir"], p["title"], p["purpose"]] + p["sites"]).lower()
+    search = " ".join([p["dir"], p["title"], p["purpose"], p["kind"], p["app"]]
+                      + p["sites"]).lower()
+    tags = [f'<span class="tag">{e(p["title"])}</span>']
+    if p["kind"]:
+        tags.append(f'<span class="tag">{e(p["kind"])}</span>')
+    if p["app"]:
+        tags.append(f'<span class="tag">app {e(p["app"])}</span>')
+    meta = [f"<span>spans {chips}</span>" if chips else "",
+            f'<span><b>{len(own)}</b> workflows</span>']
+    if p["schedule"]:
+        meta.append(f'<span>every {e(p["schedule"])}</span>')
+    if p["dataset"]:
+        meta.append(f'<span>writes dataset <code>{e(p["dataset"])}</code></span>')
+    meta.append(f'<span><a href="{e(href(p["path"]))}">project.yaml</a></span>')
     return (f'<article class="card" id="p-{e(p["dir"])}" data-search="{e(search)}">'
-            f'<h3><span class="name">{e(p["dir"])}</span>'
-            f'<span class="tag">{e(p["title"])}</span></h3>'
+            f'<h3><span class="name">{e(p["dir"])}</span>{"".join(tags)}</h3>'
             f'<p class="desc">{e(p["purpose"])}</p>'
-            f'<div class="meta"><span>spans {chips}</span>'
-            f'<span><b>{len(own)}</b> workflows</span>'
-            f'<span><a href="{e(href(p["path"]))}">project.yaml</a></span></div>'
+            f'<div class="meta">{"".join(meta)}</div>'
             + data
             + '<div class="procs">' + "".join(proc_workflow(w) for w in own) + "</div>"
             "</article>")
@@ -813,6 +832,8 @@ def site_card(site, workflows, projects):
     if site["environment"]:
         tags.append(f'<span class="tag env-{e(site["environment"])}">'
                     f'{e(site["environment"])}</span>')
+    if site["app"]:
+        tags.append(f'<span class="tag">{e(site["tier"])} of {e(site["app"])}</span>')
     if site["safe_forms"] is True:
         tags.append('<span class="tag">forms: submit allowed</span>')
 
@@ -866,7 +887,7 @@ def render(base=LOCAL, fragment=False):
     # loads a SECOND copy of it whose root nobody set. Without this line a --root
     # run wrote the framework's own overview into the map repo's docs/ — correct
     # inventory.md beside a completely wrong overview.html.
-    inventory.set_root(ROOT)
+    inventory.set_root(ROOT, PROJECTS)
 
     global BASE
     BASE = base
@@ -874,7 +895,8 @@ def render(base=LOCAL, fragment=False):
     sites = inventory.collect_sites()
     projects = inventory.collect_projects()
     workflows = inventory.collect_workflows()
-    n_scripts = sum(s["scripts"] for s in sites)
+    apps_ = inventory.collect_apps()
+    n_scripts = sum(s["scripts"] for s in sites) + sum(len(a["script_files"]) for a in apps_)
 
     modes = {}
     for w in workflows:
@@ -945,9 +967,43 @@ def render(base=LOCAL, fragment=False):
       + "</pre></details>")
 
     a('<section data-group="projects"><h2>Projects</h2>')
+    group = None
     for p in projects:
+        if p["group"] != group:
+            group = p["group"]
+            if group:
+                a(f'<h3 class="group">{e(group)}</h3>')
         a(project_card(p, workflows))
     a("</section>")
+
+    if apps_:
+        a('<section data-group="apps"><h2>Apps</h2>')
+        for ap_ in apps_:
+            tiers = " ".join(f'<a class="tag" href="#s-{e(s)}">{e(t)}: {e(s)}</a>'
+                             for t, s in ap_["tiers"].items())
+            gaps = "".join(f'<li><code>{e(g["page"])}</code> on {e(g["tier"])}: {e(g["why"])}</li>'
+                           for g in ap_["gaps"])
+            scripts = "".join(
+                f'<div class="proc" data-kind="script" data-mode="deterministic" '
+                f'data-search="{e(sc["name"] + " " + ap_["dir"] + " " + sc["desc"])}">'
+                f'<div class="proc-head"><span class="tag kind-script">script</span>'
+                f'<a class="name" href="{e(href(sc["path"]))}">{e(sc["name"])}</a>'
+                f'<span class="tag">takes a tier</span></div>'
+                f'<p class="purpose">{e(sc["desc"])}</p></div>'
+                for sc in ap_["script_files"])
+            a(f'<article class="card" id="a-{e(ap_["dir"])}" '
+              f'data-search="{e(" ".join([ap_["dir"], ap_["title"], ap_["desc"]]).lower())}">'
+              f'<h3><span class="name">{e(ap_["dir"])}</span>'
+              f'<span class="tag">{e(ap_["title"])}</span></h3>'
+              + (f'<p class="desc">{e(ap_["desc"])}</p>' if ap_["desc"] else "")
+              + f'<div class="meta"><span>tiers {tiers}</span>'
+              + (f'<span>parity reference <b>{e(ap_["reference"])}</b></span>' if ap_["reference"] else "")
+              + f'<span><a href="{e(href(ap_["path"]))}">app.yaml</a></span></div>'
+              + (f'<details><summary>{len(ap_["gaps"])} declared parity gaps</summary>'
+                 f'<ul>{gaps}</ul></details>' if ap_["gaps"] else "")
+              + (f'<div class="procs">{scripts}</div>' if scripts else "")
+              + "</article>")
+        a("</section>")
 
     a('<section data-group="sites"><h2>Sites</h2>')
     for s in sites:
@@ -985,13 +1041,13 @@ def main():
     ap.add_argument("--fragment", action="store_true",
                     help="omit <html>/<head>/<body>, for a host that wraps the page")
     ap.add_argument("--root", help="render this tree instead of the script's own repo")
+    ap.add_argument("--projects", help="the projects tree, when it is not inside --root")
     args = ap.parse_args()
 
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import inventory
-    if args.root:
-        set_root(args.root)
-        inventory.set_root(args.root)
+    if args.root or args.projects:
+        set_root(args.root or ROOT, args.projects)
+        inventory.set_root(args.root or ROOT, args.projects)
 
     base = args.base or (github_base(args.branch) if args.links == "github" else LOCAL)
     fresh = render(base, fragment=args.fragment)

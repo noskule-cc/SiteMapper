@@ -17,7 +17,28 @@ workflow:
   name: ""                    # Workflow name (used as command: /run <name>)
   description: ""             # What this workflow accomplishes
   site: ""                    # Single site (for simple workflows)
-  sites: []                   # Multiple sites (for cross-site workflows)
+  sites: []                   # Multiple sites (for cross-site workflows): the
+                              # sites whose MAPS the steps read. Only that -
+                              # write permission is gated per step, on the
+                              # policy of the site each step resolves to, so a
+                              # workflow never lists a site to reach a script.
+                              # A workflow under sites/<site>/ has `site:` only.
+
+  tiers:                      # PROJECT WORKFLOWS ONLY, with the project's `app`
+                              # set (schema/app.yaml). Declares on which tiers
+                              # of that app this workflow exists, so the fact
+                              # can be listed, scheduled and tested instead of
+                              # inferred from which site happens to have a copy.
+    required: []              #   Must exist and pass here; what a scheduler and
+                              #   a parity check read
+    allowed: []               #   May run here (default: required). The
+                              #   `environment` select parameter below has
+                              #   exactly these as its options.
+    absent: {}                #   {tier: reason} for every tier of the app in
+                              #   neither list, e.g. {prod: "forms may not be
+                              #   submitted"}. check.py fails a tier that is in
+                              #   none of the three, so a missing counterpart is
+                              #   a recorded decision, never an accident.
 
   mode: ""                    # deterministic | agentic
                               #   deterministic - every step is mechanical (navigate/
@@ -63,6 +84,19 @@ workflow:
                               # environment's policy (schema/settings.yaml) UP FRONT
                               # and refuses or asks before the browser opens.
                               # `trust: verified` never grants permission.
+
+  rollback: ""                # snapshot | none — REQUIRED when effect is not
+                              # read-only. How the state this workflow changes
+                              # could be restored.
+                              #   snapshot - the `snapshot:` phase below records
+                              #              the pre-state before the first write;
+                              #              the runner always records such a run
+                              #              (schema/run.yaml), so the copy outlives
+                              #              the session and the machine
+                              #   none     - nothing to restore, and `rollback_reason`
+                              #              says why (e.g. the teardown deletes what
+                              #              the run created; the write is the point)
+  rollback_reason: ""         # Required with `rollback: none`.
 
   requires:                   # Fail-fast contract for context-based workflows (#8).
                               # Checked against the selected context BEFORE the run;
@@ -118,6 +152,14 @@ workflow:
                               # workflow is already URL-neutral. Confirm the paths really
                               # are identical across environments before relying on it.
 
+  snapshot:                   # With `rollback: snapshot`: steps that READ the state
+                              # the workflow is about to change, run after `setup`
+                              # and before `steps`. Every `capture` of this phase
+                              # is written to the run folder's snapshot/ as JSON.
+                              # Typically one `action: script` with `--json`; a
+                              # `read` step works too. Same step shape as `steps`.
+    - action: ""
+
   setup:                      # Precondition steps run BEFORE `steps` to put the page
                               # into a known state - navigate, reset sticky UI state
                               # (e.g. select a grouping), clear filters. These are NOT
@@ -148,10 +190,11 @@ workflow:
                               #   value must name a directory under sites/.
       page: ""                # Page name (references a page YAML file)
       element: ""             # Element name from the page map
-      script: ""              # For action: script — a script in sites/<site>/scripts/
-                              # or projects/<project>/scripts/, declared in that
-                              # site.yaml or project.yaml
-                              #   (declared in that site's site.yaml `scripts:` list).
+      script: ""              # For action: script — a script declared by the step's
+                              # site (sites/<site>/scripts/), by this workflow's own
+                              # project (<project>/scripts/), or by the app the step's
+                              # site is a tier of (apps/<app>/scripts/). Resolved in
+                              # that order; a name is declared in exactly one of them.
                               #   `value` carries its CLI arguments; `capture` stores its
                               #   parsed stdout (JSON when the script is run with --json).
       value: ""               # Value to input, a URL to navigate to, CLI args for a script,

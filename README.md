@@ -67,8 +67,10 @@ scripts/
   run.py                             #   Headless deterministic workflow runner
   serve.py                           #   Serves the dashboard live with a run API
 
-sites/sitemapper-demo/               # The worked example: pages/, workflows/, results/
-projects/                            # Cross-site projects (none in the framework repo)
+sites/sitemapper-demo/               # The worked example: pages/, workflows/ (building blocks)
+sites/sitemapper-demo-dev/           #   its second tier — same UI, other data
+apps/sitemapper-demo/                # The app: which site is which tier, page-map parity
+projects/demo-checks/                # A project: a question with a verdict, run on every tier
 config.yaml                          # Global settings: environment + permission defaults
 data/                                # Copyable skeleton for your private map repository
 ```

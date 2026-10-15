@@ -7,6 +7,8 @@ workflow:
                           # are similar enough and asks the user before creating
   trust: draft            # agentic — can never become `verified` for blind runs
   effect: mutating        # creates an issue
+  rollback: none          # the created issue IS the outcome; closing it is a human's call
+  rollback_reason: "creates one issue on request; there is no prior state to restore"
 
   parameters:
     - name: "topic"

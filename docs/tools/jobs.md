@@ -51,15 +51,22 @@ repository never carries a forked copy.
 
 ### Repo consistency checks
 
-Eight mechanical checks over the YAML tree and the docs, non-zero exit on
+Fifteen mechanical checks over the YAML tree and the docs, non-zero exit on
 failure. What each one catches, and what to do when it fires:
 
 | Check | Catches | On failure |
 |---|---|---|
 | `yaml` | a file that does not parse | fix the YAML |
 | `schema` | keys used by files but absent from `schema/*.yaml` (and vice versa, as notes) | add the key to the template, with its comment |
-| `listings` | `site.yaml`/`project.yaml` naming files that are not on disk, or files nobody lists | fix the listing or add the file |
+| `listings` | `site.yaml`/`project.yaml`/`app.yaml` naming files that are not on disk, or files nobody lists; a project without a `kind`, a producer without a `dataset`, a `state` file inside the project folder | fix the listing or add the file |
 | `companions` | a workflow without its sibling `.md` | invoke the `workflow-companion` agent |
+| `apps` | a tier naming a missing site, a site whose `environment` disagrees with its tier key, a site in two apps, an app script also declared by a site | fix `app.yaml` or the site's settings |
+| `placement` | a site workflow carrying `tiers`, `sites:` or tier-keyed fixtures, or stepping onto another site | move it into a project |
+| `tiers` | `required` ⊄ `allowed` ⊄ the app's tiers; a tier neither allowed nor declared absent; `environment` options ≠ allowed; a missing `fixtures.<tier>` | declare the tier or its absence with a reason |
+| `scripts` | a script declared nowhere, or declared in a home that does not cover every caller | move it to the narrowest home that does |
+| `parity` | a page map on one tier of an app and not on another, unless declared under `parity.gaps`; a stale gap | map the page, or declare the gap with a reason |
+| `rollback` | a mutating workflow without `rollback`, `none` without a reason, `snapshot` without a capturing phase | declare it |
+| `produced` | a `results/` or `state/` folder under a site or a project | move it to the runs or state store |
 | `links` | markdown links, path refs and `screenshot:` targets that do not resolve (case-sensitively — Linux CI is the honest judge) | fix the reference, not the check |
 | `bindings` | a skill or agent in `.claude/` that is unregistered in `docs/skills-and-agents.md`, or a project doc unreachable from `docs/project-index.md` | finish the registration (framework repo only) |
 | `inventory` / `overview` | generated views out of date | `python scripts/inventory.py` |
@@ -85,7 +92,8 @@ is stale; never hand-edit the generated files.
 
 `scripts/run.py` executes a `mode: deterministic` workflow with no LLM in the
 loop and emits a `result` (`--json` for the machine-readable form, `--record`
-to write a `results/` entry).
+to write a run folder to the runs store; a `rollback: snapshot` workflow is
+recorded always).
 
 ### Live dashboard
 
@@ -117,7 +125,7 @@ is "the site shipped a release" or "a run broke".
 ### Deterministic UI test
 
 `/test <workflow>` evaluates the workflow's `assert` steps and emits a `result`
-plus, where the run is worth keeping, a `results/` record.
+plus, where the run is worth keeping, a run folder in the runs store.
 
 ### Map repair
 
@@ -145,19 +153,24 @@ expected entry point (with and without `feature-map.md`).
    `tools/evals.md` exists
 2. Output: hit-rate report per mode, misses diagnosed with navigation traces
 
-## Results retention
+## Runs retention
 
-Commit a run when it is **evidence someone will come back to** — the record
-behind a published number, the reviewed green run behind a `trust: verified`
-promotion, the reproduction of a bug. Routine green runs are noise; do not
-commit them. Two guards, stated once here for every project:
+Nothing a run wrote is ever committed. A recorded run is a folder in the runs
+store (`schema/run.yaml`), outside every repository; `check.py`'s `produced`
+check fails a `results/` or `state/` folder under a site or a project, and
+`.gitignore` (`data/gitignore.template` for a map repository) excludes the
+stores as a class. The rules, stated once here for every project:
 
+- **A run folder lives one day** unless the project's `keep:` says longer. A
+  run that is **evidence someone will come back to** — the record behind a
+  published number, the reviewed green run behind a `trust: verified`
+  promotion, the reproduction of a bug — is kept by the page that cites it, and
+  that page cites the run id.
+- **A snapshot run is always recorded**, so the pre-state of a mutating
+  workflow outlives the session and the machine.
 - **Log size:** a device that is offline all window repeats one failure with a
-  full stack trace — tens of MB, a few thousand unique lines. Commit the sibling
-  `.md` summary; leave raw logs local.
-- **Map repositories exclude `results/` blanket-style** in `.gitignore` (see
-  `data/gitignore.template`), so committing a record is a deliberate exception,
-  never a default.
+  full stack trace — tens of MB. The project's `keep` is the brake; a summary
+  on the citing page is what people read.
 
 ## Housekeeping
 

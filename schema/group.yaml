@@ -1,0 +1,14 @@
+# Schema: Group
+# projects/<group>/group.yaml — a manual node in the project tree. Groups sort
+# projects for the people who read the tree (a UI renders it as navigation);
+# they carry no behaviour. A group is a folder; the file gives it a name and an
+# order. Groups may nest. A folder under projects/ without a project.yaml is a
+# group whether or not it has a group.yaml — the file is optional.
+#
+# SiteMapper only skips and descends; the tooling never acts on a group.
+
+group:
+  name: ""                    # Shown instead of the folder name when set
+  description: ""             # One line: what belongs in this group
+  order: []                   # Child folder names in display order. Children
+                              # not listed follow, sorted by name.

@@ -25,14 +25,17 @@ cloning this repo tomorrow?*
 |---|---|
 | How one page behaves; a trap that breaks automation | `sites/<site>/pages/<page>.yaml` → `gotchas` |
 | An element that exists, and when it doesn't | that page's `elements` (+ `states: [capability-dependent]`) |
-| An API, its auth, why a path is blocked or parked | `sites/<site>/scripts/README.md`, or `projects/<project>/scripts/README.md` when the script is not about one site |
+| An API, its auth, why a path is blocked or parked | the `scripts/README.md` beside the script: under the site, the project, or the app when the script takes a tier argument ([extending.md](extending.md) → Add a script) |
 | Base URL, auth model, which scripts a site has | `sites/<site>/site.yaml` |
+| Which sites are tiers of one application; an expected difference between their page maps | `apps/<app>/app.yaml` (`tiers`, `parity.gaps` with a reason) |
+| On which tiers a test must exist and pass, and why it is absent elsewhere | the workflow's `tiers:` block (`required`, `allowed`, `absent: {tier: reason}`) |
 | Contact data, environment, form-submission authorization | layered `settings:` — `config.yaml` → `site.yaml` → page |
 | What a workflow does and why its branches differ | the workflow's sibling `<workflow>.md` |
 | The shape of a YAML file | the relevant `schema/*.yaml`, as comments |
 | A standing rule every session must follow | the deployment's `docs/guardrails.md` (authoring guide: [guardrails-template.md](guardrails-template.md)) |
 | A decision not yet made | a **GitHub issue** — see [issue-tracker.md](issue-tracker.md) |
-| What a run found | `results/<workflow>.<YYYY-MM-DD>.md` |
+| What a run found | the run folder in the runs store (`schema/run.yaml`), never a file in the tree; a person's conclusion about it goes to a wiki page that cites the run |
+| What past runs learned and the next run reads | the state store, named under the project's `state:` — never a file in the project folder |
 
 **No → the host agent's private memory store**, outside the repo (Claude Code
 keeps one under `~/.claude/…/memory/`; other hosts have their own). That means:

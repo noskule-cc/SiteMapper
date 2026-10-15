@@ -41,9 +41,16 @@ format reference for everything you write.
 my-maps/                       (private)
   config.yaml                  settings.contact, settings.mailboxes
   docs/guardrails.md           your standing rules
-  sites/<site>/                site.yaml, pages/, workflows/, scripts/, results/
-  projects/<project>/          cross-site workflows, data, results/
+  sites/<site>/                site.yaml, pages/, workflows/ (building blocks), scripts/
+  apps/<app>/                  app.yaml: which site is which tier, page-map parity; tier scripts
+  projects/<group>/<project>/  questions: project.yaml, workflows/, data/, scripts/
+  runs/                        what runs write — never committed (gitignore.template)
 ```
+
+The projects tree and the runs store may also sit BESIDE this folder, when a
+deployment keeps every tool's data in one tree (`data/SiteMapper`,
+`data/projects`, `data/runs`); the framework's tools find both layouts
+(`scripts/tree.py`), and `--projects` / `--runs` name them explicitly.
 
 ## The two rules that make the split hold
 

@@ -23,16 +23,22 @@ them) is [../USAGE.md](../USAGE.md).
 | `run.py` | the headless deterministic runner: permission gate, session, steps, watch, result | the largest file; see the Reuse Rules in [architecture-rules.md](architecture-rules.md) |
 | `serve.py` | serves the overview live with a run API, localhost only | keeps the permission gate server-side — the browser is untrusted UI |
 
-## Two Roots, Deliberately
+## Three Roots, Deliberately
 
 `HOME` is this repository (schemas, docs, `.claude/`). `ROOT` is the tree being
 checked or rendered, repointed by `--root <path>` at a private map repository.
+`PROJECTS` is the projects tree and `RUNS` the runs store: inside `ROOT` in
+this repository and in a classic map repository, beside it in a deployment's
+shared data tree (`data/SiteMapper`, `data/projects`, `data/runs`).
+`scripts/tree.py` resolves both by presence, so neither layout needs a flag;
+`--projects` and `--runs` override it.
 
 Every function that reads a *contract* must resolve against `HOME`; every
-function that reads *data* must resolve against `ROOT`. Getting this wrong is
-not a small bug — `--root .` from a map repository once resolved to the
-framework and reported it green. `inventory.py` and `overview.py` expose
-`set_root()` for the same reason, and both must be repointed together.
+function that reads *data* must resolve against `ROOT` or `PROJECTS`. Getting
+this wrong is not a small bug — `--root .` from a map repository once resolved
+to the framework and reported it green. `inventory.py` and `overview.py` expose
+`set_root(root, projects)` for the same reason, and both must be repointed
+together.
 
 The alternative — copying the script and the schemas next to the maps — is
 forbidden: a forked schema validates green against a contract nobody updated.
@@ -41,12 +47,14 @@ forbidden: a forked schema validates green against a contract nobody updated.
 
 ```
 schema/     # Commented YAML templates — the format's source of truth
-sites/      # Mapped sites: site.yaml + pages/ + workflows/ (+ scripts/, personas/, contexts/)
-projects/   # Cross-site projects (none in the framework repo)
-scripts/    # The five executables above
+sites/      # Mapped sites: site.yaml + pages/ + workflows/ (building blocks) + scripts/, personas/, contexts/
+apps/       # One application mapped as several tier sites: app.yaml (tier map, parity) + scripts/
+projects/   # Questions: project.yaml + workflows/ + data/ + scripts/, grouped in folders
+scripts/    # The five executables above, plus tree.py (where the roots are)
 docs/       # Everything agents and maintainers read — start at docs/INDEX.md
 .claude/    # Skills and agents, each carrying its complete instructions
 data/       # Copyable skeleton for a private map repository
+runs/       # The runs store when it sits inside this tree — gitignored, never committed
 ```
 
 ## Common Tasks

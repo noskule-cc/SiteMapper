@@ -24,8 +24,15 @@ __pycache__/
 # plus "!results/README.md", which is fragile enough to have needed its own
 # comment explaining why. Layout docs belong beside the workflow, not inside a
 # directory that is otherwise entirely excluded.
+#
+# Since connectOS#29 a run writes to the runs store (schema/run.yaml) and
+# learned state to the state store, both outside the tree; check.py fails a
+# results/ or state/ folder under a site or a project. The two roots are
+# excluded here for the case that they sit inside this tree.
 results/
 **/results/
+runs/
+state/
 
 # The private data repo, if it is cloned inside this tree rather than beside it.
 SiteMapper-data/

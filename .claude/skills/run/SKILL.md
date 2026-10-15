@@ -59,11 +59,14 @@ Workflow argument: $workflow
      - `read` → **read page** / **read text**
      - `key` → **press key** (`value` is the key, e.g. `Escape`, `Enter`) — used
        to dismiss a dropdown without changing state
-     - `script` → **run script**: run the named script from
-       `sites/<site>/scripts/` with `value` as its CLI arguments, and store its
-       parsed stdout under `capture` (JSON when run with `--json`). Prefer this
-       whenever the data is reachable from the site's API — it is faster,
-       headless, and does not break when the UI changes
+     - `script` → **run script**: run the named script with `value` as its CLI
+       arguments, and store its parsed stdout under `capture` (JSON when run
+       with `--json`). The script is declared by the step's site
+       (`sites/<site>/scripts/`), by this workflow's project
+       (`<project>/scripts/`), or by the app the site is a tier of
+       (`apps/<app>/scripts/`) — look in that order. Prefer this whenever the
+       data is reachable from the site's API — it is faster, headless, and does
+       not break when the UI changes
      - `verify` → check that expected elements/text exist on the page
      - `wait` → pause briefly for page transitions
    - Substitute parameter values where `$param_name` appears in step values
@@ -80,11 +83,13 @@ Workflow argument: $workflow
 6. **Verify outcomes** — check each item in the workflow's `verify` list.
 
 7. **Report results** — summarize what was done and whether verification passed.
-   For a run worth keeping as history, write it to
-   `results/<workflow>.<YYYY-MM-DD>.md` next to the workflow: run metadata, what
-   happened, and any findings. Routine runs need not be committed — `results/`
-   is gitignored as a class, so committing one is a deliberate exception (see
-   `docs/tools/jobs.md` → Results retention).
+   For a run worth keeping as history, write a run folder to the runs store
+   (`schema/run.yaml`: `runs/SiteMapper/<owner>/<workflow>.<timestamp>.<tier>.<instance>/`
+   with `run.yaml`, `result.json`, findings and evidence) — never a file inside
+   the tree, which is not committed in any case (`docs/tools/jobs.md` → Runs
+   retention). A workflow with `rollback: snapshot` must have its `snapshot:`
+   phase captures written to that folder's `snapshot/` before the first
+   mutating step. A conclusion for people goes to a wiki page that cites the run.
 
 ## Cross-Site Execution
 

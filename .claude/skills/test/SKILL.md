@@ -48,9 +48,10 @@ Workflow argument: $workflow
    - `read` → **read page** / **read text**; store under the step's `capture`
    - `key` → **press key** (`value` is the key, e.g. `Escape`) — dismisses a
      dropdown without changing state
-   - `script` → **run script** from `sites/<site>/scripts/`, `value` carrying its
-     CLI arguments and `capture` storing its parsed stdout. Preferred over
-     driving the browser wherever the data is reachable from the site's API
+   - `script` → **run script** declared by the step's site, this workflow's
+     project or the site's app (in that order), `value` carrying its CLI
+     arguments and `capture` storing its parsed stdout. Preferred over driving
+     the browser wherever the data is reachable from the site's API
    - `assert` → locate the element and evaluate `expect` (see below). Record one
      entry in `result.assertions` with `{ id, page, element, expect, actual,
      pass }`. **Do not abort on a failed assertion** — continue so the run
@@ -93,15 +94,15 @@ Workflow argument: $workflow
    send it anywhere — routing the result (e.g. to a tracker page) is the calling
    host's job, not this skill's.
 
-9. **Record a reference run.** For a run worth keeping as history, write it to
-   `results/<workflow>.<YYYY-MM-DD>.md` beside the workflow: run metadata, a
-   per-assertion PASS/FAIL table, the machine-readable `result` JSON, and any
-   findings. Routine runs need not be committed. Per-run evidence (datasets,
-   logs) goes in a sibling `<workflow>.<YYYY-MM-DD>/` folder referenced from the
-   result's `evidence` list. `results/` is gitignored as a class, so committing
-   a record is a deliberate exception (`docs/tools/jobs.md` → Results
-   retention); read the deployment's `docs/guardrails.md` before committing
-   anything containing customer data.
+9. **Record a reference run.** For a run worth keeping as history, write a run
+   folder to the runs store (`schema/run.yaml`:
+   `runs/SiteMapper/<owner>/<workflow>.<timestamp>.<tier>.<instance>/`): `run.yaml`,
+   `result.json` with the per-assertion results, findings, and the evidence
+   (screenshots, logs) under `evidence/`, referenced from the result's
+   `evidence` list. Never inside the tree: nothing a run wrote is committed, and
+   `check.py` fails a `results/` folder. The folder lives one day unless the
+   project's `keep:` says longer; a wiki page that cites the run is what keeps
+   it (`docs/tools/jobs.md` → Runs retention).
 
 ## Safety
 

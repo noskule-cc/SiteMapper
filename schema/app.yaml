@@ -1,0 +1,57 @@
+# Schema: App Configuration
+# apps/<app>/app.yaml — one application that is mapped as several SITES, one
+# per tier (prod, stg, dev). The tiers stay separate sites on purpose: they
+# rarely carry the same feature set and each needs its own page maps. The app
+# is the one place that says those sites belong together.
+#
+# What an app owns, and nothing else:
+#   - which site is which tier               (the ONLY home of this fact; a
+#                                              site.yaml never repeats it)
+#   - the page-map parity rule between tiers, with every expected difference
+#     declared next to a reason
+#   - the scripts that take a tier argument   (login, API client, a comparison
+#                                              across tiers) — they belong to
+#                                              no single site
+# An app holds no workflows. A workflow that runs on several tiers lives in a
+# project, names the app's tiers under `tiers:` (schema/workflow.yaml), and
+# picks the tier at run time with its `environment` parameter.
+
+app:
+  name: ""                    # Human-readable application name
+  description: ""             # What this application is
+
+  tiers: {}                   # tier -> site directory under sites/, e.g.
+                              #   tiers:
+                              #     prod: my-app
+                              #     stg:  my-app-stg
+                              #     dev:  my-app-dev
+                              # The tier key must agree with the site's
+                              # settings.policy.environment. `prod` and
+                              # `production`, `stg` and `staging`, `dev` and
+                              # `development` are the same tier (scripts/tree.py
+                              # TIER_SYNONYMS); any other name must match exactly.
+
+  parity:                     # Page-map parity between the tiers (connectOS#25).
+    reference: ""             #   The tier every other tier is compared with,
+                              #   usually prod. check.py fails when a page map
+                              #   exists on one side and not the other ...
+    gaps: []                  #   ... unless the difference is declared here:
+                              #   - tier: dev
+                              #     page: brita-kartusche-wechseln.yaml
+                              #     why: "integration not deployed on dev"
+                              #   A gap names the page that differs between
+                              #   `reference` and `tier`, in either direction.
+                              #   An undeclared difference is a defect; a gap
+                              #   whose page differs on neither side is stale
+                              #   and fails too, so the list cannot rot.
+
+  scripts: []                 # Scripts in apps/<app>/scripts/ that any tier's
+                              # workflows may call with `action: script`. Same
+                              # block as a site's scripts; each one takes the
+                              # tier as an argument (the step passes it, e.g.
+                              # `value: "--env $environment"`), because a
+                              # script that knows every tier is not about one
+                              # site. A name declared here may not also be
+                              # declared by a site.
+    # - name: ""              #   Filename, e.g. "my_app_auth.py"
+    #   description: ""       #   What it returns and which workflows call it

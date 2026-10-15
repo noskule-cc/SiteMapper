@@ -95,32 +95,76 @@ comments are the reference; this is the orientation:
 - **`assert` steps** — checkable expectations (`visible`, `absent`,
   `{contains}`, `{count}`, `{url_matches}`, …) that feed the result's
   assertion list. Prefer them over prose `verify:` bullets.
-- **`action: script`** — call a site script (declared in `site.yaml`
-  `scripts:`) instead of driving the browser; prefer it whenever the data is
-  reachable from an API (`docs/code-over-llm.md`).
+- **`action: script`** — call a declared script (the step's site, the
+  workflow's project, or the app the site is a tier of) instead of driving the
+  browser; prefer it whenever the data is reachable from an API
+  (`docs/code-over-llm.md`).
 - **`action: key`** — press a keyboard key (e.g. `Enter` to submit a search).
 
-### Project Workflows (cross-site)
+### Project Workflows (questions)
 
-Place in `projects/<project>/workflows/`. A project groups workflows that span multiple sites:
+A site's workflows are building blocks: true of one base URL, valued for what
+they return. A **project** holds a question — any workflow whose run is itself
+the deliverable: a test with a verdict, a producer of a dataset, a report, a
+migration. Projects live under the projects root (`projects/` inside the tree,
+or beside the lib's folder in a shared data tree — `scripts/tree.py`), grouped
+in folders; a folder with `project.yaml` is a project at any depth:
 
 ```
-projects/<project-name>/
-  project.yaml         # Which sites, description
-  workflows/
-    my-workflow.yaml
+projects/
+  <group>/group.yaml             # optional: name and order of a navigation node
+  <group>/<project-name>/
+    project.yaml                 # kind, app, the sites whose maps it reads, workflows
+    workflows/
+      my-workflow.yaml + .md
+    data/                        # reference data people maintain (listed under data:)
+    scripts/                     # scripts only this project's workflows call
 ```
 
 **project.yaml:**
 
 ```yaml
 project:
-  name: Issue Tracking
-  description: Manage issues using the demo issue tracker
-  sites: [sitemapper-demo]
+  name: Demo checks
+  description: Does the demo tracker's search behave on every tier?
+  kind: test                      # test | producer | tool | migration | spike
+  app: sitemapper-demo            # the app whose tiers the workflows declare
   workflows:
-    - smart-issue.yaml
+    - search-issues-on-tier.yaml
 ```
+
+### One application, several tiers
+
+prod, stg and dev of one application are mapped as separate sites. An **app**
+(`apps/<app>/app.yaml`) is the one place that says they belong together: which
+site is which tier, the page-map parity rule between them (with every expected
+difference declared next to a reason), and the scripts that take a tier
+argument. A workflow that must run on several tiers is **one file** in a
+project: it names the tiers, takes the tier from its `environment` parameter,
+and keys its fixtures by tier so no step names a site literally:
+
+```yaml
+workflow:
+  name: search-issues-on-tier
+  tiers:
+    required: [prod, dev]         # must exist and pass here
+    allowed: [prod, dev]
+    absent: {}                    # {tier: reason} for a tier it deliberately skips
+  parameters:
+    - { name: environment, type: select, options: [prod, dev], required: true }
+  fixtures:
+    common: { non_matching_term: "zzznothingmatchesthis" }
+    prod:   { tracker: sitemapper-demo, matching_term: "blows" }
+    dev:    { tracker: sitemapper-demo-dev, matching_term: "headless" }
+  steps:
+    - action: navigate
+      site: "$tracker"            # the tier's site, by role
+      page: issues-list
+```
+
+`check.py` fails a tier of the app that is neither allowed nor declared absent,
+so a missing counterpart is always a recorded decision. The worked example:
+`projects/demo-checks/` with `apps/sitemapper-demo/`.
 
 **Workflow with capture variables:**
 
@@ -186,29 +230,36 @@ flowchart TD
 /test <workflow-name>         # deterministic test workflows: evaluates asserts, emits a result
 ```
 
-Both search `sites/*/workflows/` and `projects/*/workflows/`, collect
-parameters (dropdown for select, prompt for text), execute the steps through
-the host's browser tools, and report a `result` (`schema/result.yaml`).
+Both search `sites/*/workflows/` and every project under the projects root,
+collect parameters (dropdown for select, prompt for text), execute the steps
+through the host's browser tools, and report a `result` (`schema/result.yaml`).
 
 ### Running headless (no LLM)
 
 ```
-python scripts/run.py <workflow> [--param key=value] [--record] [--root <maps>]
-python scripts/serve.py [--root <maps>]     # the dashboard with real run buttons
+python scripts/run.py <workflow> [--param key=value] [--record] [--root <maps>] [--projects <dir>]
+python scripts/serve.py [--root <maps>] [--projects <dir>]   # the dashboard with real run buttons
 ```
 
 `run.py` executes `mode: deterministic` workflows with no LLM in the loop —
 auto-waiting browser automation, the full assert grammar, `--json` for a
 machine-readable result with a structured failure report, `--record` to write
-the `results/` record. Permission-gated up front; `--root` points at your map
-repository. Test workflows run this way in CI on every push.
+the run folder. Permission-gated up front, per site a step runs on; `--root`
+points at your map repository, `--projects` at the projects tree when it is not
+inside it. Test workflows run this way in CI on every push.
 
-### Results
+### Runs
 
-A run worth keeping is recorded as `results/<workflow>.<YYYY-MM-DD>.md`
-beside the workflow's own directory (`sites/<site>/results/` or
-`projects/<project>/results/`). Which runs are worth committing — and which
-are noise — is `docs/tools/jobs.md` → Results retention.
+A recorded run is one folder in the **runs store**
+(`runs/SiteMapper/<owner>/<workflow>.<timestamp>.<tier>.<instance>/`, format in
+`schema/run.yaml`): the record, the full result, the pre-state captured by a
+`snapshot:` phase, the evidence. The store sits beside the lib's tree in a
+shared data tree, or inside this repository, and is gitignored as a class:
+nothing a run wrote is ever committed, and `check.py` fails a `results/` or
+`state/` folder under a site or a project. A folder lives one day unless the
+project's `keep:` says longer; a run a report cites is kept. A workflow that
+writes declares `rollback: snapshot | none` (`schema/workflow.yaml`), and a
+snapshot run is always recorded.
 
 ## Listing Workflows
 

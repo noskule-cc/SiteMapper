@@ -1,29 +1,65 @@
 # Schema: Project Configuration
-# A project groups cross-site workflows that operate across multiple mapped sites.
+# projects/<...>/<project>/project.yaml — a QUESTION: any work whose run is
+# itself the deliverable (a verdict, a dataset, a report, a migration). A site
+# holds maps and building blocks; a project holds what has a reason to be run
+# on its own. If a workflow needs tiers, a schedule, a kind or a run folder,
+# it is a project workflow. Projects live under the projects root
+# (scripts/tree.py), grouped in folders (schema/group.yaml); a folder with a
+# project.yaml is a project, whatever its depth.
 
 project:
   name: ""                    # Human-readable project name
   description: ""             # What this project accomplishes
-  sites: []                   # List of site names this project uses (must exist in sites/)
-  workflows: []               # List of workflow YAML filenames in this project
+  kind: ""                    # What kind of question. REQUIRED.
+                              #   test      - a run yields a verdict; declares `tiers`
+                              #   producer  - a run writes a dataset; names it under `dataset`
+                              #   tool      - on demand, a result for a person
+                              #   migration - mutating, one-off; its workflows snapshot before writing
+                              #   spike     - time-boxed measurement; runs only, no dataset
 
-  data: []                    # Optional: reference-data YAML files this project's
-                              # workflows read, e.g. regionen.yaml (PLZ -> team).
-                              # Project-scoped lookup tables that are neither a map
-                              # nor a workflow live here.
+  app: ""                     # The app (apps/<app>/app.yaml) whose tiers this
+                              # project's workflows declare under `tiers:`.
+                              # Required as soon as one workflow does.
+  sites: []                   # Site names this project's workflows READ maps
+                              # of (must exist in sites/). Only that: write
+                              # permission is gated per step, on the policy
+                              # of the site a step resolves to.
+  workflows: []               # Workflow YAML filenames in workflows/, in
+                              # display order
 
-  scripts:                    # Optional: scripts in projects/<project>/scripts/ that
-                              # this project's workflows call with `action: script`.
-                              # Same contract as a site's scripts block; declaring
-                              # them here is what makes them addressable.
+  schedule:                   # Present: a scheduler runs it; absent: a person
+                              # starts it. One file says how often and where
+                              # (connectOS#15).
+    every: ""                 #   Interval, e.g. 10m, 1d
+    instance: ""              #   The ONE machine that runs it; its name is in
+                              #   every run id and dataset it writes
+
+  dataset: ""                 # kind: producer only - the dataset this
+                              # project's runs write, as named by its contract
+
+  data: []                    # Reference data PEOPLE maintain and runs read,
+                              # as files in this folder, e.g. regionen.yaml
+                              # (PLZ -> team). Listed here so a reviewer can
+                              # tell a hand-edit from a run's side effect: a
+                              # run never writes a file listed under data.
+  state: []                   # Files RUNS write and the next run reads (what
+                              # past runs learned). Names only: they live in
+                              # the state store, never in this folder.
+  keep: ""                    # How long this project's run folders live, e.g.
+                              # 30d. Absent: one day. A run a report cites is
+                              # kept regardless.
+
+  scripts:                    # Scripts in <project>/scripts/ that this
+                              # project's workflows call with `action: script`.
+                              # Same contract as a site's scripts block.
                               #
-                              # A SCRIPT BELONGS TO A PROJECT WHEN IT IS NOT ABOUT ONE
-                              # SITE. A mailbox reader serving three providers, a
-                              # comparison across two environments - these have no
-                              # honest home under sites/, and parking one in whichever
-                              # site happened to be mapped first makes the directory
-                              # lie about what the file is for. Scope it to the project
-                              # that asks the question instead.
+                              # A SCRIPT LIVES IN THE NARROWEST HOME THAT COVERS
+                              # EVERY CALLER: a site when only that site's steps
+                              # call it, the project when only this project's
+                              # workflows do, the app when it takes a tier
+                              # argument (schema/app.yaml). check.py derives
+                              # the callers from the steps; a project calling
+                              # another project's script is flagged, not failed.
     - name: ""                #   Filename, e.g. "read_signup_mail.py"
       description: ""         #   What it returns and which workflow node it backs.
                               #   Record parked/blocked scripts here too, with why.

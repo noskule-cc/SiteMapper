@@ -35,7 +35,8 @@ The companion doc has four parts: an H1 with the workflow name, a one-line
 purpose lifted from the YAML `description`, an **At a glance** line
 (`Site(s)` · `Mode` · `In:` params/fixtures → `Out:` captures), a `## Flow`
 section holding one Mermaid-fenced `flowchart TD`, and a `## See also` list
-linking the workflow YAML and the latest `results/` record if one exists.
+linking the workflow YAML, its page maps, and (for a tiered workflow) its app.
+Never a run record: runs live in the runs store, outside the tree.
 
 ## Rules that make the diagram worth having
 
