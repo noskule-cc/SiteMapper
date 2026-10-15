@@ -6,7 +6,9 @@
 
 result:
   workflow: ""                # Name of the workflow that ran
-  site: ""                    # Site (or first site) the run targeted
+  site: ""                    # Site the run targeted: the tier's site for a
+                              # workflow with `tiers`, else its first site
+  tier: ""                    # The tier the run targeted, or "-" (schema/app.yaml)
   status: ""                  # passed | failed | error
                               #   passed - ran to completion, all assertions passed
                               #   failed - ran to completion, >= 1 assertion failed
@@ -22,6 +24,11 @@ result:
                               # keyed by the step's capture name, e.g.:
                               #   captures:
                               #     bestehender_count: "121"
+
+  snapshot: {}                # The captures of the `snapshot:` phase, the
+                              # pre-state of a `rollback: snapshot` workflow.
+                              # Also in `captures`; kept apart so a record can
+                              # write them as the rollback copy (schema/run.yaml)
 
   assertions:                 # One entry per `assert` step
     - id: ""                  # Stable id (defaults to "<page>.<element>.<expect>")

@@ -43,7 +43,11 @@ settings:
     # succeeds against a mailbox the suite was never meant to touch.
 
   policy:                     # Flags that tell any executor how to behave on this scope.
-    environment: ""           #   dev | staging | production
+    environment: ""           #   The tier this scope is: prod | stg | dev (also
+                              #   accepted: production, staging, development).
+                              #   When the site is a tier of an app
+                              #   (schema/app.yaml), the app's tier key for it
+                              #   must agree with this value.
 
     permissions:              # allow | ask | deny per ACTION CLASS (#18/#22). Checked
                               # UP FRONT against the workflow's declared `effect`

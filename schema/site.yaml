@@ -16,11 +16,22 @@ site:
                               #   schema/workflow.yaml is different: it dates that
                               #   workflow's `trust: verified` review.)
   pages: []                   # List of page YAML filenames
-  workflows: []               # List of workflow YAML filenames
+  workflows: []               # List of workflow YAML filenames. A site's
+                              # workflows are BUILDING BLOCKS: true of this one
+                              # base URL, valued for what they return. A
+                              # workflow with a reason to be run on its own (a
+                              # test, a producer, a migration) is a project
+                              # workflow (schema/project.yaml); the keys that
+                              # say so (`tiers`, `sites:`, tier-keyed fixtures)
+                              # are not valid here.
 
   scripts:                    # Scripts in sites/<site>/scripts/ that workflows may
                               # call with `action: script`. Declaring them here is
                               # what makes them addressable — see schema/workflow.yaml.
+                              # A site's script is about THIS site only: every step
+                              # that calls it names this site. One that takes a tier
+                              # argument belongs to the app (schema/app.yaml); one
+                              # that serves no single site belongs to a project.
     - name: ""                #   Filename, e.g. "get_gateway_status_table.py"
       description: ""         #   What it returns and which workflow node it backs.
                               #   Record parked/blocked scripts here too, with why.
