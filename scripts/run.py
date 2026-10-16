@@ -11,8 +11,10 @@ loudly and the repair loop (an LLM, on demand) fixes the map.
 
 Browser automation is Playwright driving the installed Chrome
 (channel="chrome"): its auto-waiting covers ordinary load waiting, so
-workflows carry no generic sleeps. Playwright is imported lazily — every other
-script in this repo still needs nothing beyond PyYAML.
+workflows carry no generic sleeps. Playwright is imported lazily, and only
+when a step needs the browser: a workflow of `script` steps alone (a dataset
+producer on a scheduler) runs without Chrome or Playwright, as does every
+other script in this repo.
 
 `--root` points at a separate (usually private) map repository, same
 semantics as check.py / inventory.py. `--projects` and `--runs` point at the
@@ -980,7 +982,8 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
     phase = "setup"
     try:
-        runner.start(primary)
+        if any(s.get("action") != "script" for s in steps_of(workflow)):
+            runner.start(primary)
         for phase in PHASES:
             for index, step in enumerate(workflow.get(phase) or []):
                 runner.run_step(step, phase, index)

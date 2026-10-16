@@ -8,7 +8,7 @@ them) is [../USAGE.md](../USAGE.md).
 
 - **Language:** Python 3 (no build step, no packaging — the scripts are run directly)
 - **Required dependency:** PyYAML, and nothing else for the framework's own checks and views
-- **Optional dependency:** Playwright (`pip install playwright`), needed only by the headless runner; it drives your installed Chrome (`channel="chrome"`), so there is no browser download
+- **Optional dependency:** Playwright (`pip install playwright`), needed only by the headless runner, and only for a workflow with a step other than `action: script`; it drives your installed Chrome (`channel="chrome"`), so there is no browser download
 - **Serving:** `http.server` from the standard library — `scripts/serve.py` deliberately adds no web framework
 - **Standard library first.** A new third-party dependency needs a reason in the PR
 - **CI:** GitHub Actions (`.github/workflows/check.yml`) — the consistency checks plus a real headless run on every push
