@@ -164,8 +164,14 @@ stores as a class. The rules, stated once here for every project:
 - **A run folder lives one day** unless the project's `keep:` says longer. A
   run that is **evidence someone will come back to** — the record behind a
   published number, the reviewed green run behind a `trust: verified`
-  promotion, the reproduction of a bug — is kept by the page that cites it, and
-  that page cites the run id.
+  promotion, the reproduction of a bug — is kept by the page that cites it:
+  that page cites the run id, and the run's `run.yaml` says `keep: keep`.
+- **Who sweeps, when:** `run.py` sweeps the runs store after every recorded
+  run, and `python scripts/run.py --sweep [--runs PATH] [--dry-run]` sweeps
+  on demand (a scheduler may call it). The sweep covers every lib's records,
+  since all libs write the same `run.yaml`; a folder without a readable
+  `run.yaml` (a migration's `legacy-results/`) is never touched. Rules for
+  `keep`: `schema/run.yaml`.
 - **A snapshot run is always recorded**, so the pre-state of a mutating
   workflow outlives the session and the machine.
 - **Log size:** a device that is offline all window repeats one failure with a

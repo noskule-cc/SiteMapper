@@ -257,7 +257,10 @@ A recorded run is one folder in the **runs store**
 shared data tree, or inside this repository, and is gitignored as a class:
 nothing a run wrote is ever committed, and `check.py` fails a `results/` or
 `state/` folder under a site or a project. A folder lives one day unless the
-project's `keep:` says longer; a run a report cites is kept. A workflow that
+project's `keep:` says longer; a run a report cites is kept by setting
+`keep: keep` in its `run.yaml`. Every recorded run sweeps the store of expired
+folders; `python scripts/run.py --sweep --dry-run` shows what a sweep would
+remove without removing it. A workflow that
 writes declares `rollback: snapshot | none` (`schema/workflow.yaml`), and a
 snapshot run is always recorded.
 
