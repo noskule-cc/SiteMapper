@@ -39,6 +39,7 @@ TIER_SYNONYMS = {"production": "prod", "prod": "prod",
                  "development": "dev", "dev": "dev"}
 
 PROJECT_KINDS = ("test", "producer", "tool", "migration", "spike")
+EFFECT_VALUES = ("read-only", "mutating", "destructive")
 ROLLBACK_VALUES = ("snapshot", "none")
 DEFAULT_KEEP = "1d"
 

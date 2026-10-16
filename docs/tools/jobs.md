@@ -58,7 +58,7 @@ failure. What each one catches, and what to do when it fires:
 |---|---|---|
 | `yaml` | a file that does not parse | fix the YAML |
 | `schema` | keys used by files but absent from `schema/*.yaml` (and vice versa, as notes) | add the key to the template, with its comment |
-| `listings` | `site.yaml`/`project.yaml`/`app.yaml` naming files that are not on disk, or files nobody lists; a project without a `kind`, a producer without a `dataset`, a `state` file inside the project folder | fix the listing or add the file |
+| `listings` | `site.yaml`/`project.yaml`/`app.yaml` naming files that are not on disk, or files nobody lists; a project without a `kind`, a producer without a `dataset`, a `state` file inside the project folder; a workflow without `mode` or with an `effect` other than `read-only`, `mutating`, `destructive` | fix the listing, add the file, or declare the key |
 | `companions` | a workflow without its sibling `.md` | invoke the `workflow-companion` agent |
 | `apps` | a tier naming a missing site, a site whose `environment` disagrees with its tier key, a site in two apps, an app script also declared by a site | fix `app.yaml` or the site's settings |
 | `placement` | a site workflow carrying `tiers`, `sites:` or tier-keyed fixtures, or stepping onto another site | move it into a project |
