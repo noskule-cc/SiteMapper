@@ -730,6 +730,23 @@ def check_produced():
             if os.path.isdir(f"{pd_}/{bad}"):
                 fails.append(f"{show(pd_)}/{bad}/: run-written files do not live in the tree "
                              "— runs go to the runs store, learned state to the state store")
+    # A .gitignore does not untrack files that were already tracked: a migration
+    # moved 164 committed results into runs/ and they stayed in git. Ask git.
+    import subprocess
+    runs = tree.runs_root(ROOT)
+    for store in (runs, os.path.join(os.path.dirname(runs), "state")):
+        if not os.path.isdir(store):
+            continue
+        try:
+            out = subprocess.run(["git", "-C", store, "ls-files", "--", "."],
+                                 capture_output=True, text=True, timeout=30).stdout
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        tracked = [line for line in out.splitlines() if line.strip()]
+        if tracked:
+            fails.append(f"{show(store)}/: {len(tracked)} file(s) tracked by git, e.g. "
+                         f"{tracked[0]} — produced data is never committed; "
+                         "`git rm -r --cached` it")
     return fails
 
 

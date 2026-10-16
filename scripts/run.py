@@ -304,6 +304,54 @@ class Bindings:
 
 
 # ---------------------------------------------------------------------------
+# Steps on captured values: a `read` or `assert` with no `page` works on what an
+# earlier step captured (typically a script's JSON), not on the browser.
+
+CAPTURE_PATH_RE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)((?:\.[A-Za-z0-9_-]+|\[\])*)")
+
+
+def is_capture_step(step: dict) -> bool:
+    return step.get("action") in ("read", "assert") and not step.get("page")
+
+
+def capture_path(captures: dict, expr: str):
+    """`$name.key.key` into a captured value; `[]` maps the rest over a list:
+    `$forecast.vintages[].year_end` is every vintage's year_end."""
+    m = CAPTURE_PATH_RE.fullmatch(expr.strip())
+    if not m or m.group(1) not in captures:
+        raise RunError(f"'{expr}' names no captured value (captures: {sorted(captures)})")
+    values, mapped = [captures[m.group(1)]], False
+    for part in re.findall(r"\.[A-Za-z0-9_-]+|\[\]", m.group(2)):
+        if part == "[]":
+            mapped = True
+            values = [item for v in values for item in (v or [])]
+        else:
+            values = [v.get(part[1:]) if isinstance(v, dict) else None for v in values]
+    return values if mapped else values[0]
+
+
+def evaluate_capture(bindings: "Bindings", step: dict, expect):
+    """An assert on a captured value: `element` names the capture (or `value` is a
+    capture path). `contains`/`equals` compare its text (JSON for structured values),
+    `count` its length."""
+    expr = step.get("value") or f"${step.get('element', '')}"
+    value = capture_path(bindings.captures, expr)
+    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    if isinstance(expect, dict) and "contains" in expect:
+        needle = bindings.resolve(expect["contains"])
+        return text, needle in text
+    if isinstance(expect, dict) and "equals" in expect:
+        wanted = bindings.resolve(expect["equals"])
+        return text, text == wanted
+    if isinstance(expect, dict) and "count" in expect:
+        n = len(value) if isinstance(value, (list, dict, str)) else 0
+        return n, n == expect["count"]
+    if expect == "visible":
+        return text, value not in (None, "", [], {})
+    raise RunError(f"expect {expect!r} does not apply to a captured value")
+
+
+# ---------------------------------------------------------------------------
 # Browser execution
 
 def build_locator(pw_page, element: dict, scope_value: str | None = None):
@@ -628,6 +676,11 @@ class Runner:
             pass  # not a value-bearing element; fill() was the whole job
 
     def do_read(self, step):
+        if is_capture_step(step):
+            value = capture_path(self.bindings.captures, step.get("value") or "")
+            if step.get("capture"):
+                self.bindings.captures[step["capture"]] = value
+            return
         site = self.site(step)
         element = self._element(step, site)
         text = build_locator(self.pw_page, element).inner_text()
@@ -699,6 +752,8 @@ class Runner:
         self.assertions.append(entry)
 
     def _evaluate(self, site: Site, step: dict, expect):
+        if is_capture_step(step):
+            return evaluate_capture(self.bindings, step, expect)
         if isinstance(expect, dict) and "url_matches" in expect:
             pattern = self.bindings.resolve(expect["url_matches"])
             return self._poll(lambda: self.pw_page.url,
@@ -983,7 +1038,8 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
     phase = "setup"
     try:
-        if any(s.get("action") != "script" for s in steps_of(workflow)):
+        if any(s.get("action") != "script" and not is_capture_step(s)
+               for s in steps_of(workflow)):
             runner.start(primary)
         for phase in PHASES:
             for index, step in enumerate(workflow.get(phase) or []):

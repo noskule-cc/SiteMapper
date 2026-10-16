@@ -235,6 +235,19 @@ workflow:
 #   (the runner opens the dropdown and picks it). Used in `setup` to force a
 #   known grouping, e.g. element: device-grouping-dropdown, value: "IOT-Geräte".
 #
+# Steps on a captured value (no `page`):
+#   A `read` or `assert` without a `page` works on what an earlier step captured,
+#   typically a script's --json output, and needs no browser:
+#     - action: read
+#       value: "$forecast.vintages[].year_end"   # a path into a capture; [] maps a list
+#       capture: year_end_spread
+#     - action: assert
+#       element: partner_record                  # the capture's name (or `value:` a path)
+#       expect: { contains: "\"partner_roles\"" } # contains/equals on its text (JSON for
+#                                                #   structured values), count on its length
+#   A workflow whose every step is a script or a step on a captured value runs
+#   headless without Chrome.
+#
 # Variable references:
 #   $param_name     — references a workflow parameter
 #   $fixture_name   — references a pinned fixture value
