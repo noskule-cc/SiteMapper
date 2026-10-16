@@ -18,7 +18,7 @@ For LLM-driven sessions, two things run side by side:
 
 You type commands in the agent host; it controls the browser. The site maps live on your file system, not in the browser.
 
-The headless runner needs only Python + PyYAML + Playwright (`pip install playwright` — it drives your installed Chrome, no browser download).
+The headless runner needs only Python + PyYAML + Playwright (`pip install playwright` — it drives your installed Chrome, no browser download). A workflow whose every step is `action: script` needs neither Playwright nor Chrome.
 
 To begin, tell Claude to open a Chrome browser session (it creates its own tab via the MCP extension) and navigate to your target URL — you don't open the tab by hand. Make sure Chrome and the Claude-in-Chrome extension are running first, and that you're logged in to the target site if it requires auth (Claude won't enter credentials for you).
 
@@ -257,7 +257,10 @@ A recorded run is one folder in the **runs store**
 shared data tree, or inside this repository, and is gitignored as a class:
 nothing a run wrote is ever committed, and `check.py` fails a `results/` or
 `state/` folder under a site or a project. A folder lives one day unless the
-project's `keep:` says longer; a run a report cites is kept. A workflow that
+project's `keep:` says longer; a run a report cites is kept by setting
+`keep: keep` in its `run.yaml`. Every recorded run sweeps the store of expired
+folders; `python scripts/run.py --sweep --dry-run` shows what a sweep would
+remove without removing it. A workflow that
 writes declares `rollback: snapshot | none` (`schema/workflow.yaml`), and a
 snapshot run is always recorded.
 

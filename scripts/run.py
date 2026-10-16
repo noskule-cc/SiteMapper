@@ -2,6 +2,7 @@
 
     python scripts/run.py <workflow> [--param key=value ...] [--root PATH]
                           [--projects PATH] [--runs PATH] [--json] [--headed] [--record]
+    python scripts/run.py --sweep [--root PATH] [--runs PATH] [--dry-run]
 
 Executes a `mode: deterministic` workflow against its mapped site(s) with no
 LLM in the loop, and emits the neutral `result` object (schema/result.yaml).
@@ -11,8 +12,10 @@ loudly and the repair loop (an LLM, on demand) fixes the map.
 
 Browser automation is Playwright driving the installed Chrome
 (channel="chrome"): its auto-waiting covers ordinary load waiting, so
-workflows carry no generic sleeps. Playwright is imported lazily — every other
-script in this repo still needs nothing beyond PyYAML.
+workflows carry no generic sleeps. Playwright is imported lazily, and only
+when a step needs the browser: a workflow of `script` steps alone (a dataset
+producer on a scheduler) runs without Chrome or Playwright, as does every
+other script in this repo.
 
 `--root` points at a separate (usually private) map repository, same
 semantics as check.py / inventory.py. `--projects` and `--runs` point at the
@@ -980,7 +983,8 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
     phase = "setup"
     try:
-        runner.start(primary)
+        if any(s.get("action") != "script" for s in steps_of(workflow)):
+            runner.start(primary)
         for phase in PHASES:
             for index, step in enumerate(workflow.get(phase) or []):
                 runner.run_step(step, phase, index)
@@ -1061,7 +1065,12 @@ def write_run(result: dict, runs: Path, owner: Owner, workflow: dict) -> Path:
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("workflow", help="workflow name (filename stem or its name: field)")
+    ap.add_argument("workflow", nargs="?",
+                    help="workflow name (filename stem or its name: field)")
+    ap.add_argument("--sweep", action="store_true",
+                    help="only delete run folders whose `keep` has run out, then exit")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="with --sweep: list what would be removed, remove nothing")
     ap.add_argument("--param", action="append", default=[], metavar="KEY=VALUE",
                     help="workflow parameter (repeatable)")
     ap.add_argument("--root", default=None,
@@ -1087,10 +1096,19 @@ def main(argv=None):
                     help="tenant context to bind (default: the site's only one, "
                          "when the workflow requires a context)")
     args = ap.parse_args(argv)
+    if not args.workflow and not args.sweep:
+        ap.error("a workflow name is required unless --sweep is given")
 
     root = Path(args.root).resolve() if args.root else FRAMEWORK_ROOT
     projects = Path(tree.projects_root(str(root), args.projects))
     runs = Path(tree.runs_root(str(root), args.runs))
+    if args.sweep:
+        removed = tree.sweep_runs(runs, dry_run=args.dry_run)
+        verb = "would be removed" if args.dry_run else "removed"
+        for folder in removed:
+            print(f"{verb}: {folder}")
+        print(f"sweep {runs}: {len(removed)} run folder(s) {verb}")
+        return 0
     cli_params = {}
     for item in args.param:
         if "=" not in item:
@@ -1114,6 +1132,8 @@ def main(argv=None):
     if args.record or workflow.get("rollback") == "snapshot":
         record = write_run(result, runs, owner, workflow)
         print(f"record: {record}", file=sys.stderr)
+        for folder in tree.sweep_runs(runs):
+            print(f"swept: {folder}", file=sys.stderr)
 
     if args.json:
         print(json.dumps(result, indent=2, ensure_ascii=False))

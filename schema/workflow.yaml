@@ -69,9 +69,10 @@ workflow:
                               # `trust: verified`. Distinct from site.yaml's
                               # verified_at, which dates the MAP's last drift check.
 
-  effect: ""                  # read-only | mutating | destructive — what the workflow
-                              # DOES to the target site, declared explicitly because a
-                              # runner cannot infer whether a click mutates.
+  effect: ""                  # read-only | mutating | destructive — REQUIRED on
+                              # every workflow (check.py `listings`). What the
+                              # workflow DOES to the target site, declared explicitly
+                              # because a runner cannot infer whether a click mutates.
                               #   read-only   - changes nothing on the site
                               #   mutating    - creates/edits data (form submission
                               #                 included). A workflow whose teardown

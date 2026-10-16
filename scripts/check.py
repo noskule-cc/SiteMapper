@@ -409,6 +409,10 @@ def check_listings():
                 fails.append(f"{show(f)}: site '{s}' is not a directory under sites/")
         if not w.get("mode"):
             fails.append(f"{show(f)}: no `mode` — a runner cannot tell if this needs an LLM")
+        if w.get("effect") not in tree.EFFECT_VALUES:
+            fails.append(f"{show(f)}: effect is '{w.get('effect') or ''}' — must be one of "
+                         f"{' | '.join(tree.EFFECT_VALUES)}; a missing one lets a writing "
+                         "workflow skip the rollback check")
     return fails
 
 
@@ -688,9 +692,10 @@ def check_rollback():
     fails = []
     for f in all_workflows():
         w = load(f).get("workflow") or {}
-        if w.get("effect") in (None, "", "read-only"):
+        if w.get("effect") not in ("mutating", "destructive"):
             if w.get("snapshot"):
-                fails.append(f"{show(f)}: has a snapshot phase but effect is read-only")
+                fails.append(f"{show(f)}: has a snapshot phase but effect is "
+                             f"'{w.get('effect') or ''}', not mutating or destructive")
             continue
         rb = w.get("rollback")
         if rb not in tree.ROLLBACK_VALUES:

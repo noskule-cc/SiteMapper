@@ -45,9 +45,10 @@ project:
   state: []                   # Files RUNS write and the next run reads (what
                               # past runs learned). Names only: they live in
                               # the state store, never in this folder.
-  keep: ""                    # How long this project's run folders live, e.g.
-                              # 30d. Absent: one day. A run a report cites is
-                              # kept regardless.
+  keep: ""                    # How long this project's run folders live:
+                              # <N>d, <N>h or "keep" (schema/run.yaml).
+                              # Absent: one day. A run a report cites is kept
+                              # by setting `keep: keep` in its run.yaml.
 
   scripts:                    # Scripts in <project>/scripts/ that this
                               # project's workflows call with `action: script`.

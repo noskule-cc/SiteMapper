@@ -15,8 +15,10 @@
 # tiers. The instance in the folder name is what keeps two machines' runs
 # apart; a sync copies folders and never merges them.
 #
-# A reader (a UI, a sweep) needs only this file. The folder is deleted after
-# `keep` unless something cites it.
+# A reader (a UI, a sweep) needs only this file. `sweep_runs` (scripts/tree.py)
+# deletes the folder once `keep` has passed since finished_at (else
+# started_at), for every lib's records in the store. A folder without a
+# readable run.yaml is not a record and is never swept.
 
 run:
   lib: ""                     # Always "SiteMapper" here; the runs root is shared by libs
@@ -27,7 +29,9 @@ run:
   started_at: ""              # ISO-8601 UTC
   finished_at: ""             # ISO-8601 UTC
   status: ""                  # passed | failed | error (mirrors result.json)
-  keep: ""                    # How long the folder lives: "1d" unless the
-                              # project sets `keep:`; a run a report cites is
-                              # kept by setting it here ("keep")
+  keep: ""                    # How long the folder lives: <N>d (days),
+                              # <N>h (hours), or "keep" (never swept). Copied
+                              # from the project's `keep:`, else "1d"; empty or
+                              # unparseable also means one day. A run a report
+                              # cites is kept by setting "keep" here.
   files: []                   # Relative paths of everything in the folder

@@ -58,7 +58,7 @@ failure. What each one catches, and what to do when it fires:
 |---|---|---|
 | `yaml` | a file that does not parse | fix the YAML |
 | `schema` | keys used by files but absent from `schema/*.yaml` (and vice versa, as notes) | add the key to the template, with its comment |
-| `listings` | `site.yaml`/`project.yaml`/`app.yaml` naming files that are not on disk, or files nobody lists; a project without a `kind`, a producer without a `dataset`, a `state` file inside the project folder | fix the listing or add the file |
+| `listings` | `site.yaml`/`project.yaml`/`app.yaml` naming files that are not on disk, or files nobody lists; a project without a `kind`, a producer without a `dataset`, a `state` file inside the project folder; a workflow without `mode` or with an `effect` other than `read-only`, `mutating`, `destructive` | fix the listing, add the file, or declare the key |
 | `companions` | a workflow without its sibling `.md` | invoke the `workflow-companion` agent |
 | `apps` | a tier naming a missing site, a site whose `environment` disagrees with its tier key, a site in two apps, an app script also declared by a site | fix `app.yaml` or the site's settings |
 | `placement` | a site workflow carrying `tiers`, `sites:` or tier-keyed fixtures, or stepping onto another site | move it into a project |
@@ -164,8 +164,14 @@ stores as a class. The rules, stated once here for every project:
 - **A run folder lives one day** unless the project's `keep:` says longer. A
   run that is **evidence someone will come back to** — the record behind a
   published number, the reviewed green run behind a `trust: verified`
-  promotion, the reproduction of a bug — is kept by the page that cites it, and
-  that page cites the run id.
+  promotion, the reproduction of a bug — is kept by the page that cites it:
+  that page cites the run id, and the run's `run.yaml` says `keep: keep`.
+- **Who sweeps, when:** `run.py` sweeps the runs store after every recorded
+  run, and `python scripts/run.py --sweep [--runs PATH] [--dry-run]` sweeps
+  on demand (a scheduler may call it). The sweep covers every lib's records,
+  since all libs write the same `run.yaml`; a folder without a readable
+  `run.yaml` (a migration's `legacy-results/`) is never touched. Rules for
+  `keep`: `schema/run.yaml`.
 - **A snapshot run is always recorded**, so the pre-state of a mutating
   workflow outlives the session and the machine.
 - **Log size:** a device that is offline all window repeats one failure with a

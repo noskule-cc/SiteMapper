@@ -25,8 +25,14 @@ ROOT. Resolution is by presence, so neither layout needs a flag:
 """
 from __future__ import annotations
 
+import datetime as _dt
 import os
+import re
+import shutil
 import socket
+from pathlib import Path
+
+import yaml
 
 LIB = "SiteMapper"
 
@@ -39,6 +45,7 @@ TIER_SYNONYMS = {"production": "prod", "prod": "prod",
                  "development": "dev", "dev": "dev"}
 
 PROJECT_KINDS = ("test", "producer", "tool", "migration", "spike")
+EFFECT_VALUES = ("read-only", "mutating", "destructive")
 ROLLBACK_VALUES = ("snapshot", "none")
 DEFAULT_KEEP = "1d"
 
@@ -118,3 +125,64 @@ def iter_apps(root: str):
         return []
     return [(d, os.path.join(base, d)) for d in sorted(os.listdir(base))
             if os.path.isfile(os.path.join(base, d, "app.yaml"))]
+
+
+def parse_keep(value) -> _dt.timedelta | None:
+    """How long a run folder lives: `Nd`, `Nh`, or `keep` (None: never swept).
+    Empty or unparseable means the default, one day."""
+    text = str(value or "").strip().lower()
+    if text == "keep":
+        return None
+    m = re.fullmatch(r"(\d+)\s*([dh])", text)
+    if not m:
+        return _dt.timedelta(days=1)
+    n = int(m.group(1))
+    return _dt.timedelta(days=n) if m.group(2) == "d" else _dt.timedelta(hours=n)
+
+
+def _run_record(folder: str) -> dict | None:
+    try:
+        with open(os.path.join(folder, "run.yaml"), encoding="utf-8") as fh:
+            run = (yaml.safe_load(fh) or {}).get("run")
+    except (OSError, yaml.YAMLError, AttributeError):
+        return None
+    return run if isinstance(run, dict) else None
+
+
+def _timestamp(value) -> _dt.datetime | None:
+    try:
+        ts = _dt.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=_dt.timezone.utc)
+
+
+def sweep_runs(runs_root, now: _dt.datetime | None = None,
+               dry_run: bool = False) -> list[Path]:
+    """Delete every run folder under RUNS whose `keep` has run out, for every
+    lib: runs/<lib>/<owner...>/<run-id>/run.yaml (schema/run.yaml). Returns
+    the folders removed, or that would be with dry_run.
+
+    A folder is a run only if its run.yaml reads as a record with a time
+    (finished_at, else started_at). Anything else, such as a folder a
+    migration parked in the store, is never touched."""
+    now = now or _dt.datetime.now(_dt.timezone.utc)
+    removed = []
+    if not os.path.isdir(runs_root):
+        return removed
+    for cur, dirs, names in os.walk(runs_root):
+        dirs[:] = sorted(d for d in dirs if not d.startswith("."))
+        if "run.yaml" not in names:
+            continue
+        dirs[:] = []
+        run = _run_record(cur)
+        if run is None:
+            continue
+        ended = _timestamp(run.get("finished_at") or run.get("started_at"))
+        keep = parse_keep(run.get("keep"))
+        if ended is None or keep is None or ended + keep > now:
+            continue
+        if not dry_run:
+            shutil.rmtree(cur)
+        removed.append(Path(cur))
+    return removed
