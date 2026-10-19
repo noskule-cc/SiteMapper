@@ -186,13 +186,6 @@ def app_of_site(site_name):
     return None, None
 
 
-def steps_of(w):
-    out = []
-    for phase in ("snapshot", "setup", "steps", "teardown"):
-        out += [s for s in (w.get(phase) or []) if isinstance(s, dict)]
-    return out
-
-
 def tier_keys(w, tiers=None):
     """The fixture blocks that are keyed by tier: `common` and every dict-valued
     key that names a tier (of the given app, else any known tier name). A
@@ -219,7 +212,7 @@ def step_sites(w):
         else:
             values.setdefault(k, set()).add(str(v))
     sites, unresolved = set(), set()
-    for s in steps_of(w):
+    for s in tree.steps_of(w):
         ref = s.get("site") or default
         if not ref:
             continue
@@ -596,7 +589,7 @@ def check_scripts():
                     values.setdefault(kk, set()).add(str(vv))
             else:
                 values.setdefault(k, set()).add(str(v))
-        for s in steps_of(w):
+        for s in tree.steps_of(w):
             name = s.get("script")
             if not name:
                 continue

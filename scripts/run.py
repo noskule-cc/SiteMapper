@@ -48,9 +48,6 @@ FRAMEWORK_ROOT = Path(__file__).resolve().parent.parent
 # its presence (or mode: agentic) makes the workflow un-runnable here.
 MECHANICAL_ACTIONS = set(tree.ACTIONS) - {"verify"}
 
-PHASES = ("setup", "snapshot", "steps")
-
-
 class RunError(Exception):
     """Fatal runner error — maps to result.status = error."""
 
@@ -237,15 +234,25 @@ def deep_merge(base: dict, override: dict) -> dict:
     return out
 
 
-def resolve_settings(root: Path, site: Site, page_name: str | None):
-    """config.yaml (framework, then map repo) -> site.yaml -> page. Most specific wins."""
-    merged: dict = {}
-    for cfg in {FRAMEWORK_ROOT / "config.yaml", root / "config.yaml"}:
+def settings_layers(root: Path, site: Site, page_name: str | None) -> list[tuple[Path, dict]]:
+    """(file, settings) per scope, least specific first: config.yaml of the
+    framework, then of the map repo, then site.yaml, then the page."""
+    layers = []
+    for cfg in dict.fromkeys((FRAMEWORK_ROOT / "config.yaml", root.resolve() / "config.yaml")):
         if cfg.is_file():
-            merged = deep_merge(merged, (load_yaml(cfg) or {}).get("settings", {}))
-    merged = deep_merge(merged, site.config.get("settings", {}))
+            layers.append((cfg, (load_yaml(cfg) or {}).get("settings") or {}))
+    layers.append((site.dir / "site.yaml", site.config.get("settings") or {}))
     if page_name and page_name in site.pages:
-        merged = deep_merge(merged, site.pages[page_name].get("settings", {}))
+        layers.append((site.dir / "pages" / f"{page_name}.yaml",
+                       site.pages[page_name].get("settings") or {}))
+    return layers
+
+
+def resolve_settings(root: Path, site: Site, page_name: str | None):
+    """The layers merged. Most specific wins."""
+    merged: dict = {}
+    for _, settings in settings_layers(root, site, page_name):
+        merged = deep_merge(merged, settings)
     return merged
 
 
@@ -840,13 +847,6 @@ class Runner:
 # ---------------------------------------------------------------------------
 # Scope: which tier, which sites
 
-def steps_of(workflow: dict):
-    out = []
-    for phase in PHASES + ("teardown",):
-        out += [s for s in (workflow.get(phase) or []) if isinstance(s, dict)]
-    return out
-
-
 def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
     """The tier this run targets and every site its steps touch.
 
@@ -872,7 +872,7 @@ def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
         if not primary:
             raise RunError(f"app '{app_name}' maps no site for tier '{tier}'")
     sites = []
-    for step in steps_of(workflow):
+    for step in tree.steps_of(workflow):
         ref = step.get("site") or workflow.get("site")
         if not ref:
             continue
@@ -908,6 +908,28 @@ def permission_verdict(settings: dict, action_class: str) -> str:
     if not verdict and action_class == "write" and policy.get("safe_to_submit_forms"):
         verdict = "allow"  # legacy alias
     return verdict or PERMISSION_DEFAULTS[action_class]
+
+
+def permission_source(root: Path, site: Site, action_class: str) -> tuple[str, Path | None]:
+    """permission_verdict for the site, and the file whose rule decided it;
+    None when no file sets one and the default applies."""
+    merged: dict = {}
+    set_class = set_alias = None
+    for path, settings in settings_layers(root, site, None):
+        merged = deep_merge(merged, settings)
+        policy = settings.get("policy") or {}
+        if action_class in (policy.get("permissions") or {}):
+            set_class = path
+        if "safe_to_submit_forms" in policy:
+            set_alias = path
+    policy = merged.get("policy") or {}
+    if (policy.get("permissions") or {}).get(action_class):
+        source = set_class
+    elif action_class == "write" and policy.get("safe_to_submit_forms"):
+        source = set_alias
+    else:
+        source = None
+    return permission_verdict(merged, action_class), source
 
 
 def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str]):
@@ -1025,7 +1047,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
             f"'{name}' is mode: {mode or 'unset'} — only deterministic workflows can run "
             "headless. An agentic workflow needs an LLM host (the /run skill)."
         )
-    for phase in PHASES + ("teardown",):
+    for phase in tree.PHASES + ("teardown",):
         for step in workflow.get(phase) or []:
             if step.get("action") == "verify":
                 raise RunError(
@@ -1062,11 +1084,11 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     }
 
     phase = "setup"
-    ordered = [(ph, index, step) for ph in PHASES
+    ordered = [(ph, index, step) for ph in tree.PHASES
                for index, step in enumerate(workflow.get(ph) or [])]
     try:
         if any(s.get("action") not in ("script", "human") and not is_capture_step(s)
-               for s in steps_of(workflow)):
+               for s in tree.steps_of(workflow)):
             runner.start(primary)
         for number, (phase, index, step) in enumerate(ordered, 1):
             runner.run_step(step, phase, index, number)

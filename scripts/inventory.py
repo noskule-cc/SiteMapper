@@ -82,18 +82,10 @@ def oneline(s, limit=110):
 # every clone of the tree.
 
 
-def phases(w):
-    """Every step of a workflow, whichever phase it sits in."""
-    out = []
-    for phase in ("snapshot", "setup", "steps", "teardown"):
-        out += [s for s in (w.get(phase) or []) if isinstance(s, dict)]
-    return out
-
-
 def _workflow_row(f, kind, owner, project=None):
     w = load(f).get("workflow") or {}
     sites = w.get("sites") or ([w.get("site")] if w.get("site") else [])
-    steps = phases(w)
+    steps = tree.steps_of(w)
     tiers = w.get("tiers") or {}
     return {
         "kind": kind,
