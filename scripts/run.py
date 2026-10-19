@@ -232,7 +232,7 @@ def read_secret(ref: str, what: str) -> str:
             import keyring
         except ImportError:
             raise RunError(f"persona {what} is a keyring: reference, but keyring is not "
-                           "installed: pip install keyring")
+                           "installed: pip install keyring") from None
         value = keyring.get_password(service, name)
         if not value:
             raise RunError(f"keyring entry '{ref}' ({what}) does not exist")
@@ -443,6 +443,7 @@ class Runner:
         self._pw = None
         self.browser = None
         self.pw_page = None
+        self.login_failed = False
 
     # -- sites ------------------------------------------------------------
     def site(self, step: dict) -> Site:
@@ -491,7 +492,19 @@ class Runner:
         self.pw_page = self.context.new_page()
         self.pw_page.set_default_timeout(self.DEFAULT_TIMEOUT_MS)
         if self.persona and "storage_state" not in context_args:
-            self._establish_session(primary_site, credentials)
+            failed = None
+            try:
+                self._establish_session(primary_site, credentials)
+            except RunError as exc:
+                failed = str(exc)
+            except Exception as exc:
+                failed = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
+            if failed:
+                # Raised outside the except block: the Playwright exception's
+                # call log holds fill("<password>") and must not ride along as
+                # __context__. A login screen shows the username, so no screenshot.
+                self.login_failed = True
+                raise RunError(f"{failed} (no screenshot taken: the failure was in the login)")
 
     def _login_credentials(self, site_name: str) -> tuple[str, str]:
         site = Site(self.root, site_name)
@@ -545,7 +558,8 @@ class Runner:
                         locator.fill(value)
                 except Exception as exc:
                     raise RunError(f"login.{key} '{login[key]}' on page '{login['page']}': "
-                                   f"{type(exc).__name__}: {str(exc).splitlines()[0]}")
+                                   f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
+                                   ) from None
             self.pw_page.wait_for_load_state()
             password = build_locator(self.pw_page,
                                      site.element(login["page"], login["password_element"]))
@@ -554,7 +568,7 @@ class Runner:
             except Exception:
                 raise RunError(f"login rejected on site '{site_name}': the password element "
                                f"'{login['password_element']}' still shows after submit. "
-                               "Not retried.")
+                               "Not retried.") from None
         else:
             raise RunError(f"persona auth method '{method}' is not session|human|automated")
         if persona.get("fresh_login"):
@@ -654,6 +668,8 @@ class Runner:
                 failure["page_title"] = self.pw_page.title()
             except Exception:
                 pass
+            if self.login_failed:
+                return failure
             try:
                 shots = self.root / ".runner"
                 shots.mkdir(exist_ok=True)

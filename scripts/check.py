@@ -298,6 +298,10 @@ def check_credentials():
     fails = []
     for f in files(["sites/*/personas/*.yaml"]):
         refs = ((load(f) or {}).get("persona") or {}).get("credential_ref") or {}
+        if not isinstance(refs, dict):
+            fails.append(f"{show(f)}: credential_ref is not a mapping of username and "
+                         "password references (the value is not shown)")
+            continue
         for key, ref in refs.items():
             if ref and not SECRET_REF.fullmatch(str(ref)):
                 fails.append(f"{show(f)}: credential_ref.{key} is not an env: or keyring: "
