@@ -39,7 +39,8 @@ the workflow to produce it) if only a prose description is offered.
 5. **Re-run**: `python scripts/run.py <workflow> --json`. Green → restore the
    workflow's `trust:` (`broken → draft`, or `verified` **only** if it was
    verified before the drift and the run is reviewed — see
-   `schema/workflow.yaml`).
+   `schema/workflow.yaml`). The run that set `broken` was recorded with
+   `keep: keep`; delete its folder or lower its `keep` once trust is back.
 6. **Cannot find it** → ask the user for a focused re-map of that page
    (`/map-site`). Never guess a locator into the map: a plausible-but-wrong
    locator is worse than a missing one, because it fails only sometimes.
