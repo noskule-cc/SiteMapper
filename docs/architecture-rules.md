@@ -85,7 +85,7 @@ Before implementing new logic, check this table. If what you need exists, use it
 | Walk a workflow's steps in run order | `steps_of` / `PHASES` | `scripts/tree.py` |
 | Every site a workflow's steps name, through fixtures too | `step_sites` | `scripts/tree.py` |
 | Resolve `$name` (params → context → fixtures → captures) | the `Bindings` class (`lookup`, `resolve`) | `scripts/run.py` |
-| Read a secret by reference, never by value | `env_secret` | `scripts/run.py` |
+| Read a secret by `env:` or `keyring:` reference, never by value | `read_secret` | `scripts/run.py` |
 
 ### Policy and trust
 

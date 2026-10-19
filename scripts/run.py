@@ -217,14 +217,29 @@ def state_path(root: Path, site_name: str, persona: dict) -> Path:
     return root / ".runner" / "state" / f"{site_name}.{persona.get('name', 'default')}.json"
 
 
-def env_secret(ref: str, what: str) -> str:
-    if not (ref or "").startswith("env:"):
-        raise RunError(f"persona {what} must be an env: reference, got '{ref}' — "
-                       "committed files never contain secrets (schema/persona.yaml)")
-    value = os.environ.get(ref[4:])
-    if not value:
-        raise RunError(f"environment variable '{ref[4:]}' ({what}) is not set")
-    return value
+def read_secret(ref: str, what: str) -> str:
+    """Resolve `env:VAR` or `keyring:<service>/<name>`. No message carries the value."""
+    ref = ref or ""
+    if ref.startswith("env:"):
+        value = os.environ.get(ref[4:])
+        if not value:
+            raise RunError(f"environment variable '{ref[4:]}' ({what}) is not set")
+        return value
+    if ref.startswith("keyring:"):
+        service, _, name = ref[8:].partition("/")
+        if not service or not name:
+            raise RunError(f"persona {what} '{ref}' must read keyring:<service>/<name>")
+        try:
+            import keyring
+        except ImportError:
+            raise RunError(f"persona {what} is a keyring: reference, but keyring is not "
+                           "installed: pip install keyring")
+        value = keyring.get_password(service, name)
+        if not value:
+            raise RunError(f"keyring entry '{ref}' ({what}) does not exist")
+        return value
+    raise RunError(f"persona {what} must be an env: or keyring: reference, not a value "
+                   "— committed files never contain secrets (schema/persona.yaml)")
 
 
 def deep_merge(base: dict, override: dict) -> dict:
@@ -449,12 +464,16 @@ class Runner:
                 "SiteMapper does not): pip install playwright  — no browser "
                 "download required, the installed Chrome is used."
             )
-        self._pw = sync_playwright().start()
-        self.browser = self._pw.chromium.launch(channel="chrome", headless=not self.headed)
         context_args = {}
+        credentials = None
         if self.persona:
             state = state_path(self.root, primary_site, self.persona)
+            fresh = bool(self.persona.get("fresh_login"))
             if self.persona.get("auth") == "session":
+                if fresh:
+                    raise RunError(f"persona '{self.persona.get('name')}' is auth: session "
+                                   "and fresh_login: true — a session persona only reuses "
+                                   "saved state (schema/persona.yaml)")
                 if not state.is_file():
                     raise RunError(
                         f"persona '{self.persona.get('name')}' is auth: session but "
@@ -463,21 +482,44 @@ class Runner:
                         "silently."
                     )
                 context_args["storage_state"] = str(state)
-            elif state.is_file():  # human/automated reuse an existing state too
+            elif state.is_file() and not fresh:  # human/automated reuse an existing state too
                 context_args["storage_state"] = str(state)
+            elif self.persona.get("auth") == "automated":
+                credentials = self._login_credentials(primary_site)
+        self._pw = sync_playwright().start()
+        self.browser = self._pw.chromium.launch(channel="chrome", headless=not self.headed)
         self.context = self.browser.new_context(**context_args)
         self.pw_page = self.context.new_page()
         self.pw_page.set_default_timeout(self.DEFAULT_TIMEOUT_MS)
         if self.persona and "storage_state" not in context_args:
-            self._establish_session(primary_site)
+            self._establish_session(primary_site, credentials)
 
-    def _establish_session(self, site_name: str):
-        """First-time login for auth: human | automated. Saves storage_state."""
+    def _login_credentials(self, site_name: str) -> tuple[str, str]:
+        """Permission and credentials for auth: automated, settled before the browser opens."""
+        site = Site(self.root, site_name)
+        settings = resolve_settings(self.root, site, None)
+        verdict = permission_verdict(settings, "auth")
+        if verdict == "deny" or (verdict == "ask" and "auth" not in self.pre_authorized):
+            env = (settings.get("policy") or {}).get("environment", "?")
+            raise RunError(
+                f"automated login is '{verdict}' for site '{site_name}' "
+                f"(environment: {env})" +
+                (" — pass --yes-auth to pre-authorize" if verdict == "ask" else
+                 ". Use a `human`-seeded session instead (docs/permissions.md).")
+            )
+        if not (self.persona.get("login") or {}).get("page"):
+            raise RunError("auth: automated needs a `login:` block (schema/persona.yaml)")
+        creds = self.persona.get("credential_ref") or {}
+        return (read_secret(creds.get("username"), "credential_ref.username"),
+                read_secret(creds.get("password"), "credential_ref.password"))
+
+    def _establish_session(self, site_name: str, credentials: tuple[str, str] | None):
+        """Login for auth: human | automated. Saves storage_state unless fresh_login.
+        A failed login fails the run once; nothing here retries (account lockout)."""
         persona = self.persona
         method = persona.get("auth")
         site = Site(self.root, site_name)
         state = state_path(self.root, site_name, persona)
-        state.parent.mkdir(parents=True, exist_ok=True)
         if method == "human":
             if not self.headed:
                 raise RunError(
@@ -492,32 +534,32 @@ class Runner:
             except (EOFError, KeyboardInterrupt):
                 raise RunError("no interactive console to wait on — auth: human needs one")
         elif method == "automated":
-            settings = resolve_settings(self.root, site, None)
-            verdict = permission_verdict(settings, "auth")
-            if verdict == "deny" or (verdict == "ask" and "auth" not in self.pre_authorized):
-                env = (settings.get("policy") or {}).get("environment", "?")
-                raise RunError(
-                    f"automated login is '{verdict}' for site '{site_name}' "
-                    f"(environment: {env})" +
-                    (" — pass --yes-auth to pre-authorize" if verdict == "ask" else
-                     ". Use a `human`-seeded session instead (docs/permissions.md).")
-                )
-            login = persona.get("login") or {}
-            if not login.get("page"):
-                raise RunError("auth: automated needs a `login:` block (schema/persona.yaml)")
-            creds = persona.get("credential_ref") or {}
-            user = env_secret(creds.get("username"), "credential_ref.username")
-            pw = env_secret(creds.get("password"), "credential_ref.password")
+            login = persona["login"]
+            user, pw = credentials
             self.pw_page.goto(site.base_url + site.page(login["page"]).get("url_pattern", ""))
-            build_locator(self.pw_page,
-                          site.element(login["page"], login["username_element"])).fill(user)
-            build_locator(self.pw_page,
-                          site.element(login["page"], login["password_element"])).fill(pw)
-            build_locator(self.pw_page,
-                          site.element(login["page"], login["submit_element"])).click()
-            self.pw_page.wait_for_load_state()
+            moves = [("open_element", None)] if login.get("open_element") else []
+            moves += [("username_element", user), ("password_element", pw),
+                      ("submit_element", None)]
+            for key, value in moves:
+                locator = build_locator(self.pw_page, site.element(login["page"], login[key]))
+                try:
+                    locator.click() if value is None else locator.fill(value)
+                except Exception as exc:
+                    raise RunError(f"login.{key} '{login[key]}' on page '{login['page']}': "
+                                   f"{type(exc).__name__}: {str(exc).splitlines()[0]}")
+            try:
+                self.pw_page.wait_for_load_state()
+                build_locator(self.pw_page, site.element(
+                    login["page"], login["password_element"])).wait_for(state="hidden")
+            except Exception:
+                raise RunError(f"login rejected on site '{site_name}': the password element "
+                               f"'{login['password_element']}' still shows after submit. "
+                               "Not retried.")
         else:
             raise RunError(f"persona auth method '{method}' is not session|human|automated")
+        if persona.get("fresh_login"):
+            return
+        state.parent.mkdir(parents=True, exist_ok=True)
         self.context.storage_state(path=str(state))
         print(f"session saved: {state}", file=sys.stderr)
 

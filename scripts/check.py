@@ -255,6 +255,7 @@ def schema_map():
         ("group", "schema/group.yaml",
          [norm(os.path.join(d, "group.yaml")) for _, d, has in tree.iter_groups(PROJECTS) if has]),
         ("page", "schema/page.yaml", files(["sites/*/pages/*.yaml"])),
+        ("persona", "schema/persona.yaml", files(["sites/*/personas/*.yaml"])),
         ("workflow", "schema/workflow.yaml", all_workflows()),
     ]
 
@@ -286,6 +287,23 @@ def check_schema():
             # legitimately absent until that tooling has run. Worth surfacing so a
             # schema documenting something that never existed still gets noticed.
             NOTES.append(f"{schema}: defines key(s) no file currently uses: {sorted(unused)}")
+    return fails
+
+
+SECRET_REF = re.compile(r"env:\w+|keyring:[^/]+/.+")
+
+
+def check_credentials():
+    """Persona credential_ref values are env: or keyring: references, never a secret.
+
+    A plain value here is a password committed to the repository."""
+    fails = []
+    for f in files(["sites/*/personas/*.yaml"]):
+        refs = ((load(f) or {}).get("persona") or {}).get("credential_ref") or {}
+        for key, ref in refs.items():
+            if ref and not SECRET_REF.fullmatch(str(ref)):
+                fails.append(f"{show(f)}: credential_ref.{key} is not an env: or keyring: "
+                             "reference (the value is not shown)")
     return fails
 
 
@@ -863,6 +881,7 @@ def check_lib_tree():
 CHECKS = {
     "yaml": check_yaml,
     "schema": check_schema,
+    "credentials": check_credentials,
     "listings": check_listings,
     "companions": check_companions,
     "apps": check_apps,

@@ -29,8 +29,20 @@ persona:
                               #               dev/staging scopes; production stays ask.
 
   credential_ref:             # For auth: automated — RUNTIME references, never values.
-    username: ""              #   env:VARNAME — resolved from the environment at run time
-    password: ""              #   env:VARNAME — a committed file NEVER contains a secret
+                              # Each is one of:
+                              #   env:VARNAME              - read from the environment
+                              #   keyring:<service>/<name> - read from the OS keyring
+                              #     (pip install keyring; Credential Manager on Windows).
+                              #     A scheduled task has no environment, so it uses this.
+                              # A committed file NEVER contains a secret: check.py fails
+                              # a plain value.
+    username: ""
+    password: ""
+
+  fresh_login: false          # true: never reuse a saved state and never save one —
+                              #   log in on every run. For sites whose session ends with
+                              #   the browser, where a restored state fails a day later.
+                              #   Not with auth: session, which only reuses state.
 
   storage_state: ""           # Where the saved browser state lives. Default:
                               #   .runner/state/<site>.<persona>.json — a LOCAL,
@@ -40,6 +52,11 @@ persona:
   login:                      # For auth: automated (and human, as a courtesy nav) —
                               # where login happens, referencing the page map.
     page: ""                  #   page map name of the login page
+    open_element: ""          #   optional: clicked after opening the page, before the
+                              #   form is filled (a landing page's Login button)
     username_element: ""      #   element names from that page map
     password_element: ""
-    submit_element: ""
+    submit_element: ""        #   after submit the password element must disappear; if
+                              #   it still shows, the login was rejected and the run
+                              #   fails. The runner never retries, so a wrong password
+                              #   cannot lock the account.
