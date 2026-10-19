@@ -417,19 +417,17 @@ def build_locator(pw_page, element: dict, scope_value: str | None = None):
     return loc.first
 
 
-# Header texts and the cells of every body row containing the needle, for a
-# <table> or an ARIA grid (role=row / columnheader / cell). Cells are counted as
-# the row's children, hidden ones included, so header and cell indices agree.
 TABLE_JS = """(el, needle) => {
   const rows = Array.from(el.querySelectorAll('tr, [role=row]'));
+  const childCellsIncludingHidden = r => Array.from(r.children);
   const isHead = r => r.closest('thead') !== null
     || r.querySelector(':scope > [role=columnheader]') !== null
-    || (r.children.length > 0 && Array.from(r.children).every(c => c.tagName === 'TH'));
+    || (r.children.length > 0 && childCellsIncludingHidden(r).every(c => c.tagName === 'TH'));
   const head = rows.find(isHead);
   return {
-    headers: head ? Array.from(head.children, c => c.innerText.replace(/\\s+/g, ' ').trim()) : [],
+    headers: head ? childCellsIncludingHidden(head).map(c => c.innerText.replace(/\\s+/g, ' ').trim()) : [],
     rows: rows.filter(r => !isHead(r) && r.innerText.includes(needle))
-      .map(r => Array.from(r.children, c => c.innerText.trim())),
+      .map(r => childCellsIncludingHidden(r).map(c => c.innerText.trim())),
   };
 }"""
 
@@ -793,17 +791,9 @@ class Runner:
             self.bindings.captures[step["capture"]] = text.strip()
 
     def _read_cell(self, table, row: str, column: str) -> str:
-        """The header is found by text, never by position, so a hidden or moved
-        column cannot shift the read. A filtered list re-renders after the
-        filter lands, so the row count is polled until it settles on one."""
         if not row or not column:
             raise RunError("a table read needs both `row` and `column`")
-        deadline = time.monotonic() + self.DEFAULT_TIMEOUT_MS / 1000
-        while True:
-            grid = table.evaluate(TABLE_JS, row)
-            if len(grid["rows"]) == 1 or time.monotonic() > deadline:
-                break
-            self.pw_page.wait_for_timeout(250)
+        grid = self._settle_rows(table, row)
         headers = grid["headers"]
         index = [i for i, h in enumerate(headers) if h == column] \
             or [i for i, h in enumerate(headers) if h.startswith(column)]
@@ -817,6 +807,14 @@ class Runner:
             raise RunError(f"the row containing '{row}' has {len(cells)} cells, "
                            f"no cell under header '{column}'")
         return cells[index[0]]
+
+    def _settle_rows(self, table, row: str) -> dict:
+        deadline = time.monotonic() + self.DEFAULT_TIMEOUT_MS / 1000
+        grid = table.evaluate(TABLE_JS, row)
+        while len(grid["rows"]) != 1 and time.monotonic() < deadline:
+            self.pw_page.wait_for_timeout(250)
+            grid = table.evaluate(TABLE_JS, row)
+        return grid
 
     def do_wait(self, step):
         value = self.bindings.resolve(step.get("value"))
