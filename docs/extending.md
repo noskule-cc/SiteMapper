@@ -74,7 +74,9 @@ become one.
 2. Both skills that execute steps: `.claude/skills/run/SKILL.md` and
    `.claude/skills/test/SKILL.md`.
 3. [host-bindings.md](host-bindings.md) — which capability implements it per host.
-4. The headless runner: a `do_<action>` method in `scripts/run.py`.
+4. The headless runner: a `do_<action>` method in `scripts/run.py`, and the
+   name in `ACTIONS` in `scripts/tree.py`, which the runner and the `actions`
+   check in `scripts/check.py` both read.
 
 `key` and `script` shipped without steps 2–3 once and went undocumented for
 weeks — that is the failure mode this list exists for.

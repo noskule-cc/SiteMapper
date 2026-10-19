@@ -13,7 +13,7 @@ loudly and the repair loop (an LLM, on demand) fixes the map.
 Browser automation is Playwright driving the installed Chrome
 (channel="chrome"): its auto-waiting covers ordinary load waiting, so
 workflows carry no generic sleeps. Playwright is imported lazily, and only
-when a step needs the browser: a workflow of `script` steps alone (a dataset
+when a step needs the browser: a workflow of `script` and `human` steps (a dataset
 producer on a scheduler) runs without Chrome or Playwright, as does every
 other script in this repo.
 
@@ -45,13 +45,19 @@ FRAMEWORK_ROOT = Path(__file__).resolve().parent.parent
 
 # Actions a deterministic workflow may contain. `verify` needs judgement, so
 # its presence (or mode: agentic) makes the workflow un-runnable here.
-MECHANICAL_ACTIONS = {"navigate", "click", "input", "read", "assert", "wait", "key", "script"}
+MECHANICAL_ACTIONS = set(tree.ACTIONS) - {"verify"}
 
 PHASES = ("setup", "snapshot", "steps")
 
 
 class RunError(Exception):
     """Fatal runner error — maps to result.status = error."""
+
+
+class WaitForPerson(Exception):
+    def __init__(self, step: int, label: str, reason: str):
+        super().__init__(f"step {step}: {label}")
+        self.waiting_for = {"step": step, "label": label, "reason": reason}
 
 
 # ---------------------------------------------------------------------------
@@ -505,8 +511,8 @@ class Runner:
                 pass
 
     # -- steps -------------------------------------------------------------
-    def run_step(self, step: dict, phase: str = "steps", index: int = 0):
-        self.current = {"phase": phase, "index": index, "step": step}
+    def run_step(self, step: dict, phase: str = "steps", index: int = 0, number: int = 0):
+        self.current = {"phase": phase, "index": index, "number": number, "step": step}
         action = step.get("action")
         if action not in MECHANICAL_ACTIONS:
             raise RunError(f"action '{action}' is not mechanical — this workflow needs an LLM")
@@ -735,6 +741,11 @@ class Runner:
                 self.bindings.captures[step["capture"]] = json.loads(out)
             except json.JSONDecodeError:
                 self.bindings.captures[step["capture"]] = out
+
+    def do_human(self, step):
+        number = self.current["number"]
+        raise WaitForPerson(number, step.get("description") or f"step {number}",
+                            step.get("reason", ""))
 
     def do_assert(self, step):
         site = self.site(step)
@@ -1040,13 +1051,20 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     }
 
     phase = "setup"
+    ordered = [(ph, index, step) for ph in PHASES
+               for index, step in enumerate(workflow.get(ph) or [])]
     try:
-        if any(s.get("action") != "script" and not is_capture_step(s)
+        if any(s.get("action") not in ("script", "human") and not is_capture_step(s)
                for s in steps_of(workflow)):
             runner.start(primary)
-        for phase in PHASES:
-            for index, step in enumerate(workflow.get(phase) or []):
-                runner.run_step(step, phase, index)
+        for number, (phase, index, step) in enumerate(ordered, 1):
+            runner.run_step(step, phase, index, number)
+    except WaitForPerson as wait:
+        if any(not a["pass"] for a in runner.assertions):
+            result["status"] = "failed"
+        else:
+            result["status"] = "waiting"
+            result["waiting_for"] = wait.waiting_for
     except RunError as exc:
         result["status"] = "error"
         result["error"] = f"[{phase}] {exc}"
@@ -1057,8 +1075,9 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         result["failure"] = runner.build_failure()
     finally:
         try:  # teardown is best-effort, even after a failure
-            for index, step in enumerate(workflow.get("teardown") or []):
-                runner.run_step(step, "teardown", index)
+            if result["status"] != "waiting":
+                for index, step in enumerate(workflow.get("teardown") or []):
+                    runner.run_step(step, "teardown", index)
         except Exception as exc:
             note = f"teardown incomplete: {str(exc).splitlines()[0]}"
             result["error"] = (result["error"] + "; " + note).lstrip("; ")
@@ -1209,9 +1228,12 @@ def main(argv=None):
         for a in result["assertions"]:
             print(f"  {'PASS' if a['pass'] else 'FAIL'}  {a['id']}  "
                   f"expect={a['expect']!r} actual={a['actual']!r}")
+        if result.get("waiting_for"):
+            w = result["waiting_for"]
+            print(f"  waiting for a person at step {w['step']}: {w['label']} ({w['reason']})")
         if result["error"]:
             print(f"  error: {result['error']}")
-    return {"passed": 0, "failed": 1, "error": 2}[result["status"]]
+    return {"passed": 0, "waiting": 0, "failed": 1, "error": 2}[result["status"]]
 
 
 if __name__ == "__main__":

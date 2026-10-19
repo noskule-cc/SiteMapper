@@ -9,11 +9,16 @@ result:
   site: ""                    # Site the run targeted: the tier's site for a
                               # workflow with `tiers`, else its first site
   tier: ""                    # The tier the run targeted, or "-" (schema/app.yaml)
-  status: ""                  # passed | failed | error
-                              #   passed - ran to completion, all assertions passed
-                              #   failed - ran to completion, >= 1 assertion failed
-                              #   error  - could not complete (element not found,
-                              #            navigation/timeout, etc.)
+  status: ""                  # passed | failed | error | waiting
+                              #   passed  - ran to completion, all assertions passed
+                              #   failed  - ran to completion, >= 1 assertion failed
+                              #   error   - could not complete (element not found,
+                              #             navigation/timeout, etc.)
+                              #   waiting - stopped at a `human` step with every
+                              #             assertion so far passed; teardown skipped.
+                              #             Not a failure: trust is unchanged, exit 0
+  waiting_for: {}             # Set when status == waiting: the person step the run
+                              # stopped at, {step, label, reason} (schema/workflow.yaml)
   started_at: ""              # ISO-8601 timestamp (set by the runner/host)
   finished_at: ""             # ISO-8601 timestamp
 

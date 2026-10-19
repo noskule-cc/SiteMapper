@@ -69,6 +69,7 @@ Rules that follow:
 | Capability | What it must do | Claude Code |
 |---|---|---|
 | **run script** | Execute a script declared by the step's site, the workflow's project or the site's app (`sites/<site>/scripts/`, `<project>/scripts/`, `apps/<app>/scripts/`), capture stdout (JSON with `--json`) | `Bash` / `PowerShell` |
+| **hand to a person** | For a `human` step: stop the run, tell the person the step's `description` and `reason`, and report `status: waiting` with `waiting_for`. The run does not continue in this session | the reply in the conversation; the headless runner exits 0 with `waiting` |
 | **read/write files** | Read and write maps and workflows; write a run folder to the runs store | `Read`, `Write`, `Edit`, `Glob`, `Grep` |
 | **fan out** | Run independent read-only work in parallel *(optional — see below)* | `Agent` / subagents |
 

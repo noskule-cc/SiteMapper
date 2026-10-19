@@ -176,7 +176,14 @@ workflow:
     - action: ""
 
   steps:
-    - action: ""              # navigate | click | input | read | assert | verify | wait | key | script
+    - action: ""              # navigate | click | input | read | assert | verify | wait | key | script | human
+                              #   human: a step only a person can do (approve a result, log
+                              #   in, act on a device). The run stops here with
+                              #   result.status = waiting and `waiting_for` = {step, label,
+                              #   reason}: step is its 1-based position across setup,
+                              #   snapshot and steps, label its `description`. Teardown is
+                              #   skipped, since the run is not over. Needs `reason`; not
+                              #   allowed in teardown (check.py)
                               #   key: press a keyboard key (value = the key, e.g. "Escape",
                               #   "Enter") - e.g. to dismiss a dropdown without changing state
                               #   script: run a site script instead of driving the browser
@@ -206,6 +213,9 @@ workflow:
       capture: ""             # Store step output in a named variable (e.g., "offline_devices")
       expect: null            # For action: assert — the expected condition (see below)
       description: ""         # Human-readable step description
+      reason: ""              # For action: human — what the person must do and why the
+                              #   run cannot, in one line. Required
+      kind: ""                # For action: human, optional — approve | login | physical | other
 
   teardown:                   # Steps run AFTER `steps` to restore any state the test
                               # mutated (uncheck a column, delete a created record). Run

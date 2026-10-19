@@ -69,6 +69,11 @@ Workflow argument: $workflow
        not break when the UI changes
      - `verify` → check that expected elements/text exist on the page
      - `wait` → pause briefly for page transitions
+     - `human` → **hand to a person**: stop here. Tell the user the step's
+       `description` and `reason`, and report the run as `waiting` with
+       `waiting_for: {step, label, reason}` (`step` is the 1-based position
+       across `setup`, `snapshot` and `steps`). Do not perform the step
+       yourself and do not run `teardown`: the run is not over
    - Substitute parameter values where `$param_name` appears in step values
    - Substitute captured variables where `$captured_var` appears in step values
    - If step has `capture` field, store the step output in the named variable

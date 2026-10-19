@@ -711,6 +711,39 @@ def check_rollback():
     return fails
 
 
+def check_actions():
+    """Every step's action is one the runner and the skills know; a person step says why.
+
+    A `human` step without a reason pauses a run with nothing to tell the person
+    who picks it up, and one in `teardown` would surface as a broken teardown
+    instead of a waiting run. An unknown action failed only at run time. A
+    step without `action` is allowed only in an agentic workflow.
+    """
+    fails = []
+    for f in all_workflows():
+        w = load(f).get("workflow") or {}
+        for phase in ("snapshot", "setup", "steps", "teardown"):
+            for i, s in enumerate(w.get(phase) or []):
+                if not isinstance(s, dict):
+                    continue
+                where = f"{show(f)}: {phase}[{i}]"
+                action = s.get("action")
+                if action is None and w.get("mode") == "agentic":
+                    continue
+                if action not in tree.ACTIONS:
+                    fails.append(f"{where}: unknown action '{action}' "
+                                 f"({' | '.join(tree.ACTIONS)})")
+                elif action == "human":
+                    if not s.get("reason"):
+                        fails.append(f"{where}: a human step needs a `reason`")
+                    if "kind" in s and s["kind"] not in tree.HUMAN_KINDS:
+                        fails.append(f"{where}: kind '{s['kind']}' is not "
+                                     f"{' | '.join(tree.HUMAN_KINDS)}")
+                    if phase == "teardown":
+                        fails.append(f"{where}: a human step cannot be in teardown")
+    return fails
+
+
 def check_produced():
     """Nothing a run wrote is in the tree: no results/ or state/ under sites or projects.
 
@@ -884,6 +917,7 @@ CHECKS = {
     "scripts": check_scripts,
     "parity": check_parity,
     "rollback": check_rollback,
+    "actions": check_actions,
     "produced": check_produced,
     "links": check_links,
     "bindings": check_bindings,
