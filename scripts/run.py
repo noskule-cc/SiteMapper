@@ -235,8 +235,6 @@ def deep_merge(base: dict, override: dict) -> dict:
 
 
 def settings_layers(root: Path, site: Site, page_name: str | None) -> list[tuple[Path, dict]]:
-    """(file, settings) per scope, least specific first: config.yaml of the
-    framework, then of the map repo, then site.yaml, then the page."""
     layers = []
     for cfg in dict.fromkeys((FRAMEWORK_ROOT / "config.yaml", root.resolve() / "config.yaml")):
         if cfg.is_file():
@@ -249,7 +247,6 @@ def settings_layers(root: Path, site: Site, page_name: str | None) -> list[tuple
 
 
 def resolve_settings(root: Path, site: Site, page_name: str | None):
-    """The layers merged. Most specific wins."""
     merged: dict = {}
     for _, settings in settings_layers(root, site, page_name):
         merged = deep_merge(merged, settings)
@@ -902,34 +899,37 @@ PERMISSION_DEFAULTS = {"read": "allow", "write": "ask", "auth": "ask", "destruct
 STRICTNESS = {"allow": 0, "ask": 1, "deny": 2}
 
 
-def permission_verdict(settings: dict, action_class: str) -> str:
-    policy = settings.get("policy") or {}
+def deciding_rule(policy: dict, action_class: str) -> tuple[str, str] | None:
+    """(verdict, key) of the policy rule that decides the class; None leaves
+    it to PERMISSION_DEFAULTS."""
     verdict = (policy.get("permissions") or {}).get(action_class)
-    if not verdict and action_class == "write" and policy.get("safe_to_submit_forms"):
-        verdict = "allow"  # legacy alias
-    return verdict or PERMISSION_DEFAULTS[action_class]
+    if verdict:
+        return verdict, "permissions"
+    if action_class == "write" and policy.get("safe_to_submit_forms"):
+        return "allow", "safe_to_submit_forms"  # legacy alias
+    return None
+
+
+def permission_verdict(settings: dict, action_class: str) -> str:
+    rule = deciding_rule(settings.get("policy") or {}, action_class)
+    return rule[0] if rule else PERMISSION_DEFAULTS[action_class]
 
 
 def permission_source(root: Path, site: Site, action_class: str) -> tuple[str, Path | None]:
-    """permission_verdict for the site, and the file whose rule decided it;
-    None when no file sets one and the default applies."""
+    """The verdict and the file whose rule decided it, None for the default."""
+    layers = settings_layers(root, site, None)
     merged: dict = {}
-    set_class = set_alias = None
-    for path, settings in settings_layers(root, site, None):
+    for _, settings in layers:
         merged = deep_merge(merged, settings)
+    rule = deciding_rule(merged.get("policy") or {}, action_class)
+    if not rule:
+        return PERMISSION_DEFAULTS[action_class], None
+    verdict, key = rule
+    for path, settings in reversed(layers):
         policy = settings.get("policy") or {}
-        if action_class in (policy.get("permissions") or {}):
-            set_class = path
-        if "safe_to_submit_forms" in policy:
-            set_alias = path
-    policy = merged.get("policy") or {}
-    if (policy.get("permissions") or {}).get(action_class):
-        source = set_class
-    elif action_class == "write" and policy.get("safe_to_submit_forms"):
-        source = set_alias
-    else:
-        source = None
-    return permission_verdict(merged, action_class), source
+        if (action_class in (policy.get("permissions") or {}) if key == "permissions"
+                else key in policy):
+            return verdict, path
 
 
 def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str]):

@@ -52,12 +52,10 @@ ACTIONS = ("navigate", "click", "input", "read", "assert", "verify", "wait", "ke
 HUMAN_KINDS = ("approve", "login", "physical", "other")
 DEFAULT_KEEP = "1d"
 
-# The order a run walks a workflow's phases; teardown runs last, after them.
 PHASES = ("setup", "snapshot", "steps")
 
 
 def steps_of(workflow: dict) -> list[dict]:
-    """Every step of a workflow, in run order, teardown included."""
     out = []
     for phase in PHASES + ("teardown",):
         out += [s for s in (workflow.get(phase) or []) if isinstance(s, dict)]

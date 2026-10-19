@@ -69,8 +69,6 @@ def joined(*parts):
     return " · ".join(p for p in parts if p)
 
 
-# Actions that can change the site; in a workflow whose effect needs more
-# than read, these are the steps the policy applies to.
 ACTING = ("click", "input", "key", "script")
 
 
@@ -85,7 +83,6 @@ def source_label(path):
 
 @functools.cache
 def site_policy(root, site_name):
-    """{class: (verdict, source)} for one site."""
     site = run.Site(Path(root), site_name)
     out = {}
     for cls in run.PERMISSION_DEFAULTS:
@@ -95,7 +92,6 @@ def site_policy(root, site_name):
 
 
 def workflow_sites(wf, row, apps):
-    """Every site the workflow touches, its own site first, then each tier's."""
     names = [row["owner"]] if row["kind"] == "site" else []
     names += [wf.get("site"), *(wf.get("sites") or []),
               *(s.get("site") for s in tree.steps_of(wf))]
@@ -119,8 +115,6 @@ def strictest(verdicts):
 
 
 def persona_of(site_name):
-    """(fact value, persona) for the site: its only persona, a note when it
-    has several, nothing when it has none."""
     try:
         persona = run.load_persona(Path(ROOT), site_name, None)
     except run.RunError:
@@ -136,7 +130,6 @@ def step_label(step):
 
 
 def workflow_details(row, apps):
-    """owner, facts, flow and permissions of one workflow row."""
     wf = (run.load_yaml(Path(ROOT) / row["path"]) or {}).get("workflow") or {}
     sites = workflow_sites(wf, row, apps)
     policies = {s: site_policy(ROOT, s) for s in sites}
