@@ -417,6 +417,21 @@ def build_locator(pw_page, element: dict, scope_value: str | None = None):
     return loc.first
 
 
+TABLE_JS = """(el, needle) => {
+  const rows = Array.from(el.querySelectorAll('tr, [role=row]'));
+  const childCellsIncludingHidden = r => Array.from(r.children);
+  const isHead = r => r.closest('thead') !== null
+    || r.querySelector(':scope > [role=columnheader]') !== null
+    || (r.children.length > 0 && childCellsIncludingHidden(r).every(c => c.tagName === 'TH'));
+  const head = rows.find(isHead);
+  return {
+    headers: head ? childCellsIncludingHidden(head).map(c => c.innerText.replace(/\\s+/g, ' ').trim()) : [],
+    rows: rows.filter(r => !isHead(r) && r.innerText.includes(needle))
+      .map(r => childCellsIncludingHidden(r).map(c => c.innerText.trim())),
+  };
+}"""
+
+
 class Runner:
     DEFAULT_TIMEOUT_MS = 10_000
 
@@ -760,15 +775,42 @@ class Runner:
 
     def do_read(self, step):
         if is_capture_step(step):
+            if "row" in step or "column" in step:
+                raise RunError("`row` and `column` read a table on a page; this read has "
+                               "no `page`, so it reads a capture and cannot take them")
             value = capture_path(self.bindings.captures, step.get("value") or "")
             if step.get("capture"):
                 self.bindings.captures[step["capture"]] = value
             return
         site = self.site(step)
         element = self._element(step, site)
-        text = build_locator(self.pw_page, element).inner_text()
+        locator = build_locator(self.pw_page, element)
+        if "row" in step or "column" in step:
+            text = self._read_cell(locator, self.bindings.resolve(step.get("row")),
+                                   self.bindings.resolve(step.get("column")))
+        else:
+            text = locator.inner_text()
         if step.get("capture"):
             self.bindings.captures[step["capture"]] = text.strip()
+
+    def _read_cell(self, table, row: str, column: str) -> str:
+        if not row or not column:
+            raise RunError("a table read needs both `row` and `column`")
+        grid, _ = self._poll(lambda: table.evaluate(TABLE_JS, row),
+                             lambda g: len(g["rows"]) == 1)
+        headers = grid["headers"]
+        index = [i for i, h in enumerate(headers) if h == column] \
+            or [i for i, h in enumerate(headers) if h.startswith(column)]
+        if len(index) != 1:
+            raise RunError(f"header '{column}' matches {len(index)} of the columns "
+                           f"{headers}, expected 1")
+        if len(grid["rows"]) != 1:
+            raise RunError(f"{len(grid['rows'])} rows contain '{row}', expected 1")
+        cells = grid["rows"][0]
+        if index[0] >= len(cells):
+            raise RunError(f"the row containing '{row}' has {len(cells)} cells, "
+                           f"no cell under header '{column}'")
+        return cells[index[0]]
 
     def do_wait(self, step):
         value = self.bindings.resolve(step.get("value"))

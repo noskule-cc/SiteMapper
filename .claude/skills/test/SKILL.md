@@ -45,7 +45,11 @@ Workflow argument: $workflow
      paths with the site `base_url`; substitute `$` references first)
    - `click` → **find** + **click**
    - `input` → **type**
-   - `read` → **read page** / **read text**; store under the step's `capture`
+   - `read` → **read page** / **read text**; store under the step's `capture`.
+     With `row` and `column`, read one table cell: the header matching
+     `column` by text gives the position, counting hidden header cells, and the
+     one body row containing `row` gives the cell. Zero or several such rows,
+     or no single matching header, fail the step
    - `key` → **press key** (`value` is the key, e.g. `Escape`) — dismisses a
      dropdown without changing state
    - `script` → **run script** declared by the step's site, this workflow's

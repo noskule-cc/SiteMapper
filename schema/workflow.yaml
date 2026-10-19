@@ -211,6 +211,9 @@ workflow:
       value: ""               # Value to input, a URL to navigate to, CLI args for a script,
                               #   or a reference like "$param", "$fixture", "$captured_var"
       capture: ""             # Store step output in a named variable (e.g., "offline_devices")
+      row: ""                 # For action: read on a table — text the one row must contain
+                              #   (a "$fixture" works). Needs `column`; see "action: read" below.
+      column: ""              # For action: read on a table — the header text of the cell to read
       expect: null            # For action: assert — the expected condition (see below)
       description: ""         # Human-readable step description
       reason: ""              # For action: human — what the person must do and why the
@@ -247,6 +250,25 @@ workflow:
 #   grouping or sort dropdown), selects the option whose text equals `value`
 #   (the runner opens the dropdown and picks it). Used in `setup` to force a
 #   known grouping, e.g. element: device-grouping-dropdown, value: "IOT-Geräte".
+#
+# action: read
+#   Captures the element's text. With `row` and `column`, the element is a table
+#   (<table> with <th>/<td>, or an ARIA grid of role=row / columnheader / cell)
+#   and the read captures one cell: the one under the header whose text equals
+#   (or else starts with) `column`, in the one body row whose text contains
+#   `row`. The header is found by text, so a hidden or moved column does not
+#   shift the read. Zero or several matching rows, or a header matching no
+#   column or several, fail the step and name them. The row count is polled
+#   for up to 10 s first, so a list still re-rendering after a filter settles.
+#   One header row is assumed: the first row in <thead>, of role=columnheader
+#   cells, or of <th> only. Two header rows and spanning (colspan) headers are
+#   not supported. A read without `page` reads a capture and rejects both keys.
+#     - action: read
+#       page: device-list
+#       element: device-table
+#       row: "$device"
+#       column: "Capacity remaining"
+#       capture: capacity
 #
 # Steps on a captured value (no `page`):
 #   A `read` or `assert` without a `page` works on what an earlier step captured,
