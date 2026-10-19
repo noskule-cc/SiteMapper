@@ -4,8 +4,8 @@
 # The same `settings:` block may appear at three scopes. Lower (more specific)
 # scopes override higher ones, deep-merged per key:
 #
-#     global  (<your-maps>/config.yaml, private — contact only)
-#       └─ global  (config.yaml at repo root — policy)
+#     global  (config.yaml at the framework's repo root — policy)
+#       └─ global  (<your-maps>/config.yaml, private — contact only)
 #            └─ site   (sites/<site>/site.yaml)
 #                 └─ page  (sites/<site>/pages/<page>.yaml)
 #

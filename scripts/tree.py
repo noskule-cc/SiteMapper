@@ -62,6 +62,19 @@ def steps_of(workflow: dict) -> list[dict]:
     return out
 
 
+def fixture_values(w):
+    """Every value each fixture name takes, across the common block and every
+    tier's block."""
+    values = {}
+    for k, v in (w.get("fixtures") or {}).items():
+        if isinstance(v, dict):
+            for kk, vv in v.items():
+                values.setdefault(kk, set()).add(str(vv))
+        else:
+            values.setdefault(k, set()).add(str(v))
+    return values
+
+
 def step_sites(w):
     """Every site a workflow's steps resolve to, literal or through fixtures.
 
@@ -69,14 +82,7 @@ def step_sites(w):
     so an environment-parameterised workflow reports each tier's site. Returns
     (sites, unresolved) where unresolved lists the $names no fixture answers."""
     default = w.get("site")
-    fixtures = w.get("fixtures") or {}
-    values = {}
-    for k, v in fixtures.items():
-        if isinstance(v, dict):
-            for kk, vv in v.items():
-                values.setdefault(kk, set()).add(str(vv))
-        else:
-            values.setdefault(k, set()).add(str(v))
+    values = fixture_values(w)
     sites, unresolved = set(), set()
     for s in steps_of(w):
         ref = s.get("site") or default

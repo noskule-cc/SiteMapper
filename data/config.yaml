@@ -4,8 +4,8 @@
 # identifying and ships with the tool. This file carries the values that name a
 # real person, and is deep-merged over it at the SAME global scope:
 #
-#     my-maps/config.yaml       (this file, private)   contact, mailboxes
-#       └─ SiteMapper/config.yaml                      policy
+#     SiteMapper/config.yaml                           policy
+#       └─ my-maps/config.yaml  (this file, private)   contact, mailboxes
 #            └─ sites/<site>/site.yaml
 #                 └─ sites/<site>/pages/<page>.yaml
 #

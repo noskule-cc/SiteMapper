@@ -143,7 +143,7 @@ def workflow_details(row, apps, policy):
 
     flow = []
     auth = (persona or {}).get("auth")
-    if auth in ("automated", "human"):
+    if auth in ("automated", "human") and run.needs_browser(wf):
         login = {"label": f"Log in as {persona.get('name') or 'the persona'}", "kind": "login",
                  "detail": "automated" if auth == "automated" else "a person logs in"}
         if auth == "automated":
@@ -153,8 +153,10 @@ def workflow_details(row, apps, policy):
     needed = run.EFFECT_CLASS.get(wf.get("effect"), "read")
     for step in tree.steps_of(wf):
         if step.get("action") == "human":
-            person = {"label": step_label(step), "kind": "person"}
-            if step.get("reason"):
+            label = (inventory.oneline(step.get("description"), 160)
+                     or inventory.oneline(step.get("reason"), 160) or "human")
+            person = {"label": label, "kind": "person"}
+            if step.get("description") and step.get("reason"):
                 person["detail"] = inventory.oneline(step["reason"], 300)
             flow.append(person)
             continue

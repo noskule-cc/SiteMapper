@@ -238,6 +238,9 @@ def deep_merge(base: dict, override: dict) -> dict:
 
 
 def settings_layers(root: Path, site: Site, page_name: str | None) -> list[tuple[Path, dict]]:
+    """(file, settings) per scope, least specific first: the framework's
+    config.yaml, the map repository's config.yaml, site.yaml, the page. A
+    later layer wins per key (schema/settings.yaml)."""
     layers = []
     for cfg in dict.fromkeys((FRAMEWORK_ROOT / "config.yaml", root.resolve() / "config.yaml")):
         if cfg.is_file():
@@ -327,6 +330,13 @@ CAPTURE_PATH_RE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)((?:\.[A-Za-z0-9_-]+|\[
 
 def is_capture_step(step: dict) -> bool:
     return step.get("action") in ("read", "assert") and not step.get("page")
+
+
+def needs_browser(workflow: dict) -> bool:
+    """A workflow of script, human and capture steps runs without Chrome, so
+    it never opens a session or logs in."""
+    return any(s.get("action") not in ("script", "human") and not is_capture_step(s)
+               for s in tree.steps_of(workflow))
 
 
 def capture_path(captures: dict, expr: str):
@@ -1097,8 +1107,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     ordered = [(ph, index, step) for ph in tree.PHASES
                for index, step in enumerate(workflow.get(ph) or [])]
     try:
-        if any(s.get("action") not in ("script", "human") and not is_capture_step(s)
-               for s in tree.steps_of(workflow)):
+        if needs_browser(workflow):
             runner.start(primary)
         for number, (phase, index, step) in enumerate(ordered, 1):
             runner.run_step(step, phase, index, number)

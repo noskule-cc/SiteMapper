@@ -549,14 +549,7 @@ def check_scripts():
         proj = next((rel for ff, rel, _ in project_workflows() if ff == f), None)
         papp = next((p.get("app") for ff, _, p in project_workflows() if ff == f), None)
         default = w.get("site")
-        fixtures = w.get("fixtures") or {}
-        values = {}
-        for k, v in fixtures.items():
-            if isinstance(v, dict):
-                for kk, vv in v.items():
-                    values.setdefault(kk, set()).add(str(vv))
-            else:
-                values.setdefault(k, set()).add(str(v))
+        values = tree.fixture_values(w)
         for s in tree.steps_of(w):
             name = s.get("script")
             if not name:
@@ -683,7 +676,7 @@ def check_actions():
     fails = []
     for f in all_workflows():
         w = load(f).get("workflow") or {}
-        for phase in ("snapshot", "setup", "steps", "teardown"):
+        for phase in tree.PHASES + ("teardown",):
             for i, s in enumerate(w.get(phase) or []):
                 if not isinstance(s, dict):
                     continue
