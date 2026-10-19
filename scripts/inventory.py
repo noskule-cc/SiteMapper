@@ -119,10 +119,12 @@ def _workflow_row(f, kind, owner, project=None):
         "companion": os.path.exists(f[:-5] + ".md"),
         "doc_path": rel(f[:-5] + ".md") if os.path.exists(f[:-5] + ".md") else "",
         "path": rel(f),
+        "workflow": w,
     }
 
 
-def collect_workflows():
+def collect_workflows(raw=False):
+    """raw keeps each parsed YAML under "workflow", which serve.py must not ship."""
     rows = []
     for f in sorted(glob.glob(os.path.join(ROOT, "sites", "*", "workflows", "*.yaml"))):
         rows.append(_workflow_row(f, "site", rel(f).split("/")[1]))
@@ -130,6 +132,9 @@ def collect_workflows():
         p = load(os.path.join(pd_, "project.yaml")).get("project") or {}
         for f in sorted(glob.glob(os.path.join(pd_, "workflows", "*.yaml"))):
             rows.append(_workflow_row(f, "project", prel, p))
+    if not raw:
+        for row in rows:
+            del row["workflow"]
     return rows
 
 

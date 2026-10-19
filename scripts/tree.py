@@ -62,6 +62,38 @@ def steps_of(workflow: dict) -> list[dict]:
     return out
 
 
+def step_sites(w):
+    """Every site a workflow's steps resolve to, literal or through fixtures.
+
+    A `$role` site resolves against every fixtures block (common and per tier),
+    so an environment-parameterised workflow reports each tier's site. Returns
+    (sites, unresolved) where unresolved lists the $names no fixture answers."""
+    default = w.get("site")
+    fixtures = w.get("fixtures") or {}
+    values = {}
+    for k, v in fixtures.items():
+        if isinstance(v, dict):
+            for kk, vv in v.items():
+                values.setdefault(kk, set()).add(str(vv))
+        else:
+            values.setdefault(k, set()).add(str(v))
+    sites, unresolved = set(), set()
+    for s in steps_of(w):
+        ref = s.get("site") or default
+        if not ref:
+            continue
+        ref = str(ref)
+        if ref.startswith("$"):
+            name = ref[1:]
+            if name in values:
+                sites |= values[name]
+            else:
+                unresolved.add(ref)
+        else:
+            sites.add(ref)
+    return sites, unresolved
+
+
 def tier_name(environment: str | None) -> str:
     """The tier key a settings.policy.environment value stands for."""
     env = str(environment or "").strip().lower()

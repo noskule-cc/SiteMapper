@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import functools
 import json
 import os
 import re
@@ -112,11 +113,13 @@ class Site:
         site_file = self.dir / "site.yaml"
         if not site_file.is_file():
             raise RunError(f"site '{site_name}' has no {site_file}")
-        self.config = load_yaml(site_file).get("site", {})
+        self.config = (load_yaml(site_file) or {}).get("site") or {}
         self.base_url = (self.config.get("base_url") or "").rstrip("/")
-        self.pages = {}
-        for page_file in (self.dir / "pages").glob("*.yaml"):
-            self.pages[page_file.stem] = load_yaml(page_file).get("page", {})
+
+    @functools.cached_property
+    def pages(self):
+        return {f.stem: (load_yaml(f) or {}).get("page") or {}
+                for f in (self.dir / "pages").glob("*.yaml")}
 
     def page(self, page_name: str):
         if page_name not in self.pages:
@@ -160,11 +163,11 @@ def load_persona(root: Path, site_name: str, persona_name: str | None):
     if persona_name:
         for f in files:
             if f.stem == persona_name:
-                return load_yaml(f).get("persona", {})
+                return (load_yaml(f) or {}).get("persona") or {}
         raise RunError(f"site '{site_name}' has no persona '{persona_name}' "
                        f"({[f.stem for f in files] or 'none defined'})")
     if len(files) == 1:
-        return load_yaml(files[0]).get("persona", {})
+        return (load_yaml(files[0]) or {}).get("persona") or {}
     if not files:
         return None
     raise RunError(f"site '{site_name}' has several personas "
@@ -246,11 +249,12 @@ def settings_layers(root: Path, site: Site, page_name: str | None) -> list[tuple
     return layers
 
 
+def merge_layers(layers: list[tuple[Path, dict]]) -> dict:
+    return functools.reduce(deep_merge, (settings for _, settings in layers), {})
+
+
 def resolve_settings(root: Path, site: Site, page_name: str | None):
-    merged: dict = {}
-    for _, settings in settings_layers(root, site, page_name):
-        merged = deep_merge(merged, settings)
-    return merged
+    return merge_layers(settings_layers(root, site, page_name))
 
 
 # ---------------------------------------------------------------------------
@@ -899,14 +903,14 @@ PERMISSION_DEFAULTS = {"read": "allow", "write": "ask", "auth": "ask", "destruct
 STRICTNESS = {"allow": 0, "ask": 1, "deny": 2}
 
 
-def deciding_rule(policy: dict, action_class: str) -> tuple[str, str] | None:
-    """(verdict, key) of the policy rule that decides the class; None leaves
-    it to PERMISSION_DEFAULTS."""
+def deciding_rule(policy: dict, action_class: str) -> tuple[str, tuple[str, ...]] | None:
+    """(verdict, key path) of the policy rule that decides the class; None
+    leaves it to PERMISSION_DEFAULTS."""
     verdict = (policy.get("permissions") or {}).get(action_class)
     if verdict:
-        return verdict, "permissions"
+        return verdict, ("permissions", action_class)
     if action_class == "write" and policy.get("safe_to_submit_forms"):
-        return "allow", "safe_to_submit_forms"  # legacy alias
+        return "allow", ("safe_to_submit_forms",)  # legacy alias
     return None
 
 
@@ -915,21 +919,27 @@ def permission_verdict(settings: dict, action_class: str) -> str:
     return rule[0] if rule else PERMISSION_DEFAULTS[action_class]
 
 
-def permission_source(root: Path, site: Site, action_class: str) -> tuple[str, Path | None]:
-    """The verdict and the file whose rule decided it, None for the default."""
+def _sets(policy: dict, key_path: tuple[str, ...]) -> bool:
+    for key in key_path[:-1]:
+        policy = policy.get(key) or {}
+    return key_path[-1] in policy
+
+
+def permission_sources(root: Path, site: Site) -> dict[str, tuple[str, Path | None]]:
+    """Per action class, the verdict and the file whose rule decided it, None
+    for the default."""
     layers = settings_layers(root, site, None)
-    merged: dict = {}
-    for _, settings in layers:
-        merged = deep_merge(merged, settings)
-    rule = deciding_rule(merged.get("policy") or {}, action_class)
-    if not rule:
-        return PERMISSION_DEFAULTS[action_class], None
-    verdict, key = rule
-    for path, settings in reversed(layers):
-        policy = settings.get("policy") or {}
-        if (action_class in (policy.get("permissions") or {}) if key == "permissions"
-                else key in policy):
-            return verdict, path
+    policy = (merge_layers(layers).get("policy") or {})
+    out = {}
+    for action_class, default in PERMISSION_DEFAULTS.items():
+        rule = deciding_rule(policy, action_class)
+        if not rule:
+            out[action_class] = (default, None)
+            continue
+        verdict, key_path = rule
+        out[action_class] = (verdict, next(path for path, settings in reversed(layers)
+                                           if _sets(settings.get("policy") or {}, key_path)))
+    return out
 
 
 def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str]):

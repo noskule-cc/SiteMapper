@@ -25,7 +25,7 @@ A workflow node carries what its page shows, each key omitted when empty:
     permissions  [{"tier", "class", "verdict", "source"}] per tier of every site
                  the workflow touches; "-" is a site that is no tier of an app.
                  source is the file whose rule decided, relative to the tree
-                 root, "SiteMapper/config.yaml" for the framework's own, or
+                 root, "framework:config.yaml" for the framework's own, or
                  "defaults" when no file sets the class
 """
 import argparse
@@ -70,44 +70,46 @@ def joined(*parts):
 
 
 ACTING = ("click", "input", "key", "script")
+FRAMEWORK_CONFIG = run.FRAMEWORK_ROOT / "config.yaml"
 
 
 def source_label(path):
     if path is None:
         return "defaults"
     path = path.resolve()
-    if path.is_relative_to(Path(ROOT).resolve()):
-        return path.relative_to(Path(ROOT).resolve()).as_posix()
-    return f"{tree.LIB}/{path.relative_to(run.FRAMEWORK_ROOT).as_posix()}"
+    if path == FRAMEWORK_CONFIG:
+        return "framework:config.yaml"
+    return path.relative_to(Path(ROOT).resolve()).as_posix()
 
 
-@functools.cache
-def site_policy(root, site_name):
-    site = run.Site(Path(root), site_name)
-    out = {}
-    for cls in run.PERMISSION_DEFAULTS:
-        verdict, path = run.permission_source(Path(root), site, cls)
-        out[cls] = (verdict, source_label(path))
-    return out
+def site_policy(site_name):
+    sources = run.permission_sources(Path(ROOT), run.Site(Path(ROOT), site_name))
+    return {cls: (verdict, source_label(path)) for cls, (verdict, path) in sources.items()}
 
 
-def workflow_sites(wf, row, apps):
-    names = [row["owner"]] if row["kind"] == "site" else []
-    names += [wf.get("site"), *(wf.get("sites") or []),
-              *(s.get("site") for s in tree.steps_of(wf))]
+def is_site(name):
+    return not name.startswith("$") and os.path.isfile(os.path.join(ROOT, "sites", name, "site.yaml"))
+
+
+def workflow_scope(wf, row, apps):
+    """(primaries, sites): the site a run leads with, one per allowed tier
+    when the workflow has tiers, and every site it touches."""
+    tier_sites = []
     if wf.get("tiers"):
-        tiers = (apps.get(row["app"]) or {}).get("tiers") or {}
-        allowed = wf["tiers"].get("allowed") or wf["tiers"].get("required") or []
-        names += [tiers.get(t) for t in allowed]
-    return [n for n in dict.fromkeys(str(n) for n in names if n)
-            if not n.startswith("$") and os.path.isfile(os.path.join(ROOT, "sites", n, "site.yaml"))]
+        app_tiers = (apps.get(row["app"]) or {}).get("tiers") or {}
+        tier_sites = [app_tiers.get(t) for t in row["tiers"]["allowed"]]
+    refs = [s.get("site") or wf.get("site") for s in tree.steps_of(wf)]
+    refs += [wf.get("site"), *(wf.get("sites") or [])]
+    refs += [row["owner"]] if row["kind"] == "site" else []
+    names = [*tier_sites, *refs, *sorted(tree.step_sites(wf)[0])]
+    sites = [n for n in dict.fromkeys(str(n) for n in names if n) if is_site(n)]
+    primaries = [s for s in dict.fromkeys(tier_sites) if s in sites] or sites[:1]
+    return primaries, sites
 
 
-def tier_of(apps, site_name):
-    _, app = run.app_of_site(apps, site_name)
-    if not app:
-        return "-"
-    return next(t for t, s in app["tiers"].items() if s == site_name)
+def tiers_of(apps, site_name):
+    return [str(t) for app in apps.values() for t, s in (app.get("tiers") or {}).items()
+            if s == site_name] or ["-"]
 
 
 def strictest(verdicts):
@@ -125,15 +127,19 @@ def persona_of(site_name):
 
 
 def step_label(step):
-    return (inventory.oneline(step.get("description"), 160)
-            or " ".join(str(step[k]) for k in ("action", "page", "element") if step.get(k)))
+    return inventory.oneline(step.get("description"), 160) or inventory.oneline(
+        " ".join(str(step[k]) for k in ("action", "page", "element", "script", "value")
+                 if step.get(k)), 160)
 
 
-def workflow_details(row, apps):
-    wf = (run.load_yaml(Path(ROOT) / row["path"]) or {}).get("workflow") or {}
-    sites = workflow_sites(wf, row, apps)
-    policies = {s: site_policy(ROOT, s) for s in sites}
-    persona_value, persona = persona_of(sites[0]) if sites else ("", None)
+def workflow_details(row, apps, policy):
+    wf = row["workflow"]
+    primaries, sites = workflow_scope(wf, row, apps)
+    personas = [persona_of(s) for s in primaries]
+    if any(p != personas[0] for p in personas):
+        persona_value, persona = "chosen per tier", None
+    else:
+        persona_value, persona = personas[0] if personas else ("", None)
 
     flow = []
     auth = (persona or {}).get("auth")
@@ -141,7 +147,8 @@ def workflow_details(row, apps):
         login = {"label": f"Log in as {persona.get('name') or 'the persona'}", "kind": "login",
                  "detail": "automated" if auth == "automated" else "a person logs in"}
         if auth == "automated":
-            login["policy"] = {"class": "auth", "verdict": policies[sites[0]]["auth"][0]}
+            login["policy"] = {"class": "auth",
+                               "verdict": strictest(policy(s)["auth"] for s in primaries)[0]}
         flow.append(login)
     needed = run.EFFECT_CLASS.get(wf.get("effect"), "read")
     for step in tree.steps_of(wf):
@@ -153,8 +160,9 @@ def workflow_details(row, apps):
             continue
         entry = {"label": step_label(step), "kind": "step"}
         if needed != "read" and step.get("action") in ACTING and sites:
-            verdict = strictest(policies[s][needed] for s in sites)[0]
-            entry["policy"] = {"class": needed, "verdict": verdict}
+            ref = str(step.get("site") or wf.get("site") or "")
+            on = [ref] if ref in sites else sites
+            entry["policy"] = {"class": needed, "verdict": strictest(policy(s)[needed] for s in on)[0]}
         flow.append(entry)
 
     facts = [{"label": label, "value": str(value)} for label, value in (
@@ -163,10 +171,13 @@ def workflow_details(row, apps):
 
     by_tier = {}
     for s in sites:
-        by_tier.setdefault(tier_of(apps, s), []).append(policies[s])
-    permissions = [{"tier": tier, "class": cls, "verdict": verdict, "source": source}
-                   for tier, found in by_tier.items() for cls in run.PERMISSION_DEFAULTS
-                   for verdict, source in [strictest(p[cls] for p in found)]]
+        for tier in tiers_of(apps, s):
+            by_tier.setdefault(tier, []).append(policy(s))
+    permissions = []
+    for tier, found in by_tier.items():
+        for cls in run.PERMISSION_DEFAULTS:
+            verdict, source = strictest(p[cls] for p in found)
+            permissions.append({"tier": tier, "class": cls, "verdict": verdict, "source": source})
     return {"owner": row["owner"], "facts": facts, "flow": flow, "permissions": permissions}
 
 
@@ -209,10 +220,11 @@ def render():
     # __main__, so this module's `inventory` is a second copy whose root
     # nobody set.
     inventory.set_root(ROOT, PROJECTS)
-    workflows = inventory.collect_workflows()
+    workflows = inventory.collect_workflows(raw=True)
     project_sites = {p["dir"]: set(p["sites"]) for p in inventory.collect_projects()}
     apps = run.load_apps(Path(ROOT))
-    details = {w["path"]: workflow_details(w, apps) for w in workflows}
+    policy = functools.cache(site_policy)
+    details = {w["path"]: workflow_details(w, apps, policy) for w in workflows}
     sites = [site_node(s, workflows, project_sites, details) for s in inventory.collect_sites()]
     app_nodes = [app_node(a) for a in sorted(inventory.collect_apps(), key=lambda a: a["dir"])]
     nodes = [node("sites", "Sites", "folder", sites) if sites else None,

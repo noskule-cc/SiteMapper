@@ -102,25 +102,25 @@
            "tier": "prod",
            "class": "read",
            "verdict": "allow",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           },
           {
            "tier": "prod",
            "class": "write",
            "verdict": "ask",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           },
           {
            "tier": "prod",
            "class": "auth",
            "verdict": "ask",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           },
           {
            "tier": "prod",
            "class": "destructive",
            "verdict": "deny",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           }
          ]
         },
@@ -232,25 +232,25 @@
            "tier": "prod",
            "class": "read",
            "verdict": "allow",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           },
           {
            "tier": "prod",
            "class": "write",
            "verdict": "ask",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           },
           {
            "tier": "prod",
            "class": "auth",
            "verdict": "ask",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           },
           {
            "tier": "prod",
            "class": "destructive",
            "verdict": "deny",
-           "source": "config.yaml"
+           "source": "framework:config.yaml"
           }
          ]
         }
