@@ -218,7 +218,6 @@ def state_path(root: Path, site_name: str, persona: dict) -> Path:
 
 
 def read_secret(ref: str, what: str) -> str:
-    """Resolve `env:VAR` or `keyring:<service>/<name>`. No message carries the value."""
     ref = ref or ""
     if ref.startswith("env:"):
         value = os.environ.get(ref[4:])
@@ -482,7 +481,7 @@ class Runner:
                         "silently."
                     )
                 context_args["storage_state"] = str(state)
-            elif state.is_file() and not fresh:  # human/automated reuse an existing state too
+            elif state.is_file() and not fresh:
                 context_args["storage_state"] = str(state)
             elif self.persona.get("auth") == "automated":
                 credentials = self._login_credentials(primary_site)
@@ -495,7 +494,6 @@ class Runner:
             self._establish_session(primary_site, credentials)
 
     def _login_credentials(self, site_name: str) -> tuple[str, str]:
-        """Permission and credentials for auth: automated, settled before the browser opens."""
         site = Site(self.root, site_name)
         settings = resolve_settings(self.root, site, None)
         verdict = permission_verdict(settings, "auth")
@@ -514,8 +512,6 @@ class Runner:
                 read_secret(creds.get("password"), "credential_ref.password"))
 
     def _establish_session(self, site_name: str, credentials: tuple[str, str] | None):
-        """Login for auth: human | automated. Saves storage_state unless fresh_login.
-        A failed login fails the run once; nothing here retries (account lockout)."""
         persona = self.persona
         method = persona.get("auth")
         site = Site(self.root, site_name)
@@ -543,14 +539,18 @@ class Runner:
             for key, value in moves:
                 locator = build_locator(self.pw_page, site.element(login["page"], login[key]))
                 try:
-                    locator.click() if value is None else locator.fill(value)
+                    if value is None:
+                        locator.click()
+                    else:
+                        locator.fill(value)
                 except Exception as exc:
                     raise RunError(f"login.{key} '{login[key]}' on page '{login['page']}': "
                                    f"{type(exc).__name__}: {str(exc).splitlines()[0]}")
+            self.pw_page.wait_for_load_state()
+            password = build_locator(self.pw_page,
+                                     site.element(login["page"], login["password_element"]))
             try:
-                self.pw_page.wait_for_load_state()
-                build_locator(self.pw_page, site.element(
-                    login["page"], login["password_element"])).wait_for(state="hidden")
+                password.wait_for(state="hidden")
             except Exception:
                 raise RunError(f"login rejected on site '{site_name}': the password element "
                                f"'{login['password_element']}' still shows after submit. "

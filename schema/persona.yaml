@@ -33,7 +33,6 @@ persona:
                               #   env:VARNAME              - read from the environment
                               #   keyring:<service>/<name> - read from the OS keyring
                               #     (pip install keyring; Credential Manager on Windows).
-                              #     A scheduled task has no environment, so it uses this.
                               # A committed file NEVER contains a secret: check.py fails
                               # a plain value.
     username: ""

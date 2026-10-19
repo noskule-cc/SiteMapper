@@ -294,9 +294,7 @@ SECRET_REF = re.compile(r"env:\w+|keyring:[^/]+/.+")
 
 
 def check_credentials():
-    """Persona credential_ref values are env: or keyring: references, never a secret.
-
-    A plain value here is a password committed to the repository."""
+    """Persona credential_ref values are env: or keyring: references, never a secret."""
     fails = []
     for f in files(["sites/*/personas/*.yaml"]):
         refs = ((load(f) or {}).get("persona") or {}).get("credential_ref") or {}
