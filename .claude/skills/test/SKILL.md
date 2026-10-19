@@ -57,6 +57,11 @@ Workflow argument: $workflow
      pass }`. **Do not abort on a failed assertion** — continue so the run
      reports every assertion.
    - `wait` → brief pause for transitions
+   - `human` → **hand to a person**: stop here. If every assertion so far
+     passed, the result is `status: waiting` with `waiting_for: {step, label,
+     reason}` (`step` is the 1-based position across `setup`, `snapshot` and
+     `steps`, `label` the step's `description`), and `teardown` is skipped. If
+     an assertion already failed, the result is `failed` and `teardown` runs
 
 6. **Evaluate `expect`** for `assert` steps:
    - `visible` → element present and visible
@@ -86,7 +91,8 @@ Workflow argument: $workflow
 
 7. **Build the result** (`schema/result.yaml`):
    - `status`: `error` if a non-assert step could not complete (element missing,
-     navigation/timeout); else `failed` if any assertion failed; else `passed`.
+     navigation/timeout); else `failed` if any assertion failed; else `waiting`
+     if the run stopped at a `human` step; else `passed`.
    - Fill `captures`, `assertions`, `parameters`, `fixtures`, and `counts`.
    - Optionally capture a screenshot into `evidence` on failure/error.
 

@@ -146,6 +146,7 @@ h3.group { margin: 18px 0 6px; font-size: 14px; color: var(--muted); text-transf
   font: 12.5px ui-monospace, "Cascadia Code", Consolas, monospace;
   white-space: pre-wrap; overflow-x: auto; }
 .live-result.fail { border-color: var(--prod-fg); }
+.live-result.wait { border-color: var(--staging-fg); }
 /* Which copy is this? local file / live server / published shareable page. */
 .where { font-size: 11px; font-weight: 500; padding: 3px 10px;
   border-radius: 999px; letter-spacing: .03em; vertical-align: 3px; }
@@ -477,7 +478,7 @@ async function postDeploy(d, consent) {
 async function postRun(btn, params, consent) {
   const box = resultBox(btn);
   btn.disabled = true; btn.textContent = 'running…';
-  box.classList.remove('fail');
+  box.classList.remove('fail', 'wait');
   box.textContent = 'running…';
   try {
     const r = await fetch('/api/run/' + encodeURIComponent(btn.dataset.wf), {
@@ -499,9 +500,12 @@ async function postRun(btn, params, consent) {
                    + res.counts.total + ' assertions passed)'];
     for (const a of res.assertions || [])
       lines.push((a.pass ? 'PASS' : 'FAIL') + '  ' + a.id);
+    if (res.waiting_for) lines.push('waiting for a person at step ' + res.waiting_for.step
+                                    + ': ' + res.waiting_for.label + ' (' + res.waiting_for.reason + ')');
     if (res.error) lines.push('error: ' + res.error);
     box.textContent = lines.join('\n');
-    if (res.status !== 'passed') {
+    if (res.status === 'waiting') box.classList.add('wait');
+    else if (res.status !== 'passed') {
       box.classList.add('fail');
       const tag = btn.closest('.proc').querySelector('[class*="trust-"]');
       if (tag) { tag.textContent = 'broken'; tag.className = 'tag trust-broken'; }

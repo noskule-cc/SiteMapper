@@ -27,8 +27,8 @@ run:
   tier: ""                    # The tier the run targeted, or "-"
   instance: ""                # Machine the run happened on (hostname or SITEMAPPER_INSTANCE)
   started_at: ""              # ISO-8601 UTC
-  finished_at: ""             # ISO-8601 UTC
-  status: ""                  # passed | failed | error (mirrors result.json)
+  finished_at: ""             # ISO-8601 UTC; for a waiting run, when it paused
+  status: ""                  # passed | failed | error | waiting (mirrors result.json)
   keep: ""                    # How long the folder lives: <N>d (days),
                               # <N>h (hours), or "keep" (never swept). Copied
                               # from the project's `keep:`, else "1d"; empty or
