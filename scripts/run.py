@@ -1102,12 +1102,92 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     return result, wf_path, owner
 
 
-def write_run(result: dict, runs: Path, owner: Owner, workflow: dict) -> Path:
+SUMMARY_ENTRIES = 30
+SUMMARY_VALUE_CHARS = 200
+HEADLINE_CHARS = 200
+
+
+def summary_of(captures: dict) -> list[dict]:
+    entries = []
+
+    def walk(label: str, value):
+        if isinstance(value, dict) and value:
+            for key, inner in value.items():
+                walk(f"{label}.{key}", inner)
+            return
+        text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+        entries.append({"label": label, "value": text[:SUMMARY_VALUE_CHARS]})
+
+    for name, value in (captures or {}).items():
+        walk(name, value)
+    return entries[:SUMMARY_ENTRIES]
+
+
+def assertion_counts(result: dict) -> dict | None:
+    if result.get("counts"):
+        return result["counts"]
+    if not result.get("assertions"):
+        return None
+    total = len(result["assertions"])
+    passed = sum(1 for a in result["assertions"] if a.get("pass"))
+    return {"total": total, "passed": passed, "failed": total - passed}
+
+
+def error_of(result: dict) -> str:
+    if result.get("error"):
+        return result["error"].splitlines()[0]
+    failed = [a for a in result.get("assertions") or [] if not a.get("pass")]
+    if result["status"] != "failed" or not failed:
+        return ""
+    first = failed[0]
+    more = f" (+{len(failed) - 1} more)" if len(failed) > 1 else ""
+    return " ".join(f"assertion {first.get('id')} failed: expected {first.get('expect')!r}, "
+                    f"got {first.get('actual')!r}{more}".split())[:HEADLINE_CHARS]
+
+
+def headline_of(result: dict, counts: dict | None, summary: list[dict], error: str) -> str:
+    parts = [result["status"]]
+    if result["status"] == "error" and error:
+        parts.append(error)
+    if result.get("waiting_for"):
+        parts.append(f"at step {result['waiting_for']['step']}: {result['waiting_for']['label']}")
+    if counts and counts["total"]:
+        parts.append(f"{counts['passed']}/{counts['total']} assertions passed")
+    parts += [f"{e['label']}: {e['value']}" for e in summary[:2]]
+    return " ".join(" · ".join(parts).split())[:HEADLINE_CHARS]
+
+
+if os.name == "nt":
+    import msvcrt
+
+    def _lock(fh, locked: bool):
+        fh.seek(0)
+        msvcrt.locking(fh.fileno(), msvcrt.LK_LOCK if locked else msvcrt.LK_UNLCK, 1)
+else:
+    import fcntl
+
+    def _lock(fh, locked: bool):
+        fcntl.flock(fh, fcntl.LOCK_EX if locked else fcntl.LOCK_UN)
+
+
+def append_index(runs: Path, instance: str, line: dict):
+    path = runs / tree.LIB / f"index.{instance}.jsonl"
+    with open(path, "ab") as fh:
+        _lock(fh, True)
+        try:
+            fh.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
+            fh.flush()
+        finally:
+            _lock(fh, False)
+
+
+def write_run(result: dict, runs: Path, owner: Owner, trigger: str) -> Path:
     """One folder per run in the runs store (schema/run.yaml): the record, the
     full result, the snapshot captures as the pre-state, the evidence files.
     Never inside the tree, never committed."""
+    instance = tree.instance_name()
     stamp = result["started_at"].replace(":", "")
-    run_id = f"{result['workflow']}.{stamp}.{result.get('tier') or '-'}.{tree.instance_name()}"
+    run_id = f"{result['workflow']}.{stamp}.{result.get('tier') or '-'}.{instance}"
     folder = runs / tree.LIB / owner.name / run_id
     folder.mkdir(parents=True, exist_ok=True)
     files = ["run.yaml", "result.json"]
@@ -1124,23 +1204,38 @@ def write_run(result: dict, runs: Path, owner: Owner, workflow: dict) -> Path:
             files.append(f"evidence/{p.name}")
     (folder / "result.json").write_text(
         json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
-    record = {"run": {
+    summary = summary_of(result.get("captures"))
+    counts = assertion_counts(result)
+    error = error_of(result)
+    run = {
         "lib": tree.LIB,
         "owner": owner.name,
         "workflow": result["workflow"],
         "tier": result.get("tier") or "-",
-        "instance": tree.instance_name(),
+        "instance": instance,
         "started_at": result["started_at"],
         "finished_at": result["finished_at"],
         "status": result["status"],
+        "trigger": trigger,
         # The run that set trust: broken is the evidence for it; the sweep must
         # not take it before someone has read it (#52).
         "keep": ("keep" if result.get("trust_change")
                  else str(owner.project.get("keep") or tree.DEFAULT_KEEP)),
+        "headline": headline_of(result, counts, summary, error),
+        "error": error,
+        "waiting_for": result.get("waiting_for"),
+        "trust_change": result.get("trust_change"),
+        "assertions": counts,
+        "summary": summary,
         "files": files,
-    }}
+    }
+    run = {k: v for k, v in run.items() if v not in (None, "", [], {})}
     (folder / "run.yaml").write_text(
-        yaml.safe_dump(record, sort_keys=False, allow_unicode=True), encoding="utf-8")
+        yaml.safe_dump({"run": run}, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    append_index(runs, instance, {"run_id": run_id, **{
+        k: run[k] for k in ("owner", "workflow", "tier", "instance", "started_at",
+                            "finished_at", "status", "trigger", "headline", "trust_change")
+        if k in run}})
     return folder
 
 
@@ -1165,6 +1260,8 @@ def main(argv=None):
     ap.add_argument("--record", action="store_true",
                     help="write the run folder to the runs store (schema/run.yaml); "
                          "always on for a workflow with rollback: snapshot")
+    ap.add_argument("--trigger", choices=("schedule", "manual"), default="manual",
+                    help="who started the run, written to the record (default: manual)")
     ap.add_argument("--yes-write", action="store_true",
                     help="pre-authorize the 'write' class where policy says ask")
     ap.add_argument("--yes-destructive", action="store_true",
@@ -1211,7 +1308,7 @@ def main(argv=None):
 
     workflow = (load_yaml(wf_path) or {}).get("workflow", {})
     if args.record or workflow.get("rollback") == "snapshot":
-        record = write_run(result, runs, owner, workflow)
+        record = write_run(result, runs, owner, args.trigger)
         print(f"record: {record}", file=sys.stderr)
         if result.get("trust_change"):
             print(f"kept (keep: keep): this run set trust {result['trust_change']}; "
