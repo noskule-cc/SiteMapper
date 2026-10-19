@@ -65,6 +65,9 @@ workflow:
                               #   broken   - a run failed or a page fingerprint drifted;
                               #              the runner downgrades to this automatically.
                               #              Repair (the repair skill) restores it.
+                              #              The run that set it is never swept
+                              #              (keep: keep, schema/run.yaml); remove it
+                              #              or lower its keep when trust is restored.
   verified_at: ""             # ISO date of the reviewed green run behind
                               # `trust: verified`. Distinct from site.yaml's
                               # verified_at, which dates the MAP's last drift check.

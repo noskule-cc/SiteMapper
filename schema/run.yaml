@@ -33,5 +33,9 @@ run:
                               # <N>h (hours), or "keep" (never swept). Copied
                               # from the project's `keep:`, else "1d"; empty or
                               # unparseable also means one day. A run a report
-                              # cites is kept by setting "keep" here.
+                              # cites is kept by setting "keep" here. The run
+                              # that set the workflow's trust to broken gets
+                              # "keep" from the runner: it is the evidence for
+                              # the flag. Whoever restores trust deletes the
+                              # folder or lowers its keep.
   files: []                   # Relative paths of everything in the folder

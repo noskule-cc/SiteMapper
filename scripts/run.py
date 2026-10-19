@@ -968,12 +968,15 @@ def _set_workflow_key(wf_path: Path, key: str, value: str):
 
 def update_trust(wf_path: Path, workflow: dict, result: dict):
     """broken on failure/drift; verified_at refresh on a green verified run;
-    a green draft run promotes NOTHING — promotion is a review decision."""
+    a green draft run promotes NOTHING — promotion is a review decision.
+    A downgrade is noted on the result as `trust_change`, so write_run keeps
+    the one run that explains the flag (#52)."""
     trust = workflow.get("trust")
     drifted = [p for p, s in result.get("fingerprints", {}).items() if s == "mismatch"]
     if result["status"] in ("failed", "error") or drifted:
         if trust != "broken":
             _set_workflow_key(wf_path, "trust", "broken")
+            result["trust_change"] = f"{trust or 'unset'} -> broken"
             note = f" (drifted: {', '.join(drifted)})" if drifted else ""
             print(f"trust: {trust or 'unset'} -> broken in {wf_path.name}{note}",
                   file=sys.stderr)
@@ -1111,7 +1114,10 @@ def write_run(result: dict, runs: Path, owner: Owner, workflow: dict) -> Path:
         "started_at": result["started_at"],
         "finished_at": result["finished_at"],
         "status": result["status"],
-        "keep": str(owner.project.get("keep") or tree.DEFAULT_KEEP),
+        # The run that set trust: broken is the evidence for it; the sweep must
+        # not take it before someone has read it (#52).
+        "keep": ("keep" if result.get("trust_change")
+                 else str(owner.project.get("keep") or tree.DEFAULT_KEEP)),
         "files": files,
     }}
     (folder / "run.yaml").write_text(
@@ -1188,6 +1194,9 @@ def main(argv=None):
     if args.record or workflow.get("rollback") == "snapshot":
         record = write_run(result, runs, owner, workflow)
         print(f"record: {record}", file=sys.stderr)
+        if result.get("trust_change"):
+            print(f"kept (keep: keep): this run set trust {result['trust_change']}; "
+                  f"delete the folder or lower its keep once trust is restored", file=sys.stderr)
         for folder in tree.sweep_runs(runs):
             print(f"swept: {folder}", file=sys.stderr)
 
