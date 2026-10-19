@@ -39,14 +39,220 @@
          "label": "search-issues",
          "kind": "workflow",
          "description": "Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state",
-         "status": "ok"
+         "status": "ok",
+         "owner": "sitemapper-demo",
+         "facts": [
+          {
+           "label": "Mode",
+           "value": "deterministic"
+          },
+          {
+           "label": "Effect",
+           "value": "read-only"
+          },
+          {
+           "label": "Trust",
+           "value": "verified"
+          }
+         ],
+         "flow": [
+          {
+           "label": "Open the issues list (deep-link via url_pattern)",
+           "kind": "step"
+          },
+          {
+           "label": "The search box is there (fingerprint anchor, asserted explicitly)",
+           "kind": "step"
+          },
+          {
+           "label": "Type a term that matches the standing demo issue",
+           "kind": "step"
+          },
+          {
+           "label": "Apply the search — typing alone does not filter (page gotcha)",
+           "kind": "step"
+          },
+          {
+           "label": "The query was actually submitted: URL carries ?q=",
+           "kind": "step"
+          },
+          {
+           "label": "The filtered list shows the matching issue",
+           "kind": "step"
+          },
+          {
+           "label": "Replace the query with a term that matches nothing",
+           "kind": "step"
+          },
+          {
+           "label": "Apply the search",
+           "kind": "step"
+          },
+          {
+           "label": "The SECOND query was applied too — not a stale first-query URL",
+           "kind": "step"
+          },
+          {
+           "label": "The empty state renders instead of issue rows (page gotcha)",
+           "kind": "step"
+          }
+         ],
+         "permissions": [
+          {
+           "tier": "prod",
+           "class": "read",
+           "verdict": "allow",
+           "source": "framework:config.yaml"
+          },
+          {
+           "tier": "prod",
+           "class": "write",
+           "verdict": "ask",
+           "source": "framework:config.yaml"
+          },
+          {
+           "tier": "prod",
+           "class": "auth",
+           "verdict": "ask",
+           "source": "framework:config.yaml"
+          },
+          {
+           "tier": "prod",
+           "class": "destructive",
+           "verdict": "deny",
+           "source": "framework:config.yaml"
+          }
+         ]
         },
         {
          "id": "sites/sitemapper-demo/workflows/smart-issue",
          "label": "smart-issue",
          "kind": "workflow",
          "description": "Ask what the issue is about, search for similar existing issues, present matches or create a new one",
-         "status": "unproven"
+         "status": "unproven",
+         "owner": "sitemapper-demo",
+         "facts": [
+          {
+           "label": "Mode",
+           "value": "agentic"
+          },
+          {
+           "label": "Effect",
+           "value": "mutating"
+          },
+          {
+           "label": "Trust",
+           "value": "draft"
+          }
+         ],
+         "flow": [
+          {
+           "label": "Go to the issues list",
+           "kind": "step"
+          },
+          {
+           "label": "Type the topic into the issue search",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          },
+          {
+           "label": "Apply the search — typing alone does not filter (see page gotcha); Enter navigates to ?q=<topic>",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          },
+          {
+           "label": "Read the FILTERED results list to find similar issues",
+           "kind": "step"
+          },
+          {
+           "label": "Present the search results to the user. If similar issues exist, show them and ask whether to still create a new one. If the user declines, STOP HERE — do not …",
+           "kind": "step"
+          },
+          {
+           "label": "Navigate to the new issue form",
+           "kind": "step"
+          },
+          {
+           "label": "Enter the issue title",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          },
+          {
+           "label": "Enter a default description",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          },
+          {
+           "label": "Open the labels dropdown",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          },
+          {
+           "label": "Filter to the selected label",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          },
+          {
+           "label": "Select the label checkbox",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          },
+          {
+           "label": "Submit the new issue",
+           "kind": "step",
+           "policy": {
+            "class": "write",
+            "verdict": "ask"
+           }
+          }
+         ],
+         "permissions": [
+          {
+           "tier": "prod",
+           "class": "read",
+           "verdict": "allow",
+           "source": "framework:config.yaml"
+          },
+          {
+           "tier": "prod",
+           "class": "write",
+           "verdict": "ask",
+           "source": "framework:config.yaml"
+          },
+          {
+           "tier": "prod",
+           "class": "auth",
+           "verdict": "ask",
+           "source": "framework:config.yaml"
+          },
+          {
+           "tier": "prod",
+           "class": "destructive",
+           "verdict": "deny",
+           "source": "framework:config.yaml"
+          }
+         ]
         }
        ]
       }

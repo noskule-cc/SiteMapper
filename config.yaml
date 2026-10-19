@@ -9,8 +9,8 @@
 # instead, as its config.yaml, and is deep-merged over this file at the same
 # global scope (see data/README.md):
 #
-#     <your-maps>/config.yaml       (private)  settings.contact
-#       └─ config.yaml              (this file, public)  settings.policy
+#     config.yaml                   (this file, public)  settings.policy
+#       └─ <your-maps>/config.yaml  (private)  settings.contact
 #            └─ sites/<site>/site.yaml
 #                 └─ sites/<site>/pages/<page>.yaml
 #

@@ -186,13 +186,6 @@ def app_of_site(site_name):
     return None, None
 
 
-def steps_of(w):
-    out = []
-    for phase in ("snapshot", "setup", "steps", "teardown"):
-        out += [s for s in (w.get(phase) or []) if isinstance(s, dict)]
-    return out
-
-
 def tier_keys(w, tiers=None):
     """The fixture blocks that are keyed by tier: `common` and every dict-valued
     key that names a tier (of the given app, else any known tier name). A
@@ -201,38 +194,6 @@ def tier_keys(w, tiers=None):
     names = set(tiers or []) | set(tree.TIER_SYNONYMS)
     return {k for k, v in (w.get("fixtures") or {}).items()
             if isinstance(v, dict) and (k == "common" or k in names)}
-
-
-def step_sites(w):
-    """Every site a workflow's steps resolve to, literal or through fixtures.
-
-    A `$role` site resolves against every fixtures block (common and per tier),
-    so an environment-parameterised workflow reports each tier's site. Returns
-    (sites, unresolved) where unresolved lists the $names no fixture answers."""
-    default = w.get("site")
-    fixtures = w.get("fixtures") or {}
-    values = {}
-    for k, v in fixtures.items():
-        if isinstance(v, dict):
-            for kk, vv in v.items():
-                values.setdefault(kk, set()).add(str(vv))
-        else:
-            values.setdefault(k, set()).add(str(v))
-    sites, unresolved = set(), set()
-    for s in steps_of(w):
-        ref = s.get("site") or default
-        if not ref:
-            continue
-        ref = str(ref)
-        if ref.startswith("$"):
-            name = ref[1:]
-            if name in values:
-                sites |= values[name]
-            else:
-                unresolved.add(ref)
-        else:
-            sites.add(ref)
-    return sites, unresolved
 
 
 def exists_cased(path):
@@ -485,7 +446,7 @@ def check_placement():
         if tier_keys(w, [t for _, _, a in apps() for t in (a.get("tiers") or {})]):
             fails.append(f"{show(f)}: tier-keyed fixtures belong to a project workflow with "
                          "`tiers` — a site workflow has one site")
-        sites, _ = step_sites(w)
+        sites, _ = tree.step_sites(w)
         for s in sorted(sites - {own}):
             fails.append(f"{show(f)}: a step runs on '{s}', but this workflow belongs to "
                          f"'{own}' — a workflow that touches two sites is a project workflow")
@@ -588,15 +549,8 @@ def check_scripts():
         proj = next((rel for ff, rel, _ in project_workflows() if ff == f), None)
         papp = next((p.get("app") for ff, _, p in project_workflows() if ff == f), None)
         default = w.get("site")
-        fixtures = w.get("fixtures") or {}
-        values = {}
-        for k, v in fixtures.items():
-            if isinstance(v, dict):
-                for kk, vv in v.items():
-                    values.setdefault(kk, set()).add(str(vv))
-            else:
-                values.setdefault(k, set()).add(str(v))
-        for s in steps_of(w):
+        values = tree.fixture_values(w)
+        for s in tree.steps_of(w):
             name = s.get("script")
             if not name:
                 continue
@@ -722,7 +676,7 @@ def check_actions():
     fails = []
     for f in all_workflows():
         w = load(f).get("workflow") or {}
-        for phase in ("snapshot", "setup", "steps", "teardown"):
+        for phase in tree.PHASES + ("teardown",):
             for i, s in enumerate(w.get(phase) or []):
                 if not isinstance(s, dict):
                     continue

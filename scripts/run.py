@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as _dt
+import functools
 import json
 import os
 import re
@@ -47,9 +48,6 @@ FRAMEWORK_ROOT = Path(__file__).resolve().parent.parent
 # Actions a deterministic workflow may contain. `verify` needs judgement, so
 # its presence (or mode: agentic) makes the workflow un-runnable here.
 MECHANICAL_ACTIONS = set(tree.ACTIONS) - {"verify"}
-
-PHASES = ("setup", "snapshot", "steps")
-
 
 class RunError(Exception):
     """Fatal runner error — maps to result.status = error."""
@@ -115,11 +113,13 @@ class Site:
         site_file = self.dir / "site.yaml"
         if not site_file.is_file():
             raise RunError(f"site '{site_name}' has no {site_file}")
-        self.config = load_yaml(site_file).get("site", {})
+        self.config = (load_yaml(site_file) or {}).get("site") or {}
         self.base_url = (self.config.get("base_url") or "").rstrip("/")
-        self.pages = {}
-        for page_file in (self.dir / "pages").glob("*.yaml"):
-            self.pages[page_file.stem] = load_yaml(page_file).get("page", {})
+
+    @functools.cached_property
+    def pages(self):
+        return {f.stem: (load_yaml(f) or {}).get("page") or {}
+                for f in (self.dir / "pages").glob("*.yaml")}
 
     def page(self, page_name: str):
         if page_name not in self.pages:
@@ -163,11 +163,11 @@ def load_persona(root: Path, site_name: str, persona_name: str | None):
     if persona_name:
         for f in files:
             if f.stem == persona_name:
-                return load_yaml(f).get("persona", {})
+                return (load_yaml(f) or {}).get("persona") or {}
         raise RunError(f"site '{site_name}' has no persona '{persona_name}' "
                        f"({[f.stem for f in files] or 'none defined'})")
     if len(files) == 1:
-        return load_yaml(files[0]).get("persona", {})
+        return (load_yaml(files[0]) or {}).get("persona") or {}
     if not files:
         return None
     raise RunError(f"site '{site_name}' has several personas "
@@ -237,16 +237,27 @@ def deep_merge(base: dict, override: dict) -> dict:
     return out
 
 
-def resolve_settings(root: Path, site: Site, page_name: str | None):
-    """config.yaml (framework, then map repo) -> site.yaml -> page. Most specific wins."""
-    merged: dict = {}
-    for cfg in {FRAMEWORK_ROOT / "config.yaml", root / "config.yaml"}:
+def settings_layers(root: Path, site: Site, page_name: str | None) -> list[tuple[Path, dict]]:
+    """(file, settings) per scope, least specific first: the framework's
+    config.yaml, the map repository's config.yaml, site.yaml, the page. A
+    later layer wins per key (schema/settings.yaml)."""
+    layers = []
+    for cfg in dict.fromkeys((FRAMEWORK_ROOT / "config.yaml", root.resolve() / "config.yaml")):
         if cfg.is_file():
-            merged = deep_merge(merged, (load_yaml(cfg) or {}).get("settings", {}))
-    merged = deep_merge(merged, site.config.get("settings", {}))
+            layers.append((cfg, (load_yaml(cfg) or {}).get("settings") or {}))
+    layers.append((site.dir / "site.yaml", site.config.get("settings") or {}))
     if page_name and page_name in site.pages:
-        merged = deep_merge(merged, site.pages[page_name].get("settings", {}))
-    return merged
+        layers.append((site.dir / "pages" / f"{page_name}.yaml",
+                       site.pages[page_name].get("settings") or {}))
+    return layers
+
+
+def merge_layers(layers: list[tuple[Path, dict]]) -> dict:
+    return functools.reduce(deep_merge, (settings for _, settings in layers), {})
+
+
+def resolve_settings(root: Path, site: Site, page_name: str | None):
+    return merge_layers(settings_layers(root, site, page_name))
 
 
 # ---------------------------------------------------------------------------
@@ -319,6 +330,13 @@ CAPTURE_PATH_RE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)((?:\.[A-Za-z0-9_-]+|\[
 
 def is_capture_step(step: dict) -> bool:
     return step.get("action") in ("read", "assert") and not step.get("page")
+
+
+def needs_browser(workflow: dict) -> bool:
+    """A workflow of script, human and capture steps runs without Chrome, so
+    it never opens a session or logs in."""
+    return any(s.get("action") not in ("script", "human") and not is_capture_step(s)
+               for s in tree.steps_of(workflow))
 
 
 def capture_path(captures: dict, expr: str):
@@ -840,13 +858,6 @@ class Runner:
 # ---------------------------------------------------------------------------
 # Scope: which tier, which sites
 
-def steps_of(workflow: dict):
-    out = []
-    for phase in PHASES + ("teardown",):
-        out += [s for s in (workflow.get(phase) or []) if isinstance(s, dict)]
-    return out
-
-
 def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
     """The tier this run targets and every site its steps touch.
 
@@ -872,7 +883,7 @@ def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
         if not primary:
             raise RunError(f"app '{app_name}' maps no site for tier '{tier}'")
     sites = []
-    for step in steps_of(workflow):
+    for step in tree.steps_of(workflow):
         ref = step.get("site") or workflow.get("site")
         if not ref:
             continue
@@ -902,12 +913,43 @@ PERMISSION_DEFAULTS = {"read": "allow", "write": "ask", "auth": "ask", "destruct
 STRICTNESS = {"allow": 0, "ask": 1, "deny": 2}
 
 
-def permission_verdict(settings: dict, action_class: str) -> str:
-    policy = settings.get("policy") or {}
+def deciding_rule(policy: dict, action_class: str) -> tuple[str, tuple[str, ...]] | None:
+    """(verdict, key path) of the policy rule that decides the class; None
+    leaves it to PERMISSION_DEFAULTS."""
     verdict = (policy.get("permissions") or {}).get(action_class)
-    if not verdict and action_class == "write" and policy.get("safe_to_submit_forms"):
-        verdict = "allow"  # legacy alias
-    return verdict or PERMISSION_DEFAULTS[action_class]
+    if verdict:
+        return verdict, ("permissions", action_class)
+    if action_class == "write" and policy.get("safe_to_submit_forms"):
+        return "allow", ("safe_to_submit_forms",)  # legacy alias
+    return None
+
+
+def permission_verdict(settings: dict, action_class: str) -> str:
+    rule = deciding_rule(settings.get("policy") or {}, action_class)
+    return rule[0] if rule else PERMISSION_DEFAULTS[action_class]
+
+
+def _sets(policy: dict, key_path: tuple[str, ...]) -> bool:
+    for key in key_path[:-1]:
+        policy = policy.get(key) or {}
+    return key_path[-1] in policy
+
+
+def permission_sources(root: Path, site: Site) -> dict[str, tuple[str, Path | None]]:
+    """Per action class, the verdict and the file whose rule decided it, None
+    for the default."""
+    layers = settings_layers(root, site, None)
+    policy = (merge_layers(layers).get("policy") or {})
+    out = {}
+    for action_class, default in PERMISSION_DEFAULTS.items():
+        rule = deciding_rule(policy, action_class)
+        if not rule:
+            out[action_class] = (default, None)
+            continue
+        verdict, key_path = rule
+        out[action_class] = (verdict, next(path for path, settings in reversed(layers)
+                                           if _sets(settings.get("policy") or {}, key_path)))
+    return out
 
 
 def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str]):
@@ -1025,7 +1067,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
             f"'{name}' is mode: {mode or 'unset'} — only deterministic workflows can run "
             "headless. An agentic workflow needs an LLM host (the /run skill)."
         )
-    for phase in PHASES + ("teardown",):
+    for phase in tree.PHASES + ("teardown",):
         for step in workflow.get(phase) or []:
             if step.get("action") == "verify":
                 raise RunError(
@@ -1062,11 +1104,10 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     }
 
     phase = "setup"
-    ordered = [(ph, index, step) for ph in PHASES
+    ordered = [(ph, index, step) for ph in tree.PHASES
                for index, step in enumerate(workflow.get(ph) or [])]
     try:
-        if any(s.get("action") not in ("script", "human") and not is_capture_step(s)
-               for s in steps_of(workflow)):
+        if needs_browser(workflow):
             runner.start(primary)
         for number, (phase, index, step) in enumerate(ordered, 1):
             runner.run_step(step, phase, index, number)

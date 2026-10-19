@@ -52,6 +52,53 @@ ACTIONS = ("navigate", "click", "input", "read", "assert", "verify", "wait", "ke
 HUMAN_KINDS = ("approve", "login", "physical", "other")
 DEFAULT_KEEP = "1d"
 
+PHASES = ("setup", "snapshot", "steps")
+
+
+def steps_of(workflow: dict) -> list[dict]:
+    out = []
+    for phase in PHASES + ("teardown",):
+        out += [s for s in (workflow.get(phase) or []) if isinstance(s, dict)]
+    return out
+
+
+def fixture_values(w):
+    """Every value each fixture name takes, across the common block and every
+    tier's block."""
+    values = {}
+    for k, v in (w.get("fixtures") or {}).items():
+        if isinstance(v, dict):
+            for kk, vv in v.items():
+                values.setdefault(kk, set()).add(str(vv))
+        else:
+            values.setdefault(k, set()).add(str(v))
+    return values
+
+
+def step_sites(w):
+    """Every site a workflow's steps resolve to, literal or through fixtures.
+
+    A `$role` site resolves against every fixtures block (common and per tier),
+    so an environment-parameterised workflow reports each tier's site. Returns
+    (sites, unresolved) where unresolved lists the $names no fixture answers."""
+    default = w.get("site")
+    values = fixture_values(w)
+    sites, unresolved = set(), set()
+    for s in steps_of(w):
+        ref = s.get("site") or default
+        if not ref:
+            continue
+        ref = str(ref)
+        if ref.startswith("$"):
+            name = ref[1:]
+            if name in values:
+                sites |= values[name]
+            else:
+                unresolved.add(ref)
+        else:
+            sites.add(ref)
+    return sites, unresolved
+
 
 def tier_name(environment: str | None) -> str:
     """The tier key a settings.policy.environment value stands for."""

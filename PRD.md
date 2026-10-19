@@ -159,8 +159,8 @@ Reusable configuration — contact/identity data, agent behavior flags, and form
 The same `settings:` block can appear at three levels, deep-merged per key:
 
 ```
-global  (<your-maps>/config.yaml, private — contact)
-  └─ global  (config.yaml at repo root — policy)
+global  (config.yaml at the framework's repo root — policy)
+  └─ global  (<your-maps>/config.yaml, private — contact)
        └─ site   (sites/<site>/site.yaml)
             └─ page  (sites/<site>/pages/<page>.yaml)
 ```

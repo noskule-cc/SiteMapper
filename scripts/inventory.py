@@ -82,18 +82,10 @@ def oneline(s, limit=110):
 # every clone of the tree.
 
 
-def phases(w):
-    """Every step of a workflow, whichever phase it sits in."""
-    out = []
-    for phase in ("snapshot", "setup", "steps", "teardown"):
-        out += [s for s in (w.get(phase) or []) if isinstance(s, dict)]
-    return out
-
-
 def _workflow_row(f, kind, owner, project=None):
     w = load(f).get("workflow") or {}
     sites = w.get("sites") or ([w.get("site")] if w.get("site") else [])
-    steps = phases(w)
+    steps = tree.steps_of(w)
     tiers = w.get("tiers") or {}
     return {
         "kind": kind,
@@ -127,10 +119,12 @@ def _workflow_row(f, kind, owner, project=None):
         "companion": os.path.exists(f[:-5] + ".md"),
         "doc_path": rel(f[:-5] + ".md") if os.path.exists(f[:-5] + ".md") else "",
         "path": rel(f),
+        "workflow": w,
     }
 
 
-def collect_workflows():
+def collect_workflows(raw=False):
+    """raw keeps each parsed YAML under "workflow", which serve.py must not ship."""
     rows = []
     for f in sorted(glob.glob(os.path.join(ROOT, "sites", "*", "workflows", "*.yaml"))):
         rows.append(_workflow_row(f, "site", rel(f).split("/")[1]))
@@ -138,6 +132,9 @@ def collect_workflows():
         p = load(os.path.join(pd_, "project.yaml")).get("project") or {}
         for f in sorted(glob.glob(os.path.join(pd_, "workflows", "*.yaml"))):
             rows.append(_workflow_row(f, "project", prel, p))
+    if not raw:
+        for row in rows:
+            del row["workflow"]
     return rows
 
 

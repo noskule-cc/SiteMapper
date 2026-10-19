@@ -82,6 +82,8 @@ Before implementing new logic, check this table. If what you need exists, use it
 | Locate a workflow by name across sites and projects | `find_workflow` | `scripts/run.py` |
 | Site config, page map, element lookup | the `Site` class (`page`, `element`) | `scripts/run.py` |
 | Merge layered `settings:` (global → site → page) | `resolve_settings` / `deep_merge` | `scripts/run.py` |
+| Walk a workflow's steps in run order | `steps_of` / `PHASES` | `scripts/tree.py` |
+| Every site a workflow's steps name, through fixtures too | `step_sites` | `scripts/tree.py` |
 | Resolve `$name` (params → context → fixtures → captures) | the `Bindings` class (`lookup`, `resolve`) | `scripts/run.py` |
 | Read a secret by reference, never by value | `env_secret` | `scripts/run.py` |
 
@@ -90,6 +92,7 @@ Before implementing new logic, check this table. If what you need exists, use it
 | Need | Use | Location |
 |------|-----|----------|
 | Decide allow/ask/deny for one action class | `permission_verdict` | `scripts/run.py` |
+| Every class's verdict for a site, with the file that decided it | `permission_sources` | `scripts/run.py` |
 | Gate a whole run up front, strictest site wins | `gate` | `scripts/run.py` |
 | Write `trust:` / `verified_at:` back into a workflow YAML | `update_trust` | `scripts/run.py` |
 
