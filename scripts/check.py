@@ -868,6 +868,11 @@ def check_overview():
     return generated_is_stale("overview")
 
 
+def check_lib_tree():
+    """lib-tree.json is current."""
+    return generated_is_stale("libtree")
+
+
 CHECKS = {
     "yaml": check_yaml,
     "schema": check_schema,
@@ -884,6 +889,7 @@ CHECKS = {
     "bindings": check_bindings,
     "inventory": check_inventory,
     "overview": check_overview,
+    "lib_tree": check_lib_tree,
 }
 
 

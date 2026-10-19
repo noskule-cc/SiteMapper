@@ -13,13 +13,14 @@ them) is [../USAGE.md](../USAGE.md).
 - **Standard library first.** A new third-party dependency needs a reason in the PR
 - **CI:** GitHub Actions (`.github/workflows/check.yml`) — the consistency checks plus a real headless run on every push
 
-## The Five Scripts
+## The Six Scripts
 
 | Script | Role | Notes |
 |--------|------|-------|
 | `check.py` | every mechanical consistency check, non-zero exit on failure | the CI gate; `--only <name>` runs one, `--list` names them |
 | `inventory.py` | walks the tree and renders `docs/inventory.md`; owns the collectors | `--check` fails when a generated view is stale |
 | `overview.py` | renders `docs/overview.html` from `inventory.py`'s collectors | `--links github` and `--fragment` produce the shareable build |
+| `libtree.py` | renders `lib-tree.json` at the lib root from the same collectors | the host's lib-neutral format (TeamOS#21); the host draws it as a tree |
 | `run.py` | the headless deterministic runner: permission gate, session, steps, watch, result | the largest file; see the Reuse Rules in [architecture-rules.md](architecture-rules.md) |
 | `serve.py` | serves the overview live with a run API, localhost only | keeps the permission gate server-side — the browser is untrusted UI |
 
@@ -36,9 +37,9 @@ shared data tree (`data/SiteMapper`, `data/projects`, `data/runs`).
 Every function that reads a *contract* must resolve against `HOME`; every
 function that reads *data* must resolve against `ROOT` or `PROJECTS`. Getting
 this wrong is not a small bug — `--root .` from a map repository once resolved
-to the framework and reported it green. `inventory.py` and `overview.py` expose
-`set_root(root, projects)` for the same reason, and both must be repointed
-together.
+to the framework and reported it green. `inventory.py`, `overview.py` and
+`libtree.py` expose `set_root(root, projects)` for the same reason, and all
+three must be repointed together.
 
 The alternative — copying the script and the schemas next to the maps — is
 forbidden: a forked schema validates green against a contract nobody updated.
@@ -50,7 +51,7 @@ schema/     # Commented YAML templates — the format's source of truth
 sites/      # Mapped sites: site.yaml + pages/ + workflows/ (building blocks) + scripts/, personas/, contexts/
 apps/       # One application mapped as several tier sites: app.yaml (tier map, parity) + scripts/
 projects/   # Questions: project.yaml + workflows/ + data/ + scripts/, grouped in folders
-scripts/    # The five executables above, plus tree.py (where the roots are)
+scripts/    # The six executables above, plus tree.py (where the roots are)
 docs/       # Everything agents and maintainers read — start at docs/INDEX.md
 .claude/    # Skills and agents, each carrying its complete instructions
 data/       # Copyable skeleton for a private map repository
@@ -78,8 +79,8 @@ shipped without two of them once and went undocumented for weeks.
 same command.
 
 **Change a generated view.** Edit the renderer, then re-run
-`python scripts/inventory.py`. Never edit `docs/inventory.md` or
-`docs/overview.html` by hand — `check.py` fails on staleness.
+`python scripts/inventory.py`. Never edit `docs/inventory.md`,
+`docs/overview.html` or `lib-tree.json` by hand — `check.py` fails on staleness.
 
 ## Troubleshooting
 

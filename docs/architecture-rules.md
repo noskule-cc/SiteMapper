@@ -98,7 +98,7 @@ Before implementing new logic, check this table. If what you need exists, use it
 | Need | Use | Location |
 |------|-----|----------|
 | Enumerate sites / workflows / projects | `collect_sites`, `collect_workflows`, `collect_projects` | `scripts/inventory.py` |
-| Point a generator at another tree | `set_root` | `scripts/inventory.py`, `scripts/overview.py` |
+| Point a generator at another tree | `set_root` | `scripts/inventory.py`, `scripts/overview.py`, `scripts/libtree.py` |
 | Render the dashboard HTML from those collectors | `render` | `scripts/overview.py` |
 | Detect a stale generated view | `stale` | `scripts/inventory.py` |
 
@@ -125,7 +125,7 @@ that `scripts/check.py` enforces.
 | Guess a locator into a map to make a run pass | ask for a focused re-map | A plausible-but-wrong locator fails only sometimes — worse than a missing one |
 | Fan out over work that switches tenant or sticky UI state | run it serially | The session behind the tabs is shared; concurrent agents read another tenant's data |
 | Put a project-true fact in agent memory | put it in the map, the site config, or the schema | [knowledge-placement.md](knowledge-placement.md) |
-| Hand-edit `inventory.md` or `overview.html` | re-run `scripts/inventory.py` | The staleness check will fail the build anyway |
+| Hand-edit `inventory.md`, `overview.html` or `lib-tree.json` | re-run `scripts/inventory.py` | The staleness check will fail the build anyway |
 
 ## Known Violations
 
