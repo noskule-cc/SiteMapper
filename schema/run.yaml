@@ -2,7 +2,7 @@
 # What the headless runner writes when a run is recorded (--record, or always
 # when the workflow declares `rollback: snapshot`). One folder per run:
 #
-#   <runs>/SiteMapper/<owner>/<workflow>.<YYYY-MM-DDTHHMMSSZ>.<tier>.<instance>/
+#   <runs>/SiteMapper/<owner>/<workflow>.<YYYY-MM-DDTHHMMSS.fffZ>.<tier>.<instance>.<suffix>/
 #     run.yaml          this record
 #     result.json       the full `result` object (schema/result.yaml)
 #     snapshot/         captures of the `snapshot:` phase, one JSON file each
@@ -13,7 +13,10 @@
 # gitignored as a class, never committed. <owner> is the project's path under
 # projects/ or the site's name. <tier> is `-` when the workflow declares no
 # tiers. The instance in the folder name is what keeps two machines' runs
-# apart; a sync copies folders and never merges them.
+# apart; a sync copies folders and never merges them. The start time is to
+# the millisecond and <suffix> is 4 random hex characters, so two runs started
+# together on one machine still get folders of their own. The folder name is
+# the run_id of the index; nothing parses it, readers use run.yaml.
 #
 # A reader (a UI, a sweep) needs only this file. `sweep_runs` (scripts/tree.py)
 # deletes the folder once `keep` has passed since finished_at (else
@@ -29,6 +32,7 @@ run:
   started_at: ""              # ISO-8601 UTC
   finished_at: ""             # ISO-8601 UTC; for a waiting run, when it paused
   status: ""                  # passed | failed | error | waiting (mirrors result.json)
+  trigger: ""                 # schedule | manual: run.py --trigger, default manual
   keep: ""                    # How long the folder lives: <N>d (days),
                               # <N>h (hours), or "keep" (never swept). Copied
                               # from the project's `keep:`, else "1d"; empty or
@@ -38,4 +42,30 @@ run:
                               # "keep" from the runner: it is the evidence for
                               # the flag. Whoever restores trust deletes the
                               # folder or lowers its keep.
+  headline: ""                # One line for a runs list, at most 200 characters:
+                              # status, the waiting step, assertion counts and
+                              # the first two summary entries
+  error: ""                   # status error or failed: the result's error, or
+                              # the first failed assertion, one line
+  waiting_for: {}             # status waiting: {step, label, reason} from result.json
+  trust_change: ""            # Set when this run changed the workflow's trust,
+                              # e.g. "draft -> broken"
+  assertions: {}              # {total, passed, failed}: the result's counts
+  summary: []                 # The captures as [{label, value}] strings: nested
+                              # maps flatten to dotted labels ("scan.fleet.total"),
+                              # anything else is one value (JSON unless a string).
+                              # At most 30 entries, values cut at 200 characters
   files: []                   # Relative paths of everything in the folder
+#
+# The optional keys (trigger to summary) are left out when empty, e.g. a
+# result.json an agent wrote without captures or counts has no summary.
+#
+# Index: every record also appends one JSON line to
+# <runs>/SiteMapper/index.<instance>.jsonl: run_id (the folder name) plus
+# owner, workflow, tier, instance, started_at, finished_at, status, trigger,
+# headline and trust_change as above. One file per instance, appended under
+# an exclusive file lock so parallel runs on one machine never interleave, and
+# never swept: sweep_runs touches only folders holding a run.yaml.
+#
+# Key names and types are owned by the run-record contract of the deployment
+# (connectOS contracts/run-record.yaml); this template follows it.

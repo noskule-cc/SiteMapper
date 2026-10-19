@@ -89,7 +89,7 @@ Workflow argument: $workflow
 
 7. **Report results** — summarize what was done and whether verification passed.
    For a run worth keeping as history, write a run folder to the runs store
-   (`schema/run.yaml`: `runs/SiteMapper/<owner>/<workflow>.<timestamp>.<tier>.<instance>/`
+   (`schema/run.yaml`: `runs/SiteMapper/<owner>/<workflow>.<timestamp>.<tier>.<instance>.<suffix>/`
    with `run.yaml`, `result.json`, findings and evidence) — never a file inside
    the tree, which is not committed in any case (`docs/tools/jobs.md` → Runs
    retention). A workflow with `rollback: snapshot` must have its `snapshot:`

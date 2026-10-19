@@ -102,7 +102,7 @@ Workflow argument: $workflow
 
 9. **Record a reference run.** For a run worth keeping as history, write a run
    folder to the runs store (`schema/run.yaml`:
-   `runs/SiteMapper/<owner>/<workflow>.<timestamp>.<tier>.<instance>/`): `run.yaml`,
+   `runs/SiteMapper/<owner>/<workflow>.<timestamp>.<tier>.<instance>.<suffix>/`): `run.yaml`,
    `result.json` with the per-assertion results, findings, and the evidence
    (screenshots, logs) under `evidence/`, referenced from the result's
    `evidence` list. Never inside the tree: nothing a run wrote is committed, and
