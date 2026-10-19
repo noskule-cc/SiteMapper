@@ -143,10 +143,13 @@ def parse_keep(value) -> _dt.timedelta | None:
     return _dt.timedelta(days=n) if m.group(2) == "d" else _dt.timedelta(hours=n)
 
 
+_LOADER = getattr(yaml, "CSafeLoader", yaml.SafeLoader)
+
+
 def _run_record(folder: str) -> dict | None:
     try:
         with open(os.path.join(folder, "run.yaml"), encoding="utf-8") as fh:
-            run = (yaml.safe_load(fh) or {}).get("run")
+            run = (yaml.load(fh, Loader=_LOADER) or {}).get("run")
     except (OSError, yaml.YAMLError, AttributeError):
         return None
     return run if isinstance(run, dict) else None
