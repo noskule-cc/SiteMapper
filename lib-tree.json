@@ -38,7 +38,7 @@
          "id": "sites/sitemapper-demo/workflows/search-issues",
          "label": "search-issues",
          "kind": "workflow",
-         "description": "Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching…",
+         "description": "Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state",
          "status": "ok"
         },
         {

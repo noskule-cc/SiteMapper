@@ -55,7 +55,7 @@ def joined(*parts):
 
 
 def workflow_node(id_, w, project=None):
-    return node(id_, w["name"], "workflow", description=w["desc"],
+    return node(id_, w["name"], "workflow", description=w["purpose"],
                 status=STATUS.get(w["trust"]), project=project)
 
 
