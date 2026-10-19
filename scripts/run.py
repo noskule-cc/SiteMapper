@@ -775,6 +775,9 @@ class Runner:
 
     def do_read(self, step):
         if is_capture_step(step):
+            if "row" in step or "column" in step:
+                raise RunError("`row` and `column` read a table on a page; this read has "
+                               "no `page`, so it reads a capture and cannot take them")
             value = capture_path(self.bindings.captures, step.get("value") or "")
             if step.get("capture"):
                 self.bindings.captures[step["capture"]] = value
@@ -793,7 +796,8 @@ class Runner:
     def _read_cell(self, table, row: str, column: str) -> str:
         if not row or not column:
             raise RunError("a table read needs both `row` and `column`")
-        grid = self._settle_rows(table, row)
+        grid, _ = self._poll(lambda: table.evaluate(TABLE_JS, row),
+                             lambda g: len(g["rows"]) == 1)
         headers = grid["headers"]
         index = [i for i, h in enumerate(headers) if h == column] \
             or [i for i, h in enumerate(headers) if h.startswith(column)]
@@ -807,14 +811,6 @@ class Runner:
             raise RunError(f"the row containing '{row}' has {len(cells)} cells, "
                            f"no cell under header '{column}'")
         return cells[index[0]]
-
-    def _settle_rows(self, table, row: str) -> dict:
-        deadline = time.monotonic() + self.DEFAULT_TIMEOUT_MS / 1000
-        grid = table.evaluate(TABLE_JS, row)
-        while len(grid["rows"]) != 1 and time.monotonic() < deadline:
-            self.pw_page.wait_for_timeout(250)
-            grid = table.evaluate(TABLE_JS, row)
-        return grid
 
     def do_wait(self, step):
         value = self.bindings.resolve(step.get("value"))

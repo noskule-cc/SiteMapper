@@ -214,7 +214,7 @@ workflow:
       row: ""                 # For action: read on a table — text the one row must contain
                               #   (a "$fixture" works). Needs `column`; see "action: read" below.
       column: ""              # For action: read on a table — the header text of the cell to read
-      expect: null           # For action: assert — the expected condition (see below)
+      expect: null            # For action: assert — the expected condition (see below)
       description: ""         # Human-readable step description
       reason: ""              # For action: human — what the person must do and why the
                               #   run cannot, in one line. Required
@@ -260,6 +260,9 @@ workflow:
 #   shift the read. Zero or several matching rows, or a header matching no
 #   column or several, fail the step and name them. The row count is polled
 #   for up to 10 s first, so a list still re-rendering after a filter settles.
+#   One header row is assumed: the first row in <thead>, of role=columnheader
+#   cells, or of <th> only. Two header rows and spanning (colspan) headers are
+#   not supported. A read without `page` reads a capture and rejects both keys.
 #     - action: read
 #       page: device-list
 #       element: device-table
