@@ -30,6 +30,7 @@ import datetime as _dt
 import json
 import os
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -999,7 +1000,17 @@ def update_trust(wf_path: Path, workflow: dict, result: dict):
 # Orchestration
 
 def utc_now() -> str:
-    return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+
+
+def run_id_of(result: dict, instance: str) -> str:
+    """<workflow>.<utc-ts>.<tier>.<instance>.<suffix> (contracts/run-record.yaml):
+    the start to the millisecond plus a random suffix, so runs started together
+    still get folders of their own."""
+    start = _dt.datetime.fromisoformat(result["started_at"].replace("Z", "+00:00"))
+    stamp = start.strftime("%Y-%m-%dT%H%M%S.") + f"{start.microsecond // 1000:03d}Z"
+    return (f"{result['workflow']}.{stamp}.{result.get('tier') or '-'}.{instance}."
+            f"{secrets.token_hex(2)}")
 
 
 def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed: bool,
@@ -1186,8 +1197,7 @@ def write_run(result: dict, runs: Path, owner: Owner, trigger: str) -> Path:
     full result, the snapshot captures as the pre-state, the evidence files.
     Never inside the tree, never committed."""
     instance = tree.instance_name()
-    stamp = result["started_at"].replace(":", "")
-    run_id = f"{result['workflow']}.{stamp}.{result.get('tier') or '-'}.{instance}"
+    run_id = run_id_of(result, instance)
     folder = runs / tree.LIB / owner.name / run_id
     folder.mkdir(parents=True, exist_ok=True)
     files = ["run.yaml", "result.json"]

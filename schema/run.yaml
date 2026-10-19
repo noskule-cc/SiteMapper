@@ -2,7 +2,7 @@
 # What the headless runner writes when a run is recorded (--record, or always
 # when the workflow declares `rollback: snapshot`). One folder per run:
 #
-#   <runs>/SiteMapper/<owner>/<workflow>.<YYYY-MM-DDTHHMMSSZ>.<tier>.<instance>/
+#   <runs>/SiteMapper/<owner>/<workflow>.<YYYY-MM-DDTHHMMSS.fffZ>.<tier>.<instance>.<suffix>/
 #     run.yaml          this record
 #     result.json       the full `result` object (schema/result.yaml)
 #     snapshot/         captures of the `snapshot:` phase, one JSON file each
@@ -13,7 +13,10 @@
 # gitignored as a class, never committed. <owner> is the project's path under
 # projects/ or the site's name. <tier> is `-` when the workflow declares no
 # tiers. The instance in the folder name is what keeps two machines' runs
-# apart; a sync copies folders and never merges them.
+# apart; a sync copies folders and never merges them. The start time is to
+# the millisecond and <suffix> is 4 random hex characters, so two runs started
+# together on one machine still get folders of their own. The folder name is
+# the run_id of the index; nothing parses it, readers use run.yaml.
 #
 # A reader (a UI, a sweep) needs only this file. `sweep_runs` (scripts/tree.py)
 # deletes the folder once `keep` has passed since finished_at (else
