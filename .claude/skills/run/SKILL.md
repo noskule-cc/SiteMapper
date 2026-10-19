@@ -56,7 +56,12 @@ Workflow argument: $workflow
      - `click` → **find** + **click**
      - `input` → **type**. For a text field this types `value`; for a
        select/combobox it picks the option whose text equals `value`
-     - `read` → **read page** / **read text**
+     - `read` → **read page** / **read text**. With `row` and `column` the
+       element is a table or ARIA grid: find the header whose text equals (or
+       else starts with) `column`, take its position among the header row's
+       cells, hidden ones included, and return the cell at that position in the
+       one body row containing `row`. Zero or several such rows, or no single
+       matching header, fail the step
      - `key` → **press key** (`value` is the key, e.g. `Escape`, `Enter`) — used
        to dismiss a dropdown without changing state
      - `script` → **run script**: run the named script with `value` as its CLI
