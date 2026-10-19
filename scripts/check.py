@@ -729,7 +729,7 @@ def check_actions():
                 where = f"{show(f)}: {phase}[{i}]"
                 action = s.get("action")
                 if action is None and w.get("mode") == "agentic":
-                    continue  # an agentic step may be prose for the LLM
+                    continue
                 if action not in tree.ACTIONS:
                     fails.append(f"{where}: unknown action '{action}' "
                                  f"({' | '.join(tree.ACTIONS)})")

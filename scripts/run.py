@@ -55,8 +55,6 @@ class RunError(Exception):
 
 
 class WaitForPerson(Exception):
-    """A `human` step was reached — maps to result.status = waiting."""
-
     def __init__(self, step: int, label: str, reason: str):
         super().__init__(f"step {step}: {label}")
         self.waiting_for = {"step": step, "label": label, "reason": reason}
@@ -1062,8 +1060,9 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         for number, (phase, index, step) in enumerate(ordered, 1):
             runner.run_step(step, phase, index, number)
     except WaitForPerson as wait:
-        # A run that already failed an assertion is not worth a person's check.
-        if all(a["pass"] for a in runner.assertions):
+        if any(not a["pass"] for a in runner.assertions):
+            result["status"] = "failed"
+        else:
             result["status"] = "waiting"
             result["waiting_for"] = wait.waiting_for
     except RunError as exc:
@@ -1075,7 +1074,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         result["error"] = f"[{phase}] {type(exc).__name__}: {str(exc).splitlines()[0]}"
         result["failure"] = runner.build_failure()
     finally:
-        try:  # teardown is best-effort, even after a failure; a waiting run is not over
+        try:  # teardown is best-effort, even after a failure
             if result["status"] != "waiting":
                 for index, step in enumerate(workflow.get("teardown") or []):
                     runner.run_step(step, "teardown", index)
