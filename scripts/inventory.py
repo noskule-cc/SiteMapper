@@ -2,18 +2,19 @@
 """Generate docs/inventory.md — what exists in this repo, from the YAML itself.
 
 Usage:
-    python scripts/inventory.py                    # write both views for this repo
-    python scripts/inventory.py --check            # exit 1 if either is stale
-    python scripts/inventory.py --root ../my-maps  # write THAT repo's views, into its docs/
+    python scripts/inventory.py                    # write all three views for this repo
+    python scripts/inventory.py --check            # exit 1 if any is stale
+    python scripts/inventory.py --root ../my-maps  # write THAT repo's views, into its tree
     python scripts/inventory.py --root data/SiteMapper --projects data/projects
 
-Both files are GENERATED. Never hand-edit them; change the YAML and re-run.
+All three files are GENERATED. Never hand-edit them; change the YAML and re-run.
 `--check` is what keeps that true: a generated file nobody verifies is just
 slower drift.
 
-The collectors below are the single source both renderers read: this file emits
-the Markdown table view (for agents and git diffs), `overview.py` emits the
-browsable HTML view (for humans). One walk of the YAML, two presentations.
+The collectors below are the single source every renderer reads: this file emits
+the Markdown table view (for agents and git diffs), `overview.py` the browsable
+HTML view (for humans), `libtree.py` the lib-tree.json a host draws (TeamOS).
+One walk of the YAML, three presentations.
 
 Why a script and not a skill: enumerating 16 workflows is mechanical, so an LLM
 re-parsing them on every question is the wrong executor. See docs/code-over-llm.md.
@@ -386,12 +387,15 @@ def main():
     ap.add_argument("--projects", help="the projects tree, when it is not inside --root")
     args = ap.parse_args()
 
-    import overview  # one command regenerates both views; see overview.py
+    import libtree  # one command regenerates every view
+    import overview
     if args.root or args.projects:
         set_root(args.root or ROOT, args.projects)
         overview.set_root(args.root or ROOT, args.projects)
+        libtree.set_root(args.root or ROOT, args.projects)
 
-    targets = [(OUT, render()), (overview.OUT, overview.render())]
+    targets = [(OUT, render()), (overview.OUT, overview.render()),
+               (libtree.OUT, libtree.render())]
     if args.check:
         bad = [p for p, fresh in targets if stale(p, fresh)]
         for p in bad:
@@ -399,7 +403,7 @@ def main():
             print(f"FAIL  {rel(p)} is stale — run: python scripts/inventory.py{hint}")
         if bad:
             return 1
-        print("docs/inventory.md and docs/overview.html are current")
+        print("docs/inventory.md, docs/overview.html and lib-tree.json are current")
         return 0
 
     for path, fresh in targets:

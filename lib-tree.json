@@ -1,0 +1,110 @@
+{
+ "lib": "SiteMapper",
+ "nodes": [
+  {
+   "id": "sites",
+   "label": "Sites",
+   "kind": "folder",
+   "children": [
+    {
+     "id": "sites/sitemapper-demo",
+     "label": "sitemapper-demo",
+     "kind": "site",
+     "description": "SiteMapper Demo · https://github.com/noskule-cc/SiteMapper.demo",
+     "children": [
+      {
+       "id": "sites/sitemapper-demo/pages",
+       "label": "Pages",
+       "kind": "folder",
+       "children": [
+        {
+         "id": "sites/sitemapper-demo/pages/issues-list",
+         "label": "issues-list",
+         "kind": "page"
+        },
+        {
+         "id": "sites/sitemapper-demo/pages/new-issue",
+         "label": "new-issue",
+         "kind": "page"
+        }
+       ]
+      },
+      {
+       "id": "sites/sitemapper-demo/workflows",
+       "label": "Workflows",
+       "kind": "folder",
+       "children": [
+        {
+         "id": "sites/sitemapper-demo/workflows/search-issues",
+         "label": "search-issues",
+         "kind": "workflow",
+         "description": "Search the issues list and assert the filtered result state — a matching term shows the issue, a non-matching term shows the empty state",
+         "status": "ok"
+        },
+        {
+         "id": "sites/sitemapper-demo/workflows/smart-issue",
+         "label": "smart-issue",
+         "kind": "workflow",
+         "description": "Ask what the issue is about, search for similar existing issues, present matches or create a new one",
+         "status": "unproven"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "sites/sitemapper-demo-dev",
+     "label": "sitemapper-demo-dev",
+     "kind": "site",
+     "description": "SiteMapper Demo (dev tier) · https://github.com/noskule-cc/SiteMapper",
+     "children": [
+      {
+       "id": "sites/sitemapper-demo-dev/pages",
+       "label": "Pages",
+       "kind": "folder",
+       "children": [
+        {
+         "id": "sites/sitemapper-demo-dev/pages/issues-list",
+         "label": "issues-list",
+         "kind": "page"
+        },
+        {
+         "id": "sites/sitemapper-demo-dev/pages/new-issue",
+         "label": "new-issue",
+         "kind": "page"
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "apps",
+   "label": "Apps",
+   "kind": "folder",
+   "children": [
+    {
+     "id": "apps/sitemapper-demo",
+     "label": "sitemapper-demo",
+     "kind": "app",
+     "description": "SiteMapper Demo · The demo issue tracker as one application with two tiers. prod is the demo repository's issues (the standing issue #1 every acceptance run is pinned to); dev is the framework repository's own issues, the same UI over other data. The worked example for everything an app declares: the tier map, page-…",
+     "children": [
+      {
+       "id": "apps/sitemapper-demo/tiers/dev",
+       "label": "dev · sitemapper-demo-dev",
+       "kind": "tier",
+       "target": "sites/sitemapper-demo-dev"
+      },
+      {
+       "id": "apps/sitemapper-demo/tiers/prod",
+       "label": "prod · sitemapper-demo",
+       "kind": "tier",
+       "target": "sites/sitemapper-demo"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
