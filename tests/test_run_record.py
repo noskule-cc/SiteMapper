@@ -5,6 +5,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -191,6 +192,145 @@ class RunRecordTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertFalse(self.runs.exists())
 
+
+
+class FinishWaitingTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_py(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(RUN_PY), *args, "--root", str(self.root),
+                               "--runs", str(self.runs)],
+                              env=self.env, capture_output=True, text=True, timeout=60)
+
+    def waiting(self) -> str:
+        proc = self.run_py("person", "--record")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return index_lines(self.runs)[-1]["run_id"]
+
+    def finish(self, run_id: str, status: str, by: str = "BEB") -> subprocess.CompletedProcess:
+        return self.run_py("--finish", run_id, "--status", status, "--by", by, "--json")
+
+    def test_an_approval_ends_the_run_passed_with_who_answered(self):
+        run_id = self.waiting()
+        proc = self.finish(run_id, "passed")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        done = json.loads(proc.stdout)
+        self.assertEqual((done["status"], done["answered_by"], done["changed"]),
+                         ("passed", "BEB", True))
+
+        statuses = [line["status"] for line in index_lines(self.runs)]
+        self.assertEqual(statuses, ["running", "waiting", "passed"])
+        last = index_lines(self.runs)[-1]
+        self.assertEqual((last["answered_by"], last["answered_at"], last["finished_at"]),
+                         ("BEB", done["answered_at"], done["answered_at"]))
+        self.assertEqual(last["headline"], "passed · approved by BEB")
+        run = run_yaml(self.runs, run_id)
+        self.assertEqual((run["status"], run["answered_by"]), ("passed", "BEB"))
+        self.assertNotIn("waiting_for", run)
+        self.assertNotIn("error", run)
+
+    def test_a_rejection_ends_the_run_failed_naming_who_rejected_it(self):
+        run_id = self.waiting()
+        self.assertEqual(self.finish(run_id, "failed").returncode, 0)
+        run = run_yaml(self.runs, run_id)
+        self.assertEqual((run["status"], run["error"], run["headline"]),
+                         ("failed", "rejected by BEB", "failed · rejected by BEB"))
+
+    def test_finishing_again_with_the_same_answer_changes_nothing(self):
+        run_id = self.waiting()
+        self.finish(run_id, "passed")
+        again = self.finish(run_id, "passed")
+        self.assertEqual(again.returncode, 0, again.stderr)
+        self.assertFalse(json.loads(again.stdout)["changed"])
+        self.assertEqual(len(index_lines(self.runs)), 3)
+
+    def test_a_run_that_is_not_waiting_is_refused(self):
+        run_id = self.waiting()
+        self.finish(run_id, "passed")
+        other = self.finish(run_id, "failed")
+        self.assertEqual(other.returncode, 2)
+        self.assertIn(f"run '{run_id}' is passed, not waiting", other.stderr)
+        quick = self.run_py("quick", "--record")
+        self.assertEqual(quick.returncode, 0, quick.stderr)
+        refused = self.finish(index_lines(self.runs)[-1]["run_id"], "passed")
+        self.assertEqual(refused.returncode, 2)
+        self.assertEqual(len(index_lines(self.runs)), 5)
+
+    def test_an_unknown_run_is_refused(self):
+        proc = self.finish("nap.2026-01-01T000000.000Z.-.TEST-PC.abcd", "passed")
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("no run 'nap.2026-01-01T000000.000Z.-.TEST-PC.abcd' in the index of "
+                      "TEST-PC", proc.stderr)
+
+    def test_a_swept_run_gets_the_index_line_alone(self):
+        run_id = self.waiting()
+        shutil.rmtree(self.runs / "SiteMapper" / "fixture" / run_id)
+        self.assertEqual(self.finish(run_id, "failed").returncode, 0)
+        last = index_lines(self.runs)[-1]
+        self.assertEqual((last["status"], last["answered_by"], last["owner"]),
+                         ("failed", "BEB", "fixture"))
+        self.assertFalse((self.runs / "SiteMapper" / "fixture" / run_id).exists())
+
+
+class FinishRaceTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.runs = Path(self.tmp.name) / "runs"
+        self.addCleanup(self.tmp.cleanup)
+        sys.path.insert(0, str(RUN_PY.parent))
+        self.addCleanup(sys.path.remove, str(RUN_PY.parent))
+        os.environ["SITEMAPPER_INSTANCE"] = INSTANCE
+        self.addCleanup(os.environ.pop, "SITEMAPPER_INSTANCE")
+        import run
+
+        self.run = run
+
+    def waiting(self, n: int) -> str:
+        run_id = f"person.2026-10-20T2000{n:02d}.000Z.-.{INSTANCE}.abcd"
+        folder = self.runs / "SiteMapper" / "fixture" / run_id
+        folder.mkdir(parents=True)
+        self.run.write_record(self.runs, INSTANCE, run_id, folder, {
+            "lib": "SiteMapper", "owner": "fixture", "workflow": "person", "tier": "-",
+            "instance": INSTANCE, "started_at": "2026-10-20T20:00:00.000Z",
+            "finished_at": "2026-10-20T20:00:01.000Z", "status": "waiting", "keep": "1d",
+            "waiting_for": {"step": 1, "label": "a person approves", "reason": ""},
+            "files": ["run.yaml"]})
+        return run_id
+
+    def test_two_different_answers_at_once_finish_the_run_exactly_once(self):
+        for n in range(20):
+            run_id = self.waiting(n)
+            outcomes: dict[str, object] = {}
+            start = threading.Barrier(2)
+
+            def answer(status: str, by: str):
+                start.wait()
+                try:
+                    outcomes[status] = self.run.finish_waiting(self.runs, run_id, status, by)
+                except self.run.RunError as exc:
+                    outcomes[status] = exc
+
+            threads = [threading.Thread(target=answer, args=a) for a in
+                       (("passed", "A"), ("failed", "B"))]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=60)
+
+            won = [s for s, o in outcomes.items() if isinstance(o, dict)]
+            self.assertEqual(len(won), 1, outcomes)
+            lost = next(s for s in outcomes if s not in won)
+            self.assertIn("not waiting", str(outcomes[lost]))
+            ended = [line for line in index_lines(self.runs)
+                     if line["run_id"] == run_id and line["status"] != "waiting"]
+            self.assertEqual([line["status"] for line in ended], won)
+            self.assertEqual(run_yaml(self.runs, run_id)["status"], won[0])
 
 if __name__ == "__main__":
     unittest.main()

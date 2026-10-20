@@ -41,6 +41,8 @@ run:
                               # Absent while status is running
   status: ""                  # running | passed | failed | error | waiting
                               # (the final one mirrors result.json)
+  answered_by: ""             # A waiting run a person answered: who. Set with
+  answered_at: ""             # answered_at (ISO-8601 UTC) by run.py --finish
   trigger: ""                 # schedule | manual | ui: run.py --trigger, default manual
   pid: 0                      # Process id of the runner on its instance
   keep: ""                    # How long the folder lives: <N>d (days),
@@ -73,8 +75,16 @@ run:
 #
 # Index: every write of the record also appends one JSON line to
 # <runs>/SiteMapper/index.<instance>.jsonl: run_id (the folder name) plus
-# owner, workflow, tier, instance, started_at, finished_at, status, trigger,
-# pid, headline and trust_change as above. A run has a `running` line and a
+# owner, workflow, tier, instance, started_at, finished_at, status,
+# answered_by, answered_at, trigger, pid, headline and trust_change as above.
+#
+# A waiting run ends when its host passes on a person's answer:
+# `run.py --finish <run_id> --status passed|failed --by <user>` (MCP:
+# finish_run) rewrites run.yaml with that status, drops waiting_for, sets
+# finished_at, answered_by, answered_at and, after a rejection, error
+# "rejected by <user>", then appends a third index line. Only a run whose last
+# line is `waiting` is finished; the same answer again changes nothing. A swept
+# run gets the index line alone. A run has a `running` line and a
 # final line with the same run_id; the later line supersedes the earlier. One file per instance, appended under
 # an exclusive file lock so parallel runs on one machine never interleave, and
 # never swept: sweep_runs touches only folders holding a run.yaml.

@@ -49,6 +49,7 @@ A stdio server (the `mcp` package, 2.x). It reads the tree at start, so a host s
 | `describe_workflow(name)` | parameters as a JSON schema, mode, effect, and each step's number, phase, action and label | true / false | none |
 | `preflight(name, params?, persona?, consent?)` | the [preflight](permissions.md#enforcement-rules): each class's decision and rule file, `needs_consent`, outcome, lock key. Starts nothing | true / false | none |
 | `run_workflow(name, params?, persona?, consent?, timeout_s?)` | runs any workflow | false / true, the strictest, since it can run anything | none: its lock key is the preflight's |
+| `finish_run(run_id, status, by)` | ends a `waiting` run at a person's answer: `passed` after an approval, `failed` after a rejection, with who answered. The same answer again changes nothing; a run that is not waiting is refused | false / false, `idempotentHint` true | none |
 | `run-<workflow>(params?, persona?, consent?, timeout_s?)` | runs that workflow; one per `mode: deterministic` workflow with a declared effect and fixed sites | from its `effect`: `read-only` true / false, `mutating` false / false, `destructive` false / true | `teamos/lock`: its lock key at default parameters |
 
 A run is `run.py <workflow> --json --record --trigger ui` in a child process, so the gate and the run record are the runner's own. Before it starts, the server runs the preflight:
