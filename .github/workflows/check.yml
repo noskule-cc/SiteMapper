@@ -1,5 +1,6 @@
 # Mechanical guards on every push/PR (#16). Two jobs:
-#   check        - scripts/check.py + docs/tools/check-docs.py, the mechanical checks
+#   check        - scripts/check.py + docs/tools/check-docs.py, the mechanical checks,
+#                  and the runner tests in tests/
 #   runner-smoke - the headless runner end-to-end on the read-only acceptance
 #                  workflow (#26): public site, no login, effect: read-only,
 #                  so `ask` never triggers (in CI it would degrade to deny).
@@ -20,6 +21,7 @@ jobs:
       - run: pip install pyyaml
       - run: python scripts/check.py
       - run: python docs/tools/check-docs.py
+      - run: python -m unittest discover tests
 
   runner-smoke:
     runs-on: ubuntu-latest

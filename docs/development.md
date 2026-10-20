@@ -78,13 +78,15 @@ shipped without two of them once and went undocumented for weeks.
 `python scripts/run.py search-issues --json`. CI's `runner-smoke` job runs the
 same command.
 
-**Change what a run record holds.** `write_run` in `run.py` writes `run.yaml`
-and appends one line to `RUNS/SiteMapper/index.<instance>.jsonl`. Their keys
+**Change what a run record holds.** `RunRecord` in `run.py` writes `run.yaml`
+twice, `running` before the first step and final at the end, and appends a
+line to `RUNS/SiteMapper/index.<instance>.jsonl` each time. Their keys
 belong to the deployment's run-record contract (connectOS
 `contracts/run-record.yaml`), which changes first; then `schema/run.yaml`, then
 the code. The index is appended under an exclusive file lock and is never
 swept. `--trigger schedule` is what a scheduled task passes; the default is
-`manual`.
+`manual`. `python -m unittest discover tests` proves both lines and a killed
+run's leftover `running` record.
 
 **Change a generated view.** Edit the renderer, then re-run
 `python scripts/inventory.py`. Never edit `docs/inventory.md`,

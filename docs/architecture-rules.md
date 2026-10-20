@@ -59,8 +59,8 @@ repo, its wiki, or the generated dashboard.
 
 ## Done Checks
 
-There is no unit-test suite (see [project-index.md](project-index.md) for why).
-Coverage means mechanical checks and a real run. Commands:
+Coverage means mechanical checks and a real run, plus the runner tests in
+`tests/` for what a real run cannot show, such as a killed run's record. Commands:
 [tools/jobs.md](tools/jobs.md).
 
 | Change | Done when |
