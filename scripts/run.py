@@ -2,6 +2,7 @@
 
     python scripts/run.py <workflow> [--param key=value ...] [--root PATH]
                           [--projects PATH] [--runs PATH] [--json] [--headed] [--record]
+    python scripts/run.py <workflow> --preflight [--json] [--param ...] [--persona NAME]
     python scripts/run.py --sweep [--root PATH] [--runs PATH] [--dry-run]
 
 Executes a `mode: deterministic` workflow against its mapped site(s) with no
@@ -26,6 +27,7 @@ projects tree and the runs store when they are not inside the root
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import datetime as _dt
 import functools
 import json
@@ -37,6 +39,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import Literal
 
 import yaml
 
@@ -1052,39 +1055,119 @@ def permission_sources(root: Path, site: Site) -> dict[str, tuple[str, Path | No
     return out
 
 
-def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str]):
-    """Refuse or ask BEFORE the browser opens. `trust` grants nothing here.
+Verdict = Literal["allow", "ask", "deny"]
 
-    Gated against every site a step runs on (resolve_scope); the strictest
-    verdict wins. `ask` resolves via --yes-<class>, then a TTY prompt, and
-    degrades to deny when non-interactive (CI has no human to ask).
-    """
+
+@dataclasses.dataclass(frozen=True)
+class Decision:
+    verdict: Verdict
+    site: str
+    environment: str
+    source: str | None
+
+    def where(self) -> str:
+        return f"site '{self.site}' (environment: {self.environment})"
+
+
+@dataclasses.dataclass(frozen=True)
+class Preflight:
+    workflow: str
+    effect: str
+    tier: str
+    sites: list[str]
+    persona: str | None
+    lock_key: str
+    classes: dict[str, Decision]
+    consent: list[str]
+    needs_consent: list[str]
+    outcome: Verdict
+
+
+def site_decisions(root: Path, site_name: str) -> dict[str, Decision]:
+    site = Site(root, site_name)
+    env = (resolve_settings(root, site, None).get("policy") or {}).get("environment", "?")
+    return {cls: Decision(verdict, site_name, env, path.as_posix() if path else None)
+            for cls, (verdict, path) in permission_sources(root, site).items()}
+
+
+def logs_in(root: Path, workflow: dict, primary: str, persona: dict) -> bool:
+    if persona.get("auth") != "automated" or not needs_browser(workflow):
+        return False
+    return bool(persona.get("fresh_login")) or not state_path(root, primary, persona).is_file()
+
+
+def preflight(root: Path, workflow: dict, owner: Owner, cli_params: dict,
+              persona_name: str | None = None,
+              consent: frozenset[str] = frozenset()) -> Preflight:
+    """What a run would be allowed to do, decided before anything starts.
+
+    Opens no browser and writes nothing. Each action class the run needs gets
+    the strictest decision over the sites it applies to; an `ask` that
+    `consent` answers counts as allowed in the outcome."""
+    name = workflow.get("name")
+    mode = workflow.get("mode")
+    if mode != "deterministic":
+        raise RunError(
+            f"'{name}' is mode: {mode or 'unset'} — only deterministic workflows can run "
+            "headless. An agentic workflow needs an LLM host (the /run skill)."
+        )
+    for phase in tree.PHASES + ("teardown",):
+        for step in workflow.get(phase) or []:
+            if step.get("action") == "verify":
+                raise RunError(
+                    f"step in `{phase}` uses action: verify (judgement) — the workflow "
+                    "cannot be deterministic; fix its mode or the step"
+                )
+    if workflow.get("rollback") == "snapshot" and not any(
+            s.get("capture") for s in (workflow.get("snapshot") or []) if isinstance(s, dict)):
+        raise RunError("rollback: snapshot declared, but the snapshot phase captures nothing "
+                       "— there would be no pre-state to keep (schema/workflow.yaml)")
+
+    tier, primary, sites = resolve_scope(root, workflow, owner, cli_params)
     effect = workflow.get("effect")
     if effect not in EFFECT_CLASS:
         raise RunError(
             f"effect: {effect or 'undeclared'} — a headless run needs the workflow to "
             "declare read-only | mutating | destructive (schema/workflow.yaml)"
         )
+    by_site = {s: site_decisions(root, s) for s in sites}
     action_class = EFFECT_CLASS[effect]
-    verdict, source = "allow", "defaults"
-    for site_name in sites:
-        site = Site(root, site_name)
-        v = permission_verdict(resolve_settings(root, site, None), action_class)
-        env = (resolve_settings(root, site, None).get("policy") or {}).get("environment", "?")
-        if STRICTNESS[v] > STRICTNESS[verdict]:
-            verdict, source = v, f"site '{site_name}' (environment: {env})"
-    if verdict == "deny":
+    classes = {action_class: max((by_site[s][action_class] for s in sites),
+                                 key=lambda d: STRICTNESS[d.verdict])}
+    persona = load_persona(root, primary, persona_name) or {}
+    if logs_in(root, workflow, primary, persona):
+        classes["auth"] = by_site[primary]["auth"]
+    outcome = max(("allow" if d.verdict == "ask" and c in consent else d.verdict
+                   for c, d in classes.items()), key=STRICTNESS.get)
+    return Preflight(workflow=name, effect=effect, tier=tier, sites=sites,
+                     persona=persona.get("name"),
+                     lock_key=f"{'+'.join(sorted(sites))}/{persona.get('name') or '-'}",
+                     classes=classes, consent=sorted(consent),
+                     needs_consent=[c for c, d in classes.items()
+                                    if d.verdict == "ask" and c not in consent],
+                     outcome=outcome)
+
+
+def gate(pre: Preflight):
+    """Refuse or ask BEFORE the browser opens. `trust` grants nothing here.
+
+    `ask` resolves via --yes-<class>, then a TTY prompt, and degrades to deny
+    when non-interactive (CI has no human to ask).
+    """
+    action_class = EFFECT_CLASS[pre.effect]
+    decision = pre.classes[action_class]
+    if decision.verdict == "deny":
         raise RunError(
-            f"permission denied: effect '{effect}' needs class '{action_class}' which is "
-            f"'deny' for {source}. This is policy, not a bug — see docs/permissions.md."
+            f"permission denied: effect '{pre.effect}' needs class '{action_class}' which is "
+            f"'deny' for {decision.where()}. This is policy, not a bug — see docs/permissions.md."
         )
-    if verdict == "ask":
-        if action_class in pre_authorized:
+    if decision.verdict == "ask":
+        if action_class in pre.consent:
             return
         if sys.stdin.isatty():
             try:
                 answer = input(
-                    f"'{workflow.get('name')}' is {effect} and {source} says ask. "
+                    f"'{pre.workflow}' is {pre.effect} and {decision.where()} says ask. "
                     "Proceed? [y/N] "
                 )
             except (EOFError, KeyboardInterrupt):
@@ -1092,12 +1175,13 @@ def gate(root: Path, workflow: dict, sites: list[str], pre_authorized: set[str])
             if answer.strip().lower() == "y":
                 return
             raise RunError(
-                f"not authorized: class '{action_class}' is 'ask' for {source} and no "
-                f"consent was given. Pass --yes-{action_class} to pre-authorize."
+                f"not authorized: class '{action_class}' is 'ask' for {decision.where()} and "
+                f"no consent was given. Pass --yes-{action_class} to pre-authorize."
             )
         raise RunError(
-            f"class '{action_class}' is 'ask' for {source}, and this run is non-interactive "
-            f"— `ask` degrades to deny. Pass --yes-{action_class} to pre-authorize."
+            f"class '{action_class}' is 'ask' for {decision.where()}, and this run is "
+            f"non-interactive — `ask` degrades to deny. Pass --yes-{action_class} to "
+            "pre-authorize."
         )
 
 
@@ -1162,26 +1246,9 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     wf_path, data, owner = find_workflow(root, projects, name)
     workflow = data.get("workflow", {})
 
-    mode = workflow.get("mode")
-    if mode != "deterministic":
-        raise RunError(
-            f"'{name}' is mode: {mode or 'unset'} — only deterministic workflows can run "
-            "headless. An agentic workflow needs an LLM host (the /run skill)."
-        )
-    for phase in tree.PHASES + ("teardown",):
-        for step in workflow.get(phase) or []:
-            if step.get("action") == "verify":
-                raise RunError(
-                    f"step in `{phase}` uses action: verify (judgement) — the workflow "
-                    "cannot be deterministic; fix its mode or the step"
-                )
-    if workflow.get("rollback") == "snapshot" and not any(
-            s.get("capture") for s in (workflow.get("snapshot") or []) if isinstance(s, dict)):
-        raise RunError("rollback: snapshot declared, but the snapshot phase captures nothing "
-                       "— there would be no pre-state to keep (schema/workflow.yaml)")
-
-    tier, primary, involved = resolve_scope(root, workflow, owner, cli_params)
-    gate(root, workflow, involved, pre_authorized)
+    pre = preflight(root, workflow, owner, cli_params, persona_name, frozenset(pre_authorized))
+    gate(pre)
+    tier, primary = pre.tier, pre.sites[0]
     persona = load_persona(root, primary, persona_name)
     context = load_context(root, primary, context_name, workflow)
 
@@ -1466,6 +1533,9 @@ def main(argv=None):
     ap.add_argument("--runs", default=None,
                     help="the runs store, when it is not inside --root or beside it")
     ap.add_argument("--json", action="store_true", help="print the full result as JSON")
+    ap.add_argument("--preflight", action="store_true",
+                    help="print what the run would be allowed to do, then exit 0 "
+                         "without running it")
     ap.add_argument("--headed", action="store_true", help="show the browser window")
     ap.add_argument("--record", action="store_true",
                     help="write the run folder to the runs store (schema/run.yaml); "
@@ -1508,6 +1578,22 @@ def main(argv=None):
                       (("write", args.yes_write), ("destructive", args.yes_destructive),
                        ("auth", args.yes_auth))
                       if flag}
+    if args.preflight:
+        try:
+            _, data, owner = find_workflow(root, projects, args.workflow)
+            pre = preflight(root, data.get("workflow", {}), owner, cli_params,
+                            args.persona, frozenset(pre_authorized))
+        except RunError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        if args.json:
+            print(json.dumps(dataclasses.asdict(pre), indent=2, ensure_ascii=False))
+        else:
+            print(f"{pre.workflow}: {pre.outcome}")
+            for cls, d in pre.classes.items():
+                print(f"  {cls}: {d.verdict}  {d.where()}, rule: {d.source or 'defaults'}")
+            print(f"  lock: {pre.lock_key}")
+        return 0
     try:
         result, record = run_workflow(root, projects, args.workflow, cli_params,
                                       args.headed, pre_authorized, args.persona,

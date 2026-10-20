@@ -275,47 +275,25 @@ class Handler(BaseHTTPRequestHandler):
         return self.run_workflow(m.group(1), params, consent)
 
     def run_workflow(self, name: str, params: dict, consent: set):
-        # Pre-check with the runner's own gate logic so the page can render
-        # the ask BEFORE anything launches. The subprocess enforces it again —
-        # the server never widens what run.py itself would allow.
         try:
-            wf_path, data, owner = runner.find_workflow(ROOT, PROJECTS, name)
+            _, data, owner = runner.find_workflow(ROOT, PROJECTS, name)
         except runner.RunError as exc:
             return self.send_json(404, {"error": str(exc)})
         wf = (data or {}).get("workflow", {})
-        if wf.get("mode") != "deterministic":
-            return self.send_json(400, {"error":
-                f"'{name}' is mode: {wf.get('mode') or 'unset'} — it needs an LLM "
-                "host, not the runner. Use the copy button and /run it in a session."})
-        action_class = runner.EFFECT_CLASS.get(wf.get("effect"))
-        if not action_class:
-            return self.send_json(400, {"error":
-                f"effect: {wf.get('effect') or 'undeclared'} — declare "
-                "read-only | mutating | destructive (schema/workflow.yaml)"})
-        verdict, source = "allow", ""
-        try:  # the same scope the runner gates on: every site a step touches
-            _, _, involved = runner.resolve_scope(ROOT, wf, owner, params)
+        try:
+            pre = runner.preflight(ROOT, wf, owner, params, consent=frozenset(consent))
         except runner.RunError as exc:
             return self.send_json(400, {"error": str(exc)})
-        for site_name in involved:
-            try:
-                settings = runner.resolve_settings(
-                    ROOT, runner.Site(ROOT, site_name), None)
-            except runner.RunError as exc:
-                return self.send_json(400, {"error": str(exc)})
-            v = runner.permission_verdict(settings, action_class)
-            if runner.STRICTNESS[v] > runner.STRICTNESS[verdict]:
-                env = (settings.get("policy") or {}).get("environment", "?")
-                verdict, source = v, f"site '{site_name}' (environment: {env})"
-        if verdict == "deny":
+        if pre.outcome == "deny":
+            cls, d = next((c, d) for c, d in pre.classes.items() if d.verdict == "deny")
             return self.send_json(403, {"error":
-                f"permission denied: '{wf.get('effect')}' needs class "
-                f"'{action_class}', which is 'deny' for {source}. Policy, not a "
-                "bug — docs/permissions.md."})
-        if verdict == "ask" and action_class not in consent:
-            return self.send_json(409, {"ask": action_class, "question":
-                f"'{name}' is {wf.get('effect')} and {source} says ask. "
-                "Run it this once?"})
+                f"permission denied: '{pre.effect}' needs class '{cls}', which is "
+                f"'deny' for {d.where()}. Policy, not a bug — docs/permissions.md."})
+        if pre.outcome == "ask":
+            cls = pre.needs_consent[0]
+            return self.send_json(409, {"ask": cls, "question":
+                f"'{name}' is {pre.effect} and {pre.classes[cls].where()} says ask "
+                f"for '{cls}'. Run it this once?"})
 
         is_test = any(s.get("action") == "assert" for s in wf.get("steps") or [])
         cmd = [sys.executable, str(FRAMEWORK / "scripts" / "run.py"), name, "--json"]

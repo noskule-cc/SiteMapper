@@ -93,6 +93,7 @@ Before implementing new logic, check this table. If what you need exists, use it
 |------|-----|----------|
 | Decide allow/ask/deny for one action class | `permission_verdict` | `scripts/run.py` |
 | Every class's verdict for a site, with the file that decided it | `permission_sources` | `scripts/run.py` |
+| Decide what a run may do without running it: classes, rule files, lock key | `preflight` | `scripts/run.py` |
 | Gate a whole run up front, strictest site wins | `gate` | `scripts/run.py` |
 | Write `trust:` / `verified_at:` back into a workflow YAML | `update_trust` | `scripts/run.py` |
 
