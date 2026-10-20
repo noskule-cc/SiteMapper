@@ -21,8 +21,9 @@
 # The record is written twice: `status: running` with the runner's pid before
 # the first step, then rewritten whole with the final status when the run
 # ends. Each write replaces the file through a temp file and a rename, so a
-# reader never sees half of it. A run killed in between keeps its `running`
-# record; a reader that finds its pid gone reads it as lost.
+# reader never sees half of it. A runner that fails after the start ends the
+# record as `error` ("runner stopped: ..."). Only a killed runner leaves its
+# `running` record behind; a reader that finds its pid gone reads it as lost.
 #
 # A reader (a UI, a sweep) needs only this file. `sweep_runs` (scripts/tree.py)
 # deletes the folder once `keep` has passed since finished_at (else

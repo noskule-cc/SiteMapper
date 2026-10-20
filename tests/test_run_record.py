@@ -1,5 +1,7 @@
 import json
 import os
+import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -87,9 +89,7 @@ class RunRecordTest(unittest.TestCase):
         self.root = make_tree(base)
         self.runs = base / "runs"
         self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
-
-    def tearDown(self):
-        self.tmp.cleanup()
+        self.addCleanup(self.tmp.cleanup)
 
     def run_to_end(self, workflow: str, *flags: str) -> subprocess.CompletedProcess:
         return subprocess.run(runner(self.root, self.runs, workflow, *flags),
@@ -152,6 +152,39 @@ class RunRecordTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 1, proc.stderr)
         statuses = [line["status"] for line in index_lines(self.runs)]
         self.assertEqual(statuses, ["running", "failed"])
+
+    def wait_for_running(self, proc: subprocess.Popen) -> dict:
+        deadline = time.monotonic() + 30
+        while not index_lines(self.runs) and time.monotonic() < deadline:
+            time.sleep(0.1)
+        [line] = index_lines(self.runs)
+        return line
+
+    def test_run_whose_folder_is_swept_mid_run_still_ends_passed(self):
+        proc = subprocess.Popen(runner(self.root, self.runs, "slow", "--record"),
+                                env=self.env, stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL)
+        line = self.wait_for_running(proc)
+        shutil.rmtree(self.runs / "SiteMapper" / "fixture" / line["run_id"])
+        self.assertEqual(proc.wait(timeout=60), 0)
+
+        self.assertEqual([l["status"] for l in index_lines(self.runs)], ["running", "passed"])
+        self.assertEqual(run_yaml(self.runs, line["run_id"])["status"], "passed")
+
+    def test_runner_failing_after_the_steps_ends_error_not_running(self):
+        workflow = self.root / "sites" / "fixture" / "workflows" / "wrong.yaml"
+        workflow.chmod(stat.S_IREAD)
+        self.addCleanup(workflow.chmod, stat.S_IREAD | stat.S_IWRITE)
+        proc = self.run_to_end("wrong", "--record")
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("PermissionError", proc.stderr)
+
+        first, final = index_lines(self.runs)
+        self.assertEqual((first["status"], final["status"]), ("running", "error"))
+        run = run_yaml(self.runs, final["run_id"])
+        self.assertEqual(run["status"], "error")
+        self.assertTrue(run["error"].startswith("runner stopped: PermissionError"), run["error"])
+        self.assertIn("finished_at", run)
 
     def test_run_without_record_writes_nothing(self):
         proc = self.run_to_end("quick")

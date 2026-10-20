@@ -1203,11 +1203,22 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         "evidence": [],
         "error": "",
     }
-    recorder = None
-    if record or workflow.get("rollback") == "snapshot":
-        recorder = RunRecord(runs, owner, trigger, result)
-        recorder.start(result)
+    if not record and workflow.get("rollback") != "snapshot":
+        execute(runner, workflow, bindings, wf_path, primary, result)
+        return result, None
+    recorder = RunRecord(runs, owner, trigger, result)
+    recorder.start(result)
+    try:
+        execute(runner, workflow, bindings, wf_path, primary, result)
+        recorder.finish(result)
+    except BaseException as exc:
+        recorder.stopped(result, exc)
+        raise
+    return result, recorder.folder
 
+
+def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, primary: str,
+            result: dict):
     phase = "setup"
     ordered = [(ph, index, step) for ph in tree.PHASES
                for index, step in enumerate(workflow.get(ph) or [])]
@@ -1256,10 +1267,6 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     result["counts"] = {"total": total, "passed": passed, "failed": total - passed}
     result["finished_at"] = utc_now()
     update_trust(wf_path, workflow, result)
-    if recorder is None:
-        return result, None
-    recorder.finish(result)
-    return result, recorder.folder
 
 
 SUMMARY_ENTRIES = 30
@@ -1386,7 +1393,8 @@ class RunRecord:
             "status": result["status"],
             "trigger": self.trigger,
             "pid": os.getpid(),
-            "keep": str(self.owner.project.get("keep") or tree.DEFAULT_KEEP),
+            "keep": ("keep" if result.get("trust_change")
+                     else str(self.owner.project.get("keep") or tree.DEFAULT_KEEP)),
         }
 
     def start(self, result: dict):
@@ -1396,6 +1404,7 @@ class RunRecord:
 
     def finish(self, result: dict):
         folder = self.folder
+        folder.mkdir(parents=True, exist_ok=True)
         files = ["run.yaml", "result.json"]
         for name, value in (result.get("snapshot") or {}).items():
             (folder / "snapshot").mkdir(exist_ok=True)
@@ -1413,11 +1422,8 @@ class RunRecord:
         summary = summary_of(result.get("captures"))
         counts = assertion_counts(result)
         error = error_of(result)
-        run = self._base(result)
-        if result.get("trust_change"):
-            run["keep"] = "keep"
         self._write({
-            **run,
+            **self._base(result),
             "headline": headline_of(result, counts, summary, error),
             "error": error,
             "waiting_for": result.get("waiting_for"),
@@ -1425,6 +1431,21 @@ class RunRecord:
             "assertions": counts,
             "summary": summary,
             "files": files,
+        })
+
+    def stopped(self, result: dict, exc: BaseException):
+        """The runner failed after the run started, so the record ends as an
+        error instead of reading as lost."""
+        self.folder.mkdir(parents=True, exist_ok=True)
+        error = " ".join(f"runner stopped: {type(exc).__name__}: {exc}".split())[:HEADLINE_CHARS]
+        self._write({
+            **self._base(result),
+            "finished_at": utc_now(),
+            "status": "error",
+            "headline": f"error · {error}"[:HEADLINE_CHARS],
+            "error": error,
+            "files": sorted({p.relative_to(self.folder).as_posix()
+                             for p in self.folder.rglob("*") if p.is_file()} | {"run.yaml"}),
         })
 
 
