@@ -157,7 +157,8 @@ class RunProtocol(asyncio.SubprocessProtocol):
             self.lines.put_nowait(raw.decode("utf-8", "replace").rstrip())
 
     def process_exited(self):
-        self.exited.set_result(None)
+        if not self.exited.done():
+            self.exited.set_result(None)
 
     def connection_lost(self, exc):
         if self._pending.strip():
@@ -178,6 +179,8 @@ def tail(messages: list[str]) -> str:
 async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str | None,
                     consent: list[str], ctx: Context,
                     timeout_s: float | None = None) -> dict[str, Any]:
+    if timeout_s is not None and timeout_s <= 0:
+        raise ToolError(f"timeout_s must be more than 0, got {timeout_s:g}")
     try:
         pre = tree_.preflight(name, params, persona, consent)
     except run.RunError as exc:
@@ -216,7 +219,7 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
                 messages.append(line.removeprefix("error: ")[:2000])
 
     pump = asyncio.ensure_future(pump_stderr())
-    limit = timeout_s or tree_.run_timeout_s
+    limit = tree_.run_timeout_s if timeout_s is None else timeout_s
     ended = False
     try:
         try:
@@ -337,6 +340,8 @@ def main(argv=None):
     ap.add_argument("--run-timeout", type=float, default=RUN_TIMEOUT_S,
                     help=f"seconds before a run is stopped (default: {RUN_TIMEOUT_S})")
     args = ap.parse_args(argv)
+    if args.run_timeout <= 0:
+        ap.error(f"--run-timeout must be more than 0, got {args.run_timeout:g}")
     root = Path(args.root).resolve() if args.root else run.FRAMEWORK_ROOT
     build(Tree(root, Path(tree.projects_root(str(root), args.projects)),
                Path(tree.runs_root(str(root), args.runs)), args.run_timeout)).run("stdio")

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import shutil
@@ -245,6 +246,18 @@ class StartRunTest(unittest.IsolatedAsyncioTestCase):
     async def start(self, child: str):
         self.child = child
         return await self.server.start_run(self.tree, "hold", {}, None, [], FakeContext())
+
+    async def test_a_timed_out_run_logs_no_invalid_state_error(self):
+        with self.assertNoLogs("asyncio", level="ERROR"):
+            with self.assertRaises(self.server.ToolError):
+                self.child = "import time; time.sleep(60)"
+                await self.server.start_run(self.tree, "hold", {}, None, [], FakeContext(), 1)
+            await asyncio.sleep(2)
+
+    async def test_a_timeout_that_is_not_positive_is_refused(self):
+        with self.assertRaises(self.server.ToolError) as caught:
+            await self.server.start_run(self.tree, "hold", {}, None, [], FakeContext(), 0)
+        self.assertEqual(str(caught.exception), "timeout_s must be more than 0, got 0")
 
     async def test_a_long_stderr_line_does_not_stop_the_run(self):
         out = await self.start(
