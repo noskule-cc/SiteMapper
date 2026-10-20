@@ -1158,10 +1158,7 @@ def run_id_of(result: dict, instance: str) -> str:
 def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed: bool,
                  pre_authorized: set[str] = frozenset(), persona_name: str | None = None,
                  context_name: str | None = None, runs: Path | None = None,
-                 record: bool = False, trigger: str = "manual"):
-    """Run one workflow. With `record`, or always for `rollback: snapshot`, the
-    run is recorded in the runs store `runs`: `running` before the first step,
-    final at the end. Returns (result, record folder or None)."""
+                 record: bool = False, trigger: str = "manual") -> tuple[dict, Path | None]:
     wf_path, data, owner = find_workflow(root, projects, name)
     workflow = data.get("workflow", {})
 
@@ -1345,9 +1342,8 @@ def append_index(runs: Path, instance: str, line: dict):
 
 
 def write_atomic(path: Path, text: str):
-    """A reader sees the old file or the new one, never half of either. On
-    Windows the rename fails while a reader holds the target open, so it is
-    retried briefly."""
+    """On Windows the rename fails while a reader holds the target open, so it
+    is retried briefly."""
     tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(text, encoding="utf-8")
     for attempt in range(10):
@@ -1365,11 +1361,6 @@ INDEX_KEYS = ("owner", "workflow", "tier", "instance", "started_at", "finished_a
 
 
 class RunRecord:
-    """One recorded run in the runs store (schema/run.yaml): a `running`
-    record when the run starts, the final one when it ends, both under one
-    run_id. The index gets a line for each; a later line supersedes an
-    earlier one with the same run_id. Never inside the tree, never committed."""
-
     def __init__(self, runs: Path, owner: Owner, trigger: str, result: dict):
         self.runs, self.owner, self.trigger = runs, owner, trigger
         self.instance = tree.instance_name()
@@ -1404,11 +1395,7 @@ class RunRecord:
                      "files": ["run.yaml"]})
 
     def finish(self, result: dict):
-        """The final record: the full result, the snapshot captures as the
-        pre-state, the evidence files. The folder is made again in case a
-        sweep took it from a run that outlived its keep."""
         folder = self.folder
-        folder.mkdir(parents=True, exist_ok=True)
         files = ["run.yaml", "result.json"]
         for name, value in (result.get("snapshot") or {}).items():
             (folder / "snapshot").mkdir(exist_ok=True)
@@ -1428,8 +1415,6 @@ class RunRecord:
         error = error_of(result)
         run = self._base(result)
         if result.get("trust_change"):
-            # The run that set trust: broken is the evidence for it; the sweep
-            # must not take it before someone has read it (#52).
             run["keep"] = "keep"
         self._write({
             **run,

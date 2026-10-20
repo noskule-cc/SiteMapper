@@ -1,9 +1,3 @@
-"""The run record a recorded run leaves in the runs store (schema/run.yaml):
-a `running` line when it starts, a final line with the same run_id when it
-ends, and only the `running` record when the runner is killed in between.
-
-Run: python -m unittest discover tests
-"""
 import json
 import os
 import subprocess
@@ -77,7 +71,8 @@ def index_lines(runs: Path) -> list[dict]:
     path = runs / "SiteMapper" / f"index.{INSTANCE}.jsonl"
     if not path.exists():
         return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+    whole = path.read_text(encoding="utf-8").rpartition("\n")[0]
+    return [json.loads(line) for line in whole.splitlines()]
 
 
 def run_yaml(runs: Path, run_id: str) -> dict:
