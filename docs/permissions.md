@@ -55,6 +55,14 @@ that scope when `permissions.write` is unset.
   page's confirmation click sends consent **for that one run only** — a
   browser click can never widen policy, and `deny` is refused server-side no
   matter what the page sends.
+- **One preflight for every caller.** `preflight` in `scripts/run.py` decides
+  a run without starting it: each action class the run needs, its verdict and
+  the file whose rule decided it, the outcome after one-run consent, and the
+  lock key (the sites in scope, then the persona: `iq-brita-net/brita-automated`).
+  It opens no browser and writes nothing. `auth` is listed only when the run
+  logs in by itself, and is decided by the run's lead site. The runner's gate,
+  `serve.py` and `run.py <workflow> --preflight [--json]` all read it; the
+  CLI form prints it and exits 0 whatever the outcome.
 - **`trust: verified` grants nothing.** Verified means proven to run, never
   allowed to write. The two axes stay independent.
 
@@ -86,4 +94,4 @@ contexts by design).
 
 ---
 
-**Last Updated:** 2026-08-19
+**Last Updated:** 2026-10-20
