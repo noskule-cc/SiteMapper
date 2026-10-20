@@ -1478,7 +1478,70 @@ def write_atomic(path: Path, text: str):
 
 
 INDEX_KEYS = ("owner", "workflow", "tier", "instance", "started_at", "finished_at",
-              "status", "trigger", "pid", "headline", "trust_change")
+              "status", "answered_by", "answered_at", "trigger", "pid", "headline",
+              "trust_change")
+ANSWERED = ("passed", "failed")
+
+
+def write_record(runs: Path, instance: str, run_id: str, folder: Path | None, run: dict):
+    """Write run.yaml, then append its index line (contracts/run-record.md). Without a
+    folder, a swept run gets the index line alone."""
+    run = {k: v for k, v in run.items() if v not in (None, "", [], {})}
+    if folder is not None:
+        write_atomic(folder / "run.yaml",
+                     yaml.safe_dump({"run": run}, sort_keys=False, allow_unicode=True))
+    append_index(runs, instance, {"run_id": run_id, **{k: run[k] for k in INDEX_KEYS if k in run}})
+
+
+def last_line(runs: Path, instance: str, run_id: str) -> dict | None:
+    path = runs / tree.LIB / f"index.{instance}.jsonl"
+    found = None
+    if path.is_file():
+        for raw in path.read_text(encoding="utf-8").splitlines():
+            try:
+                line = json.loads(raw)
+            except ValueError:
+                continue
+            if isinstance(line, dict) and line.get("run_id") == run_id:
+                found = line
+    return found
+
+
+def finish_waiting(runs: Path, run_id: str, status: str, by: str) -> dict:
+    """End a waiting run at a person's answer: passed after an approval, failed after a
+    rejection. A run that already ended with this answer is left as it is."""
+    if status not in ANSWERED:
+        raise RunError(f"a waiting run ends passed or failed, not '{status}'")
+    if not by.strip():
+        raise RunError("say who answered the run")
+    instance = tree.instance_name()
+    last = last_line(runs, instance, run_id)
+    if last is None:
+        raise RunError(f"no run '{run_id}' in the index of {instance}; "
+                       "finish a run on the instance that ran it")
+    if last["status"] != "waiting":
+        if last["status"] == status and last.get("answered_by"):
+            return {"run_id": run_id, "status": status, "answered_by": last["answered_by"],
+                    "answered_at": last.get("answered_at"), "changed": False}
+        raise RunError(f"run '{run_id}' is {last['status']}, not waiting")
+    now = utc_now()
+    error = f"rejected by {by}" if status == "failed" else ""
+    folder = runs / tree.LIB / last["owner"] / run_id
+    path = folder / "run.yaml"
+    run = (load_yaml(path) or {}).get("run") if path.is_file() else None
+    if not isinstance(run, dict):
+        run, folder = dict(last), None
+        run.pop("run_id", None)
+    run.pop("waiting_for", None)
+    summary = run.get("summary") or []
+    answer = error or f"approved by {by}"
+    run.update(status=status, finished_at=now, answered_by=by, answered_at=now, error=error,
+               headline=" ".join(" · ".join(
+                   [status, answer, *(f"{e['label']}: {e['value']}" for e in summary[:2])]
+               ).split())[:HEADLINE_CHARS])
+    write_record(runs, instance, run_id, folder, run)
+    return {"run_id": run_id, "status": status, "answered_by": by, "answered_at": now,
+            "changed": True}
 
 
 class RunRecord:
@@ -1489,11 +1552,7 @@ class RunRecord:
         self.folder = runs / tree.LIB / owner.name / self.run_id
 
     def _write(self, run: dict):
-        run = {k: v for k, v in run.items() if v not in (None, "", [], {})}
-        write_atomic(self.folder / "run.yaml",
-                     yaml.safe_dump({"run": run}, sort_keys=False, allow_unicode=True))
-        append_index(self.runs, self.instance,
-                     {"run_id": self.run_id, **{k: run[k] for k in INDEX_KEYS if k in run}})
+        write_record(self.runs, self.instance, self.run_id, self.folder, run)
 
     def _base(self, result: dict) -> dict:
         return {
@@ -1567,6 +1626,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("workflow", nargs="?",
                     help="workflow name (filename stem or its name: field)")
+    ap.add_argument("--finish", metavar="RUN_ID",
+                    help="end a waiting run at a person's answer, then exit "
+                         "(with --status and --by)")
+    ap.add_argument("--status", choices=ANSWERED,
+                    help="--finish: passed after an approval, failed after a rejection")
+    ap.add_argument("--by", help="--finish: who answered")
     ap.add_argument("--sweep", action="store_true",
                     help="only delete run folders whose `keep` has run out, then exit")
     ap.add_argument("--dry-run", action="store_true",
@@ -1601,12 +1666,24 @@ def main(argv=None):
                     help="tenant context to bind (default: the site's only one, "
                          "when the workflow requires a context)")
     args = ap.parse_args(argv)
-    if not args.workflow and not args.sweep:
-        ap.error("a workflow name is required unless --sweep is given")
+    if args.finish and not (args.status and args.by):
+        ap.error("--finish needs --status and --by")
+    if not args.workflow and not args.sweep and not args.finish:
+        ap.error("a workflow name is required unless --sweep or --finish is given")
 
     root = Path(args.root).resolve() if args.root else FRAMEWORK_ROOT
     projects = Path(tree.projects_root(str(root), args.projects))
     runs = Path(tree.runs_root(str(root), args.runs))
+    if args.finish:
+        try:
+            done = finish_waiting(runs, args.finish, args.status, args.by)
+        except RunError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(done) if args.json else
+              f"{done['run_id']}: {done['status']}, answered by {done['answered_by']}"
+              + ("" if done["changed"] else " (already)"))
+        return 0
     if args.sweep:
         removed = tree.sweep_runs(runs, dry_run=args.dry_run)
         verb = "would be removed" if args.dry_run else "removed"

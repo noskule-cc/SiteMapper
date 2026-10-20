@@ -87,8 +87,10 @@ belong to the deployment's run-record contract (connectOS
 `contracts/run-record.yaml`), which changes first; then `schema/run.yaml`, then
 the code. The index is appended under an exclusive file lock and is never
 swept. `--trigger schedule` is what a scheduled task passes; the default is
-`manual`. `python -m unittest discover tests` proves both lines and a killed
-run's leftover `running` record.
+`manual`. `run.py --finish <run_id> --status passed|failed --by <user>` ends a
+`waiting` run at a person's answer with a third line. `python -m unittest
+discover tests` proves the lines, a killed run's leftover `running` record and
+the finish.
 
 **Change a generated view.** Edit the renderer, then re-run
 `python scripts/inventory.py`. Never edit `docs/inventory.md`,

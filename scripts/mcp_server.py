@@ -4,7 +4,7 @@
 
                               [--run-timeout SECONDS]
 
-Tools: list_workflows, describe_workflow, preflight and run_workflow, plus one
+Tools: list_workflows, describe_workflow, preflight, run_workflow and finish_run, plus one
 run-<workflow> tool per deterministic workflow whose sites are fixed, whose
 hints carry that workflow's effect and whose `_meta` carries its lock key. A
 run is `run.py <workflow> --json --record --trigger ui` in a child process, so
@@ -311,6 +311,17 @@ def build(tree_: Tree) -> MCPServer:
         longer than `timeout_s` (default: the server's --run-timeout) is stopped."""
         return await start_run(tree_, name, params or {}, persona, consent or [], ctx,
                                timeout_s)
+
+    @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False,
+                                             idempotentHint=True), structured_output=True)
+    def finish_run(run_id: str, status: Literal["passed", "failed"], by: str) -> dict[str, Any]:
+        """End a waiting run at a person's answer: passed after an approval, failed after
+        a rejection, with who answered. Finishing it again with the same answer changes
+        nothing; a run that is not waiting is refused."""
+        try:
+            return run.finish_waiting(tree_.runs, run_id, status, by)
+        except run.RunError as exc:
+            raise ToolError(str(exc)) from exc
 
     for path, owner, wf in workflows:
         name = wf.get("name") or path.stem

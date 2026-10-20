@@ -104,7 +104,7 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
             tool, args, read_timeout_seconds=300, progress_callback=on_progress))
         return res, progress
 
-    async def test_lists_the_four_tools_and_one_run_tool_per_runnable_workflow(self):
+    async def test_lists_the_five_tools_and_one_run_tool_per_runnable_workflow(self):
         [listed] = await self.session(lambda s: s.list_tools())
         tools = {t["name"]: (t["annotations"]["readOnlyHint"],
                              t["annotations"]["destructiveHint"], t["_meta"])
@@ -114,6 +114,7 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
             "describe_workflow": (True, False, None),
             "preflight": (True, False, None),
             "run_workflow": (False, True, None),
+            "finish_run": (False, False, None),
             "run-edit": (False, False, {"teamos/lock": "lab/-"}),
             "run-hold": (True, False, {"teamos/lock": "lab/-"}),
             "run-nap": (True, False, {"teamos/lock": "lab/-"}),
@@ -177,6 +178,25 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
                      encoding="utf-8").splitlines()]
         self.assertEqual([(line["run_id"], line["status"], line["trigger"]) for line in lines],
                          [(out["run_id"], "running", "ui"), (out["run_id"], "waiting", "ui")])
+
+    async def test_finish_run_ends_a_waiting_run_once(self):
+        res, _ = await self.call("run_workflow", name="nap", params={"size": "small"})
+        run_id = res.structured_content["run_id"]
+        approve = {"run_id": run_id, "status": "passed", "by": "BEB"}
+        first, again, other = await self.session(
+            lambda s: s.call_tool("finish_run", approve),
+            lambda s: s.call_tool("finish_run", approve),
+            lambda s: s.call_tool("finish_run", {**approve, "status": "failed"}),
+        )
+        self.assertEqual((first.structured_content["status"], first.structured_content["changed"],
+                          again.structured_content["changed"]), ("passed", True, False))
+        self.assertTrue(other.is_error)
+        self.assertIn("is passed, not waiting", other.content[0].text)
+        lines = [json.loads(line) for line in
+                 next((self.runs / "SiteMapper").glob("index.*.jsonl")).read_text(
+                     encoding="utf-8").splitlines()]
+        self.assertEqual([(line["status"], line.get("answered_by")) for line in lines],
+                         [("running", None), ("waiting", None), ("passed", "BEB")])
 
     async def test_an_ask_without_consent_starts_nothing(self):
         res, _ = await self.call("run-edit")

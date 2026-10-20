@@ -192,5 +192,89 @@ class RunRecordTest(unittest.TestCase):
         self.assertFalse(self.runs.exists())
 
 
+
+class FinishWaitingTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_py(self, *args: str) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(RUN_PY), *args, "--root", str(self.root),
+                               "--runs", str(self.runs)],
+                              env=self.env, capture_output=True, text=True, timeout=60)
+
+    def waiting(self) -> str:
+        proc = self.run_py("person", "--record")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        return index_lines(self.runs)[-1]["run_id"]
+
+    def finish(self, run_id: str, status: str, by: str = "BEB") -> subprocess.CompletedProcess:
+        return self.run_py("--finish", run_id, "--status", status, "--by", by, "--json")
+
+    def test_an_approval_ends_the_run_passed_with_who_answered(self):
+        run_id = self.waiting()
+        proc = self.finish(run_id, "passed")
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        done = json.loads(proc.stdout)
+        self.assertEqual((done["status"], done["answered_by"], done["changed"]),
+                         ("passed", "BEB", True))
+
+        statuses = [line["status"] for line in index_lines(self.runs)]
+        self.assertEqual(statuses, ["running", "waiting", "passed"])
+        last = index_lines(self.runs)[-1]
+        self.assertEqual((last["answered_by"], last["answered_at"], last["finished_at"]),
+                         ("BEB", done["answered_at"], done["answered_at"]))
+        self.assertEqual(last["headline"], "passed · approved by BEB")
+        run = run_yaml(self.runs, run_id)
+        self.assertEqual((run["status"], run["answered_by"]), ("passed", "BEB"))
+        self.assertNotIn("waiting_for", run)
+        self.assertNotIn("error", run)
+
+    def test_a_rejection_ends_the_run_failed_naming_who_rejected_it(self):
+        run_id = self.waiting()
+        self.assertEqual(self.finish(run_id, "failed").returncode, 0)
+        run = run_yaml(self.runs, run_id)
+        self.assertEqual((run["status"], run["error"], run["headline"]),
+                         ("failed", "rejected by BEB", "failed · rejected by BEB"))
+
+    def test_finishing_again_with_the_same_answer_changes_nothing(self):
+        run_id = self.waiting()
+        self.finish(run_id, "passed")
+        again = self.finish(run_id, "passed")
+        self.assertEqual(again.returncode, 0, again.stderr)
+        self.assertFalse(json.loads(again.stdout)["changed"])
+        self.assertEqual(len(index_lines(self.runs)), 3)
+
+    def test_a_run_that_is_not_waiting_is_refused(self):
+        run_id = self.waiting()
+        self.finish(run_id, "passed")
+        other = self.finish(run_id, "failed")
+        self.assertEqual(other.returncode, 2)
+        self.assertIn(f"run '{run_id}' is passed, not waiting", other.stderr)
+        quick = self.run_py("quick", "--record")
+        self.assertEqual(quick.returncode, 0, quick.stderr)
+        refused = self.finish(index_lines(self.runs)[-1]["run_id"], "passed")
+        self.assertEqual(refused.returncode, 2)
+        self.assertEqual(len(index_lines(self.runs)), 5)
+
+    def test_an_unknown_run_is_refused(self):
+        proc = self.finish("nap.2026-01-01T000000.000Z.-.TEST-PC.abcd", "passed")
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("no run 'nap.2026-01-01T000000.000Z.-.TEST-PC.abcd' in the index of "
+                      "TEST-PC", proc.stderr)
+
+    def test_a_swept_run_gets_the_index_line_alone(self):
+        run_id = self.waiting()
+        shutil.rmtree(self.runs / "SiteMapper" / "fixture" / run_id)
+        self.assertEqual(self.finish(run_id, "failed").returncode, 0)
+        last = index_lines(self.runs)[-1]
+        self.assertEqual((last["status"], last["answered_by"], last["owner"]),
+                         ("failed", "BEB", "fixture"))
+        self.assertFalse((self.runs / "SiteMapper" / "fixture" / run_id).exists())
+
 if __name__ == "__main__":
     unittest.main()
