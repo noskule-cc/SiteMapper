@@ -18,6 +18,13 @@
 # together on one machine still get folders of their own. The folder name is
 # the run_id of the index; nothing parses it, readers use run.yaml.
 #
+# The record is written twice: `status: running` with the runner's pid before
+# the first step, then rewritten whole with the final status when the run
+# ends. Each write replaces the file through a temp file and a rename, so a
+# reader never sees half of it. A runner that fails after the start ends the
+# record as `error` ("runner stopped: ..."). Only a killed runner leaves its
+# `running` record behind; a reader that finds its pid gone reads it as lost.
+#
 # A reader (a UI, a sweep) needs only this file. `sweep_runs` (scripts/tree.py)
 # deletes the folder once `keep` has passed since finished_at (else
 # started_at), for every lib's records in the store. A folder without a
@@ -30,9 +37,12 @@ run:
   tier: ""                    # The tier the run targeted, or "-"
   instance: ""                # Machine the run happened on (hostname or SITEMAPPER_INSTANCE)
   started_at: ""              # ISO-8601 UTC
-  finished_at: ""             # ISO-8601 UTC; for a waiting run, when it paused
-  status: ""                  # passed | failed | error | waiting (mirrors result.json)
+  finished_at: ""             # ISO-8601 UTC; for a waiting run, when it paused.
+                              # Absent while status is running
+  status: ""                  # running | passed | failed | error | waiting
+                              # (the final one mirrors result.json)
   trigger: ""                 # schedule | manual: run.py --trigger, default manual
+  pid: 0                      # Process id of the runner on its instance
   keep: ""                    # How long the folder lives: <N>d (days),
                               # <N>h (hours), or "keep" (never swept). Copied
                               # from the project's `keep:`, else "1d"; empty or
@@ -55,15 +65,17 @@ run:
                               # maps flatten to dotted labels ("scan.fleet.total"),
                               # anything else is one value (JSON unless a string).
                               # At most 30 entries, values cut at 200 characters
-  files: []                   # Relative paths of everything in the folder
+  files: []                   # Relative paths of everything in the folder; only
+                              # run.yaml while running
 #
 # The optional keys (trigger to summary) are left out when empty, e.g. a
 # result.json an agent wrote without captures or counts has no summary.
 #
-# Index: every record also appends one JSON line to
+# Index: every write of the record also appends one JSON line to
 # <runs>/SiteMapper/index.<instance>.jsonl: run_id (the folder name) plus
 # owner, workflow, tier, instance, started_at, finished_at, status, trigger,
-# headline and trust_change as above. One file per instance, appended under
+# pid, headline and trust_change as above. A run has a `running` line and a
+# final line with the same run_id; the later line supersedes the earlier. One file per instance, appended under
 # an exclusive file lock so parallel runs on one machine never interleave, and
 # never swept: sweep_runs touches only folders holding a run.yaml.
 #

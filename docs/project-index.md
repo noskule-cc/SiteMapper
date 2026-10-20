@@ -147,7 +147,7 @@ Not stubs, decisions. `check-docs.py` reports links to them as warnings, and
 | Declined | Why |
 |----------|-----|
 | `installation.md` | Setup is two `pip install` lines; it lives in [../USAGE.md](../USAGE.md) with the rest of getting started. A separate page would duplicate it. |
-| `testing.md` | There is no unit-test suite. The repo's test surface is `scripts/check.py`, `docs/tools/check-docs.py` and the CI runner smoke test — all registered as jobs in [tools/jobs.md](tools/jobs.md). `/test` runs UI test workflows against mapped sites and is documented in its own skill. |
+| `testing.md` | The repo's test surface is `scripts/check.py`, `docs/tools/check-docs.py`, the runner tests in `tests/` (standard-library `unittest`) and the CI runner smoke test — all registered as jobs in [tools/jobs.md](tools/jobs.md). `/test` runs UI test workflows against mapped sites and is documented in its own skill. |
 | `release.md` | Nothing is released. There are no tags, no packages and no GitHub releases; the dashboard artifact deploys itself on push (see [tools/jobs.md](tools/jobs.md)). |
 | `changelog.md` | No release history to keep. Closed issues plus `git log` are the record. |
 | `design-sync.md` | No design files. The one rendered surface, `overview.html`, is generated from code. |

@@ -26,6 +26,7 @@ calendar date:
 | [Check docs (mechanical)](#check-docs) | `python docs/tools/check-docs.py` | per-change | any doc or feature-map change |
 | [Regenerate views](#regenerate-views) | `python scripts/inventory.py [--root <maps>]` | per-change | a site, page, workflow or project was added or removed |
 | [Headless workflow run](#headless-workflow-run) | `python scripts/run.py <workflow> --param k=v` | per-change | a deterministic workflow changed |
+| [Runner tests](#runner-tests) | `python -m unittest discover tests` | per-change | `scripts/run.py` changed (also runs in CI) |
 | [Live dashboard](#live-dashboard) | `python scripts/serve.py [--root <maps>]` | on demand | you want the dashboard with real run buttons |
 | [Deploy the dashboard](#deploy-the-dashboard) | automatic on push; fallback `/deploy-dashboard` | on demand | the shared page must show uncommitted or out-of-band state |
 | [Map drift check](#map-drift-check) | `/verify-map <site>` | on demand | a workflow step failed to find a mapped element |
@@ -94,6 +95,13 @@ is stale; never hand-edit the generated files.
 loop and emits a `result` (`--json` for the machine-readable form, `--record`
 to write a run folder to the runs store; a `rollback: snapshot` workflow is
 recorded always).
+
+### Runner tests
+
+`tests/` runs `scripts/run.py` as a subprocess against a fixture tree in a
+temporary folder, with no browser: script, human and capture steps only. It
+covers what a real run of the acceptance workflow cannot show, such as the
+record a killed run leaves behind.
 
 ### Live dashboard
 

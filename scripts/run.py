@@ -1157,7 +1157,8 @@ def run_id_of(result: dict, instance: str) -> str:
 
 def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed: bool,
                  pre_authorized: set[str] = frozenset(), persona_name: str | None = None,
-                 context_name: str | None = None):
+                 context_name: str | None = None, runs: Path | None = None,
+                 record: bool = False, trigger: str = "manual") -> tuple[dict, Path | None]:
     wf_path, data, owner = find_workflow(root, projects, name)
     workflow = data.get("workflow", {})
 
@@ -1202,7 +1203,22 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         "evidence": [],
         "error": "",
     }
+    if not record and workflow.get("rollback") != "snapshot":
+        execute(runner, workflow, bindings, wf_path, primary, result)
+        return result, None
+    recorder = RunRecord(runs, owner, trigger, result)
+    recorder.start(result)
+    try:
+        execute(runner, workflow, bindings, wf_path, primary, result)
+        recorder.finish(result)
+    except BaseException as exc:
+        recorder.stopped(result, exc)
+        raise
+    return result, recorder.folder
 
+
+def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, primary: str,
+            result: dict):
     phase = "setup"
     ordered = [(ph, index, step) for ph in tree.PHASES
                for index, step in enumerate(workflow.get(ph) or [])]
@@ -1251,7 +1267,6 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     result["counts"] = {"total": total, "passed": passed, "failed": total - passed}
     result["finished_at"] = utc_now()
     update_trust(wf_path, workflow, result)
-    return result, wf_path, owner
 
 
 SUMMARY_ENTRIES = 30
@@ -1333,61 +1348,105 @@ def append_index(runs: Path, instance: str, line: dict):
             _lock(fh, False)
 
 
-def write_run(result: dict, runs: Path, owner: Owner, trigger: str) -> Path:
-    """One folder per run in the runs store (schema/run.yaml): the record, the
-    full result, the snapshot captures as the pre-state, the evidence files.
-    Never inside the tree, never committed."""
-    instance = tree.instance_name()
-    run_id = run_id_of(result, instance)
-    folder = runs / tree.LIB / owner.name / run_id
-    folder.mkdir(parents=True, exist_ok=True)
-    files = ["run.yaml", "result.json"]
-    for name, value in (result.get("snapshot") or {}).items():
-        (folder / "snapshot").mkdir(exist_ok=True)
-        (folder / "snapshot" / f"{name}.json").write_text(
-            json.dumps(value, indent=2, ensure_ascii=False), encoding="utf-8")
-        files.append(f"snapshot/{name}.json")
-    for src in result.get("evidence") or []:
-        p = Path(src)
-        if p.is_file():
-            (folder / "evidence").mkdir(exist_ok=True)
-            shutil.copy2(p, folder / "evidence" / p.name)
-            files.append(f"evidence/{p.name}")
-    (folder / "result.json").write_text(
-        json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
-    summary = summary_of(result.get("captures"))
-    counts = assertion_counts(result)
-    error = error_of(result)
-    run = {
-        "lib": tree.LIB,
-        "owner": owner.name,
-        "workflow": result["workflow"],
-        "tier": result.get("tier") or "-",
-        "instance": instance,
-        "started_at": result["started_at"],
-        "finished_at": result["finished_at"],
-        "status": result["status"],
-        "trigger": trigger,
-        # The run that set trust: broken is the evidence for it; the sweep must
-        # not take it before someone has read it (#52).
-        "keep": ("keep" if result.get("trust_change")
-                 else str(owner.project.get("keep") or tree.DEFAULT_KEEP)),
-        "headline": headline_of(result, counts, summary, error),
-        "error": error,
-        "waiting_for": result.get("waiting_for"),
-        "trust_change": result.get("trust_change"),
-        "assertions": counts,
-        "summary": summary,
-        "files": files,
-    }
-    run = {k: v for k, v in run.items() if v not in (None, "", [], {})}
-    (folder / "run.yaml").write_text(
-        yaml.safe_dump({"run": run}, sort_keys=False, allow_unicode=True), encoding="utf-8")
-    append_index(runs, instance, {"run_id": run_id, **{
-        k: run[k] for k in ("owner", "workflow", "tier", "instance", "started_at",
-                            "finished_at", "status", "trigger", "headline", "trust_change")
-        if k in run}})
-    return folder
+def write_atomic(path: Path, text: str):
+    """On Windows the rename fails while a reader holds the target open, so it
+    is retried briefly."""
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(text, encoding="utf-8")
+    for attempt in range(10):
+        try:
+            os.replace(tmp, path)
+            return
+        except PermissionError:
+            if attempt == 9:
+                raise
+            time.sleep(0.05)
+
+
+INDEX_KEYS = ("owner", "workflow", "tier", "instance", "started_at", "finished_at",
+              "status", "trigger", "pid", "headline", "trust_change")
+
+
+class RunRecord:
+    def __init__(self, runs: Path, owner: Owner, trigger: str, result: dict):
+        self.runs, self.owner, self.trigger = runs, owner, trigger
+        self.instance = tree.instance_name()
+        self.run_id = run_id_of(result, self.instance)
+        self.folder = runs / tree.LIB / owner.name / self.run_id
+
+    def _write(self, run: dict):
+        run = {k: v for k, v in run.items() if v not in (None, "", [], {})}
+        write_atomic(self.folder / "run.yaml",
+                     yaml.safe_dump({"run": run}, sort_keys=False, allow_unicode=True))
+        append_index(self.runs, self.instance,
+                     {"run_id": self.run_id, **{k: run[k] for k in INDEX_KEYS if k in run}})
+
+    def _base(self, result: dict) -> dict:
+        return {
+            "lib": tree.LIB,
+            "owner": self.owner.name,
+            "workflow": result["workflow"],
+            "tier": result.get("tier") or "-",
+            "instance": self.instance,
+            "started_at": result["started_at"],
+            "finished_at": result["finished_at"],
+            "status": result["status"],
+            "trigger": self.trigger,
+            "pid": os.getpid(),
+            "keep": ("keep" if result.get("trust_change")
+                     else str(self.owner.project.get("keep") or tree.DEFAULT_KEEP)),
+        }
+
+    def start(self, result: dict):
+        self.folder.mkdir(parents=True, exist_ok=True)
+        self._write({**self._base(result), "status": "running", "headline": "running",
+                     "files": ["run.yaml"]})
+
+    def finish(self, result: dict):
+        folder = self.folder
+        folder.mkdir(parents=True, exist_ok=True)
+        files = ["run.yaml", "result.json"]
+        for name, value in (result.get("snapshot") or {}).items():
+            (folder / "snapshot").mkdir(exist_ok=True)
+            (folder / "snapshot" / f"{name}.json").write_text(
+                json.dumps(value, indent=2, ensure_ascii=False), encoding="utf-8")
+            files.append(f"snapshot/{name}.json")
+        for src in result.get("evidence") or []:
+            p = Path(src)
+            if p.is_file():
+                (folder / "evidence").mkdir(exist_ok=True)
+                shutil.copy2(p, folder / "evidence" / p.name)
+                files.append(f"evidence/{p.name}")
+        (folder / "result.json").write_text(
+            json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+        summary = summary_of(result.get("captures"))
+        counts = assertion_counts(result)
+        error = error_of(result)
+        self._write({
+            **self._base(result),
+            "headline": headline_of(result, counts, summary, error),
+            "error": error,
+            "waiting_for": result.get("waiting_for"),
+            "trust_change": result.get("trust_change"),
+            "assertions": counts,
+            "summary": summary,
+            "files": files,
+        })
+
+    def stopped(self, result: dict, exc: BaseException):
+        """The runner failed after the run started, so the record ends as an
+        error instead of reading as lost."""
+        self.folder.mkdir(parents=True, exist_ok=True)
+        error = " ".join(f"runner stopped: {type(exc).__name__}: {exc}".split())[:HEADLINE_CHARS]
+        self._write({
+            **self._base(result),
+            "finished_at": utc_now(),
+            "status": "error",
+            "headline": f"error · {error}"[:HEADLINE_CHARS],
+            "error": error,
+            "files": sorted({p.relative_to(self.folder).as_posix()
+                             for p in self.folder.rglob("*") if p.is_file()} | {"run.yaml"}),
+        })
 
 
 def main(argv=None):
@@ -1450,16 +1509,14 @@ def main(argv=None):
                        ("auth", args.yes_auth))
                       if flag}
     try:
-        result, wf_path, owner = run_workflow(root, projects, args.workflow, cli_params,
-                                              args.headed, pre_authorized, args.persona,
-                                              args.context)
+        result, record = run_workflow(root, projects, args.workflow, cli_params,
+                                      args.headed, pre_authorized, args.persona,
+                                      args.context, runs, args.record, args.trigger)
     except RunError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
-    workflow = (load_yaml(wf_path) or {}).get("workflow", {})
-    if args.record or workflow.get("rollback") == "snapshot":
-        record = write_run(result, runs, owner, args.trigger)
+    if record:
         print(f"record: {record}", file=sys.stderr)
         if result.get("trust_change"):
             print(f"kept (keep: keep): this run set trust {result['trust_change']}; "
