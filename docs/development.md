@@ -8,12 +8,13 @@ them) is [../USAGE.md](../USAGE.md).
 
 - **Language:** Python 3 (no build step, no packaging — the scripts are run directly)
 - **Required dependency:** PyYAML, and nothing else for the framework's own checks and views
+- **Optional dependency:** `mcp` 2.x (`pip install "mcp>=2.3,<3"`), needed only by `scripts/mcp_server.py` and its tests
 - **Optional dependency:** Playwright (`pip install playwright`), needed only by the headless runner, and only for a workflow with a step other than `script`, `human` or a step on a captured value; it drives your installed Chrome (`channel="chrome"`), so there is no browser download
 - **Serving:** `http.server` from the standard library — `scripts/serve.py` deliberately adds no web framework
 - **Standard library first.** A new third-party dependency needs a reason in the PR
 - **CI:** GitHub Actions (`.github/workflows/check.yml`) — the consistency checks plus a real headless run on every push
 
-## The Six Scripts
+## The Seven Scripts
 
 | Script | Role | Notes |
 |--------|------|-------|
@@ -23,6 +24,7 @@ them) is [../USAGE.md](../USAGE.md).
 | `libtree.py` | renders `lib-tree.json` at the lib root from the same collectors | the host's lib-neutral format (TeamOS#21); the host draws it as a tree |
 | `run.py` | the headless deterministic runner: permission gate, session, steps, watch, result | the largest file; see the Reuse Rules in [architecture-rules.md](architecture-rules.md) |
 | `serve.py` | serves the overview live with a run API, localhost only | keeps the permission gate server-side — the browser is untrusted UI |
+| `mcp_server.py` | the workflows as MCP tools over stdio ([interface.md](interface.md#the-mcp-server)) | runs `run.py` as a child, so the gate and the record stay the runner's |
 
 ## Three Roots, Deliberately
 
@@ -51,7 +53,7 @@ schema/     # Commented YAML templates — the format's source of truth
 sites/      # Mapped sites: site.yaml + pages/ + workflows/ (building blocks) + scripts/, personas/, contexts/
 apps/       # One application mapped as several tier sites: app.yaml (tier map, parity) + scripts/
 projects/   # Questions: project.yaml + workflows/ + data/ + scripts/, grouped in folders
-scripts/    # The six executables above, plus tree.py (where the roots are)
+scripts/    # The seven executables above, plus tree.py (where the roots are)
 docs/       # Everything agents and maintainers read — start at docs/INDEX.md
 .claude/    # Skills and agents, each carrying its complete instructions
 data/       # Copyable skeleton for a private map repository
@@ -105,4 +107,4 @@ run's leftover `running` record.
   shell's cwd captured *before* the chdir; if you added code that resolves paths
   after it, that is the bug.
 
-**Last Updated:** 2026-09-19
+**Last Updated:** 2026-10-20

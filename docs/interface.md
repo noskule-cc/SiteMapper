@@ -33,7 +33,33 @@ The same three verbs and the same `result` shape serve both kinds of host:
 - **LLM host** — the verbs are tools/skills. Today: `/list-workflows`, `/run`, `/test`. The agent introspects via `describe`, runs, gets the `result`, then routes it using its own tools (e.g. an Azure DevOps tool).
 - **Python host** — the verbs are a JSON-emitting CLI / importable function, e.g. `sitemapper run <ref> --params '{...}' --json` → the same `result` object, routed with the host's own Azure DevOps SDK.
 
-A clean way to expose both at once is an **MCP server** (the three verbs as MCP tools) that is also runnable as a CLI — MCP is consumed natively by LLM hosts and is just a process a Python host can call.
+Both meet in the **MCP server**, `scripts/mcp_server.py`: LLM hosts consume MCP natively, and for a Python host it is one process to start.
+
+## The MCP server
+
+```
+python scripts/mcp_server.py [--root PATH] [--projects PATH] [--runs PATH]
+```
+
+A stdio server (the `mcp` package, 2.x). It reads the tree at start, so a host starts one session per run. Its tools:
+
+| Tool | Does | `readOnlyHint` / `destructiveHint` | `_meta` |
+|---|---|---|---|
+| `list_workflows` | every workflow: name, owner, sites, mode, effect, summary, its run tool | true / false | none |
+| `describe_workflow(name)` | parameters as a JSON schema, mode, effect, and each step's number, phase, action and label | true / false | none |
+| `preflight(name, params?, persona?, consent?)` | the [preflight](permissions.md#enforcement-rules): each class's decision and rule file, `needs_consent`, outcome, lock key. Starts nothing | true / false | none |
+| `run_workflow(name, params?, persona?, consent?)` | runs any workflow | false / true, the strictest, since it can run anything | none: its lock key is the preflight's |
+| `run-<workflow>(params?, persona?, consent?)` | runs that workflow; one per `mode: deterministic` workflow with a declared effect | from its `effect`: `read-only` true / false, `mutating` false / false, `destructive` false / true | `teamos/lock`: its lock key at default parameters |
+
+A run is `run.py <workflow> --json --record --trigger ui` in a child process, so the gate and the run record are the runner's own. Before it starts, the server runs the preflight:
+
+- `deny` returns `status: denied` and starts nothing.
+- An `ask` that `consent` does not answer returns `status: needs-consent` with `needs_consent` and starts nothing.
+- Otherwise the run starts, with `--yes-<class>` only for the classes the preflight reported as `ask`. Consent covers this one run, never the policy.
+
+Each step sends a progress notification (`step N/M: label` on the runner's stderr). The result is `{run_id, status, waiting_for, error, record}`; a run that reaches a `human` step returns `status: waiting`. A runner error before the run starts, such as a missing parameter, is a tool error naming it.
+
+Cancelling the call, or closing the session, kills the run and everything it started: on Windows the child runs in its own Job Object, elsewhere in its own process group. A host's read timeout must exceed the workflow's run time, because progress does not reset it.
 
 ## Who executes the steps
 

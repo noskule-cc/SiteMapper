@@ -73,6 +73,7 @@ the documentation.
 | `../scripts/check.py` | all mechanical consistency checks; non-zero exit on failure |
 | `../scripts/run.py` | headless deterministic workflow runner (Playwright, no LLM in the loop) |
 | `../scripts/serve.py` | serves the overview live on localhost; run buttons become real, gated by [permissions.md](permissions.md) |
+| `../scripts/mcp_server.py` | the workflows as MCP tools over stdio for a host such as TeamOS ([interface.md](interface.md#the-mcp-server)) |
 | `../scripts/inventory.py` | generates the three views below; `--check` fails when any is stale |
 | `../scripts/overview.py` | the HTML renderer, reading `inventory.py`'s collectors |
 | `../scripts/libtree.py` | the `lib-tree.json` renderer for the host, reading the same collectors |
