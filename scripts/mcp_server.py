@@ -2,11 +2,13 @@
 
     python scripts/mcp_server.py [--root PATH] [--projects PATH] [--runs PATH]
 
+                              [--run-timeout SECONDS]
+
 Tools: list_workflows, describe_workflow, preflight and run_workflow, plus one
-run-<workflow> tool per deterministic workflow whose hints carry that
-workflow's effect and whose `_meta` carries its lock key. A run is
-`run.py <workflow> --json --record --trigger ui` in a child process, so the
-permission gate and the run record are the runner's own.
+run-<workflow> tool per deterministic workflow whose sites are fixed, whose
+hints carry that workflow's effect and whose `_meta` carries its lock key. A
+run is `run.py <workflow> --json --record --trigger ui` in a child process, so
+the permission gate and the run record are the runner's own.
 """
 
 from __future__ import annotations
@@ -32,6 +34,9 @@ import tree  # noqa: E402
 
 RUN_PY = Path(__file__).resolve().parent / "run.py"
 STEP_LINE = re.compile(r"^step (\d+)/(\d+): (.*)$")
+RUN_TIMEOUT_S = 30 * 60
+DRAIN_S = 5
+TAIL_LINES = 10
 HINTS = {
     "read-only": ToolAnnotations(readOnlyHint=True, destructiveHint=False),
     "mutating": ToolAnnotations(readOnlyHint=False, destructiveHint=False),
@@ -44,32 +49,45 @@ Consent = Literal["write", "destructive", "auth"]
 
 if sys.platform == "win32":
     import ctypes
+    from ctypes import wintypes
 
     import win32api
     import win32con
     import win32job
 
     PROCESS_SUSPEND_RESUME = 0x0800
+    NtResumeProcess = ctypes.WinDLL("ntdll").NtResumeProcess
+    NtResumeProcess.argtypes = [wintypes.HANDLE]
+    NtResumeProcess.restype = ctypes.c_long
 
-    def contain(proc: asyncio.subprocess.Process):
+    def contain(pid: int):
         """A job that kills the run and everything it started (Chrome, scripts)
         when its handle closes, which this server's exit also does. The child
         starts suspended so nothing it spawns can escape before it joins."""
         job = win32job.CreateJobObject(None, "")
-        info = win32job.QueryInformationJobObject(job, win32job.JobObjectExtendedLimitInformation)
-        info["BasicLimitInformation"]["LimitFlags"] |= win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE
-        win32job.SetInformationJobObject(job, win32job.JobObjectExtendedLimitInformation, info)
-        handle = win32api.OpenProcess(
-            win32con.PROCESS_SET_QUOTA | win32con.PROCESS_TERMINATE | PROCESS_SUSPEND_RESUME,
-            False, proc.pid)
         try:
-            win32job.AssignProcessToJobObject(job, handle)
-            ctypes.windll.ntdll.NtResumeProcess(int(handle))
-        finally:
-            win32api.CloseHandle(handle)
+            info = win32job.QueryInformationJobObject(
+                job, win32job.JobObjectExtendedLimitInformation)
+            info["BasicLimitInformation"]["LimitFlags"] |= (
+                win32job.JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE)
+            win32job.SetInformationJobObject(
+                job, win32job.JobObjectExtendedLimitInformation, info)
+            handle = win32api.OpenProcess(
+                win32con.PROCESS_SET_QUOTA | win32con.PROCESS_TERMINATE | PROCESS_SUSPEND_RESUME,
+                False, pid)
+            try:
+                win32job.AssignProcessToJobObject(job, handle)
+                status = NtResumeProcess(int(handle))
+                if status != 0:
+                    raise OSError(f"NtResumeProcess returned NTSTATUS 0x{status & 0xFFFFFFFF:08X}")
+            finally:
+                win32api.CloseHandle(handle)
+        except BaseException:
+            win32api.CloseHandle(job)
+            raise
         return job
 
-    def end(proc: asyncio.subprocess.Process, job) -> None:
+    def end(pid: int, job) -> None:
         win32api.CloseHandle(job)
 
     CREATE_SUSPENDED = 0x00000004
@@ -77,12 +95,12 @@ if sys.platform == "win32":
 else:
     import signal
 
-    def contain(proc: asyncio.subprocess.Process):
+    def contain(pid: int):
         return None
 
-    def end(proc: asyncio.subprocess.Process, job) -> None:
+    def end(pid: int, job) -> None:
         try:
-            os.killpg(proc.pid, signal.SIGKILL)
+            os.killpg(pid, signal.SIGKILL)
         except ProcessLookupError:
             pass
 
@@ -94,12 +112,18 @@ class Tree:
     root: Path
     projects: Path
     runs: Path
+    run_timeout_s: float = RUN_TIMEOUT_S
 
     def preflight(self, name: str, params: dict[str, str], persona: str | None,
                   consent: list[str]) -> run.Preflight:
         _, data, owner = run.find_workflow(self.root, self.projects, name)
-        return run.preflight(self.root, data.get("workflow", {}), owner, params, persona,
-                             frozenset(consent))
+        workflow = data.get("workflow", {})
+        declared = [p["name"] for p in workflow.get("parameters") or []]
+        unknown = sorted(set(params) - set(declared))
+        if unknown:
+            raise run.RunError(f"'{name}' declares no parameter {', '.join(unknown)}; "
+                               f"it takes: {', '.join(declared) or 'none'}")
+        return run.preflight(self.root, workflow, owner, params, persona, frozenset(consent))
 
     def command(self, name: str, params: dict[str, str], persona: str | None,
                 pre: run.Preflight) -> list[str]:
@@ -113,8 +137,47 @@ class Tree:
                       if cls in pre.classes and pre.classes[cls].verdict == "ask"]
 
 
+class RunProtocol(asyncio.SubprocessProtocol):
+    """Collects stdout and queues stderr lines. `exited` resolves when run.py
+    exits, even while a process it started still holds a pipe open."""
+
+    def __init__(self):
+        loop = asyncio.get_running_loop()
+        self.exited = loop.create_future()
+        self.stdout = bytearray()
+        self.lines: asyncio.Queue[str | None] = asyncio.Queue()
+        self._pending = b""
+
+    def pipe_data_received(self, fd: int, data: bytes):
+        if fd == 1:
+            self.stdout += data
+            return
+        *lines, self._pending = (self._pending + data).split(b"\n")
+        for raw in lines:
+            self.lines.put_nowait(raw.decode("utf-8", "replace").rstrip())
+
+    def process_exited(self):
+        self.exited.set_result(None)
+
+    def connection_lost(self, exc):
+        if self._pending.strip():
+            self.lines.put_nowait(self._pending.decode("utf-8", "replace").rstrip())
+        self.lines.put_nowait(None)
+
+
+def fixed_sites(workflow: dict) -> bool:
+    refs = [workflow.get("site"), *(workflow.get("sites") or []),
+            *(step.get("site") for step in tree.steps_of(workflow))]
+    return not workflow.get("tiers") and not any("$" in str(r) for r in refs if r)
+
+
+def tail(messages: list[str]) -> str:
+    return "\n".join(m for m in messages[-TAIL_LINES:] if m)
+
+
 async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str | None,
-                    consent: list[str], ctx: Context) -> dict[str, Any]:
+                    consent: list[str], ctx: Context,
+                    timeout_s: float | None = None) -> dict[str, Any]:
     try:
         pre = tree_.preflight(name, params, persona, consent)
     except run.RunError as exc:
@@ -125,49 +188,70 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
         return {"status": "needs-consent", "needs_consent": pre.needs_consent,
                 "preflight": dataclasses.asdict(pre)}
 
-    proc = await asyncio.create_subprocess_exec(
-        *tree_.command(name, params, persona, pre),
-        stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
+    transport, child = await asyncio.get_running_loop().subprocess_exec(
+        RunProtocol, *tree_.command(name, params, persona, pre),
+        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"}, **SPAWN)
+    pid = transport.get_pid()
     try:
-        job = contain(proc)
-    except BaseException:
-        proc.kill()
-        raise
-    proc.stdin.close()
-    stdout = asyncio.ensure_future(proc.stdout.read())
-    try:
-        record, messages = None, []
-        async for raw in proc.stderr:
-            line = raw.decode("utf-8", "replace").rstrip()
+        job = contain(pid)
+    except Exception as exc:
+        transport.kill()
+        await asyncio.wait([child.exited], timeout=DRAIN_S)
+        transport.close()
+        raise ToolError(f"run.py could not be contained, so it was stopped: {exc}") from exc
+    transport.get_pipe_transport(0).close()
+
+    record, messages = None, []
+
+    async def pump_stderr():
+        nonlocal record
+        while (line := await child.lines.get()) is not None:
             step = STEP_LINE.match(line)
             if step:
                 await ctx.report_progress(int(step[1]), int(step[2]), step[3])
             elif line.startswith("record: "):
                 record = Path(line.removeprefix("record: "))
             else:
-                messages.append(line.removeprefix("error: "))
-        out = await stdout
-        await proc.wait()
+                messages.append(line.removeprefix("error: ")[:2000])
+
+    pump = asyncio.ensure_future(pump_stderr())
+    limit = timeout_s or tree_.run_timeout_s
+    ended = False
+    try:
+        try:
+            async with asyncio.timeout(limit):
+                await child.exited
+        except TimeoutError:
+            raise ToolError(f"'{name}' ran longer than {limit:g} s and was stopped; "
+                            f"last output:\n{tail(messages)}") from None
+        end(pid, job)
+        ended = True
+        await asyncio.wait([pump], timeout=DRAIN_S)
     finally:
-        stdout.cancel()
-        end(proc, job)
-        if proc.returncode is None:
-            await proc.wait()
-    if not out.strip():
-        raise ToolError("\n".join(m for m in messages if m) or f"run.py exited {proc.returncode}")
-    result = json.loads(out)
-    return {"run_id": record.name if record else None, "status": result["status"],
+        pump.cancel()
+        if not ended:
+            end(pid, job)
+        transport.close()
+    out = bytes(child.stdout)
+    try:
+        result = json.loads(out)
+        status = result["status"]
+    except (ValueError, TypeError, KeyError) as exc:
+        reason = f" ({type(exc).__name__})" if out.strip() else ""
+        raise ToolError(f"run.py exited {transport.get_returncode()} without a result{reason}; "
+                        f"last output:\n{tail(messages)}") from None
+    return {"run_id": record.name if record else None, "status": status,
             "waiting_for": result.get("waiting_for"), "error": result.get("error") or "",
             "record": str(record) if record else None}
 
 
 def runner_for(tree_: Tree, name: str):
     async def run_this(ctx: Context, params: dict[str, str] | None = None,
-                       persona: str | None = None,
-                       consent: list[Consent] | None = None) -> dict[str, Any]:
-        return await start_run(tree_, name, params or {}, persona, consent or [], ctx)
+                       persona: str | None = None, consent: list[Consent] | None = None,
+                       timeout_s: float | None = None) -> dict[str, Any]:
+        return await start_run(tree_, name, params or {}, persona, consent or [], ctx,
+                               timeout_s)
     return run_this
 
 
@@ -214,18 +298,21 @@ def build(tree_: Tree) -> MCPServer:
 
     @server.tool(annotations=HINTS["destructive"], structured_output=True)
     async def run_workflow(name: str, ctx: Context, params: dict[str, str] | None = None,
-                           persona: str | None = None,
-                           consent: list[Consent] | None = None) -> dict[str, Any]:
+                           persona: str | None = None, consent: list[Consent] | None = None,
+                           timeout_s: float | None = None) -> dict[str, Any]:
         """Run a workflow and return its run_id, status and waiting_for.
 
         `consent` answers an `ask` for this run only. Without it an ask returns
         status needs-consent and starts nothing; a deny returns status denied.
-        Progress arrives per step. The lock key is the preflight's."""
-        return await start_run(tree_, name, params or {}, persona, consent or [], ctx)
+        Progress arrives per step. The lock key is the preflight's. A run
+        longer than `timeout_s` (default: the server's --run-timeout) is stopped."""
+        return await start_run(tree_, name, params or {}, persona, consent or [], ctx,
+                               timeout_s)
 
     for path, owner, wf in workflows:
         name = wf.get("name") or path.stem
-        if wf.get("mode") != "deterministic" or wf.get("effect") not in HINTS:
+        if (wf.get("mode") != "deterministic" or wf.get("effect") not in HINTS
+                or not fixed_sites(wf)):
             continue
         try:
             lock = run.preflight(tree_.root, wf, owner, {}).lock_key
@@ -247,10 +334,12 @@ def main(argv=None):
     ap.add_argument("--root", default=None, help="map repository (default: this repo)")
     ap.add_argument("--projects", default=None, help="the projects tree, when not inside --root")
     ap.add_argument("--runs", default=None, help="the runs store, when not inside --root")
+    ap.add_argument("--run-timeout", type=float, default=RUN_TIMEOUT_S,
+                    help=f"seconds before a run is stopped (default: {RUN_TIMEOUT_S})")
     args = ap.parse_args(argv)
     root = Path(args.root).resolve() if args.root else run.FRAMEWORK_ROOT
     build(Tree(root, Path(tree.projects_root(str(root), args.projects)),
-               Path(tree.runs_root(str(root), args.runs)))).run("stdio")
+               Path(tree.runs_root(str(root), args.runs)), args.run_timeout)).run("stdio")
 
 
 if __name__ == "__main__":
