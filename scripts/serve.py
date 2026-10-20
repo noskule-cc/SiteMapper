@@ -290,7 +290,7 @@ class Handler(BaseHTTPRequestHandler):
                 f"permission denied: '{pre.effect}' needs class '{cls}', which is "
                 f"'deny' for {d.where()}. Policy, not a bug — docs/permissions.md."})
         if pre.outcome == "ask":
-            cls = pre.asking()[0]
+            cls = pre.needs_consent[0]
             return self.send_json(409, {"ask": cls, "question":
                 f"'{name}' is {pre.effect} and {pre.classes[cls].where()} says ask "
                 f"for '{cls}'. Run it this once?"})

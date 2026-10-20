@@ -86,14 +86,14 @@ class PreflightTest(unittest.TestCase):
             workflow="read-prod", effect="read-only", tier="-", sites=["prod"],
             persona=None, lock_key="prod/-",
             classes={"read": run.Decision("allow", "prod", "production", FRAMEWORK_CONFIG)},
-            consent=[], outcome="allow"))
+            consent=[], needs_consent=[], outcome="allow"))
 
     def test_write_on_production_asks(self):
         self.assertEqual(self.preflight("write-prod"), run.Preflight(
             workflow="write-prod", effect="mutating", tier="-", sites=["prod"],
             persona=None, lock_key="prod/-",
             classes={"write": run.Decision("ask", "prod", "production", FRAMEWORK_CONFIG)},
-            consent=[], outcome="ask"))
+            consent=[], needs_consent=["write"], outcome="ask"))
 
     def test_destructive_on_production_is_denied(self):
         self.assertEqual(self.preflight("wipe-prod"), run.Preflight(
@@ -101,21 +101,21 @@ class PreflightTest(unittest.TestCase):
             persona=None, lock_key="prod/-",
             classes={"destructive": run.Decision("deny", "prod", "production",
                                                  FRAMEWORK_CONFIG)},
-            consent=[], outcome="deny"))
+            consent=[], needs_consent=[], outcome="deny"))
 
     def test_strictest_site_decides_a_run_over_two_sites(self):
         self.assertEqual(self.preflight("write-both"), run.Preflight(
             workflow="write-both", effect="mutating", tier="-", sites=["stage", "prod"],
-            persona="bot", lock_key="stage+prod/bot",
+            persona="bot", lock_key="prod+stage/bot",
             classes={"write": run.Decision("ask", "prod", "production", FRAMEWORK_CONFIG)},
-            consent=[], outcome="ask"))
+            consent=[], needs_consent=["write"], outcome="ask"))
 
     def test_one_run_consent_answers_the_ask_without_changing_the_verdict(self):
         self.assertEqual(self.preflight("write-prod", frozenset({"write"})), run.Preflight(
             workflow="write-prod", effect="mutating", tier="-", sites=["prod"],
             persona=None, lock_key="prod/-",
             classes={"write": run.Decision("ask", "prod", "production", FRAMEWORK_CONFIG)},
-            consent=["write"], outcome="allow"))
+            consent=["write"], needs_consent=[], outcome="allow"))
 
     def test_automated_login_adds_the_auth_class_from_the_lead_site(self):
         self.assertEqual(self.preflight("read-stage-browser"), run.Preflight(
@@ -123,7 +123,7 @@ class PreflightTest(unittest.TestCase):
             persona="bot", lock_key="stage/bot",
             classes={"read": run.Decision("allow", "stage", "staging", FRAMEWORK_CONFIG),
                      "auth": run.Decision("allow", "stage", "staging", self.stage_yaml)},
-            consent=[], outcome="allow"))
+            consent=[], needs_consent=[], outcome="allow"))
 
     def test_cli_prints_the_preflight_as_json_and_exits_zero_on_ask(self):
         proc = self.cli("write-prod", "--preflight", "--json")
@@ -133,7 +133,7 @@ class PreflightTest(unittest.TestCase):
             "persona": None, "lock_key": "prod/-",
             "classes": {"write": {"verdict": "ask", "site": "prod",
                                   "environment": "production", "source": FRAMEWORK_CONFIG}},
-            "consent": [], "outcome": "ask"})
+            "consent": [], "needs_consent": ["write"], "outcome": "ask"})
 
     def test_cli_preflight_of_a_missing_workflow_names_it_and_fails(self):
         proc = self.cli("no-such-workflow", "--preflight", "--json")

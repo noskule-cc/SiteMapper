@@ -1079,11 +1079,8 @@ class Preflight:
     lock_key: str
     classes: dict[str, Decision]
     consent: list[str]
+    needs_consent: list[str]
     outcome: Verdict
-
-    def asking(self) -> list[str]:
-        return [c for c, d in self.classes.items()
-                if d.verdict == "ask" and c not in self.consent]
 
 
 def site_decisions(root: Path, site_name: str) -> dict[str, Decision]:
@@ -1144,8 +1141,11 @@ def preflight(root: Path, workflow: dict, owner: Owner, cli_params: dict,
                    for c, d in classes.items()), key=STRICTNESS.get)
     return Preflight(workflow=name, effect=effect, tier=tier, sites=sites,
                      persona=persona.get("name"),
-                     lock_key=f"{'+'.join(sites)}/{persona.get('name') or '-'}",
-                     classes=classes, consent=sorted(consent), outcome=outcome)
+                     lock_key=f"{'+'.join(sorted(sites))}/{persona.get('name') or '-'}",
+                     classes=classes, consent=sorted(consent),
+                     needs_consent=[c for c, d in classes.items()
+                                    if d.verdict == "ask" and c not in consent],
+                     outcome=outcome)
 
 
 def gate(pre: Preflight):
