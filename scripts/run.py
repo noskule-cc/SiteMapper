@@ -27,6 +27,7 @@ projects tree and the runs store when they are not inside the root
 from __future__ import annotations
 
 import argparse
+import contextlib
 import dataclasses
 import datetime as _dt
 import functools
@@ -1451,21 +1452,34 @@ else:
         fcntl.flock(fh, fcntl.LOCK_EX if locked else fcntl.LOCK_UN)
 
 
-def append_index(runs: Path, instance: str, line: dict):
+@contextlib.contextmanager
+def locked_index(runs: Path, instance: str):
+    """The instance's index, open for reading and appending under its exclusive lock."""
     path = runs / tree.LIB / f"index.{instance}.jsonl"
-    with open(path, "ab") as fh:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a+b") as fh:
         _lock(fh, True)
         try:
-            fh.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
-            fh.flush()
+            yield fh
         finally:
             _lock(fh, False)
+
+
+def _append(fh, line: dict):
+    fh.seek(0, os.SEEK_END)
+    fh.write((json.dumps(line, ensure_ascii=False) + "\n").encode("utf-8"))
+    fh.flush()
+
+
+def append_index(runs: Path, instance: str, line: dict):
+    with locked_index(runs, instance) as fh:
+        _append(fh, line)
 
 
 def write_atomic(path: Path, text: str):
     """On Windows the rename fails while a reader holds the target open, so it
     is retried briefly."""
-    tmp = path.with_name(path.name + ".tmp")
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.{secrets.token_hex(4)}.tmp")
     tmp.write_text(text, encoding="utf-8")
     for attempt in range(10):
         try:
@@ -1483,27 +1497,32 @@ INDEX_KEYS = ("owner", "workflow", "tier", "instance", "started_at", "finished_a
 ANSWERED = ("passed", "failed")
 
 
-def write_record(runs: Path, instance: str, run_id: str, folder: Path | None, run: dict):
+def write_record(runs: Path, instance: str, run_id: str, folder: Path | None, run: dict,
+                 index=None):
     """Write run.yaml, then append its index line (contracts/run-record.md). Without a
-    folder, a swept run gets the index line alone."""
+    folder, a swept run gets the index line alone. `index` is the locked index when the
+    caller already holds it."""
     run = {k: v for k, v in run.items() if v not in (None, "", [], {})}
     if folder is not None:
         write_atomic(folder / "run.yaml",
                      yaml.safe_dump({"run": run}, sort_keys=False, allow_unicode=True))
-    append_index(runs, instance, {"run_id": run_id, **{k: run[k] for k in INDEX_KEYS if k in run}})
+    line = {"run_id": run_id, **{k: run[k] for k in INDEX_KEYS if k in run}}
+    if index is None:
+        append_index(runs, instance, line)
+    else:
+        _append(index, line)
 
 
-def last_line(runs: Path, instance: str, run_id: str) -> dict | None:
-    path = runs / tree.LIB / f"index.{instance}.jsonl"
+def last_line(index, run_id: str) -> dict | None:
+    index.seek(0)
     found = None
-    if path.is_file():
-        for raw in path.read_text(encoding="utf-8").splitlines():
-            try:
-                line = json.loads(raw)
-            except ValueError:
-                continue
-            if isinstance(line, dict) and line.get("run_id") == run_id:
-                found = line
+    for raw in index.read().decode("utf-8", errors="replace").splitlines():
+        try:
+            line = json.loads(raw)
+        except ValueError:
+            continue
+        if isinstance(line, dict) and line.get("run_id") == run_id:
+            found = line
     return found
 
 
@@ -1515,7 +1534,12 @@ def finish_waiting(runs: Path, run_id: str, status: str, by: str) -> dict:
     if not by.strip():
         raise RunError("say who answered the run")
     instance = tree.instance_name()
-    last = last_line(runs, instance, run_id)
+    with locked_index(runs, instance) as index:
+        return _finish_locked(runs, instance, index, run_id, status, by)
+
+
+def _finish_locked(runs: Path, instance: str, index, run_id: str, status: str, by: str) -> dict:
+    last = last_line(index, run_id)
     if last is None:
         raise RunError(f"no run '{run_id}' in the index of {instance}; "
                        "finish a run on the instance that ran it")
@@ -1539,7 +1563,7 @@ def finish_waiting(runs: Path, run_id: str, status: str, by: str) -> dict:
                headline=" ".join(" · ".join(
                    [status, answer, *(f"{e['label']}: {e['value']}" for e in summary[:2])]
                ).split())[:HEADLINE_CHARS])
-    write_record(runs, instance, run_id, folder, run)
+    write_record(runs, instance, run_id, folder, run, index)
     return {"run_id": run_id, "status": status, "answered_by": by, "answered_at": now,
             "changed": True}
 

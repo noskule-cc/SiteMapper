@@ -5,6 +5,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -275,6 +276,61 @@ class FinishWaitingTest(unittest.TestCase):
         self.assertEqual((last["status"], last["answered_by"], last["owner"]),
                          ("failed", "BEB", "fixture"))
         self.assertFalse((self.runs / "SiteMapper" / "fixture" / run_id).exists())
+
+
+class FinishRaceTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.runs = Path(self.tmp.name) / "runs"
+        self.addCleanup(self.tmp.cleanup)
+        sys.path.insert(0, str(RUN_PY.parent))
+        self.addCleanup(sys.path.remove, str(RUN_PY.parent))
+        os.environ["SITEMAPPER_INSTANCE"] = INSTANCE
+        self.addCleanup(os.environ.pop, "SITEMAPPER_INSTANCE")
+        import run
+
+        self.run = run
+
+    def waiting(self, n: int) -> str:
+        run_id = f"person.2026-10-20T2000{n:02d}.000Z.-.{INSTANCE}.abcd"
+        folder = self.runs / "SiteMapper" / "fixture" / run_id
+        folder.mkdir(parents=True)
+        self.run.write_record(self.runs, INSTANCE, run_id, folder, {
+            "lib": "SiteMapper", "owner": "fixture", "workflow": "person", "tier": "-",
+            "instance": INSTANCE, "started_at": "2026-10-20T20:00:00.000Z",
+            "finished_at": "2026-10-20T20:00:01.000Z", "status": "waiting", "keep": "1d",
+            "waiting_for": {"step": 1, "label": "a person approves", "reason": ""},
+            "files": ["run.yaml"]})
+        return run_id
+
+    def test_two_different_answers_at_once_finish_the_run_exactly_once(self):
+        for n in range(20):
+            run_id = self.waiting(n)
+            outcomes: dict[str, object] = {}
+            start = threading.Barrier(2)
+
+            def answer(status: str, by: str):
+                start.wait()
+                try:
+                    outcomes[status] = self.run.finish_waiting(self.runs, run_id, status, by)
+                except self.run.RunError as exc:
+                    outcomes[status] = exc
+
+            threads = [threading.Thread(target=answer, args=a) for a in
+                       (("passed", "A"), ("failed", "B"))]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join(timeout=60)
+
+            won = [s for s, o in outcomes.items() if isinstance(o, dict)]
+            self.assertEqual(len(won), 1, outcomes)
+            lost = next(s for s in outcomes if s not in won)
+            self.assertIn("not waiting", str(outcomes[lost]))
+            ended = [line for line in index_lines(self.runs)
+                     if line["run_id"] == run_id and line["status"] != "waiting"]
+            self.assertEqual([line["status"] for line in ended], won)
+            self.assertEqual(run_yaml(self.runs, run_id)["status"], won[0])
 
 if __name__ == "__main__":
     unittest.main()
