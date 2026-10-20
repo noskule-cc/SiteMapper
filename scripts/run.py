@@ -83,8 +83,6 @@ class Owner:
 
 
 def iter_workflows(root: Path, projects: Path) -> list[tuple[Path, Owner]]:
-    """Every workflow YAML under the sites tree and, recursively, the
-    projects tree, with its owner."""
     candidates: list[tuple[Path, Owner]] = []
     for path in sorted(root.glob("sites/*/workflows/*.yaml")):
         candidates.append((path, Owner("site", path.parent.parent.name, path.parent.parent)))
@@ -97,8 +95,6 @@ def iter_workflows(root: Path, projects: Path) -> list[tuple[Path, Owner]]:
 
 
 def find_workflow(root: Path, projects: Path, name: str):
-    """Locate a workflow YAML by name (filename stem or workflow.name).
-    Returns (path, data, owner)."""
     candidates = iter_workflows(root, projects)
     for path, owner in candidates:
         if path.stem == name:
@@ -293,8 +289,7 @@ class Bindings:
     """Resolves $name from parameters, context roles/ids, fixtures and
     captured variables — in that order (most caller-specific wins)."""
 
-    def __init__(self, workflow: dict, cli_params: dict, context: dict | None = None,
-                 require: bool = True):
+    def __init__(self, workflow: dict, cli_params: dict, context: dict | None = None):
         self.context_values = {}
         if context:
             self.context_values = {**(context.get("ids") or {}),
@@ -312,10 +307,6 @@ class Bindings:
                 self.params[name] = value
             elif p.get("default") not in (None, ""):
                 self.params[name] = p["default"]
-            elif p.get("required") and require:
-                raise RunError(
-                    f"required parameter '{name}' missing — pass --param {name}=..."
-                )
         self.fixtures = self._flatten_fixtures(workflow.get("fixtures") or {})
         self.captures: dict = {}
 
@@ -968,6 +959,13 @@ class Runner:
 # ---------------------------------------------------------------------------
 # Scope: which tier, which sites
 
+def require_params(workflow: dict, cli_params: dict):
+    for p in workflow.get("parameters") or []:
+        if p.get("required") and p["name"] not in cli_params and p.get("default") in (None, ""):
+            name = p["name"]
+            raise RunError(f"required parameter '{name}' missing — pass --param {name}=...")
+
+
 def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
     """The tier this run targets and every site its steps touch.
 
@@ -977,9 +975,7 @@ def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
     permission gate is per step: the policy of each site a step runs on
     applies, never the policy of a site listed only to be read.
     Returns (tier, primary_site, sites)."""
-    # A missing parameter is the run's error, not the scope's: a site named
-    # through it is skipped like a context role, so a form can preflight first.
-    bindings = Bindings(workflow, cli_params, require=False)
+    bindings = Bindings(workflow, cli_params)
     tier, primary = "-", None
     tiers = workflow.get("tiers") or {}
     if tiers:
@@ -1257,6 +1253,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
     pre = preflight(root, workflow, owner, cli_params, persona_name, frozenset(pre_authorized))
     gate(pre)
+    require_params(workflow, cli_params)
     tier, primary = pre.tier, pre.sites[0]
     persona = load_persona(root, primary, persona_name)
     context = load_context(root, primary, context_name, workflow)
@@ -1294,14 +1291,12 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
 
 def step_label(step: dict) -> str:
-    """The step's description, first line, or its action and target."""
     lines = str(step.get("description") or "").strip().splitlines()
     return lines[0] if lines else " ".join(
         str(step[k]) for k in ("action", "page", "element", "script") if step.get(k))
 
 
 def parameters_schema(workflow: dict) -> dict:
-    """The workflow's parameters as a JSON schema, for a form or a tool call."""
     properties, required = {}, []
     for p in workflow.get("parameters") or []:
         prop = {"type": "string"}
@@ -1318,7 +1313,6 @@ def parameters_schema(workflow: dict) -> dict:
 
 
 def describe_workflow(root: Path, projects: Path, name: str) -> dict:
-    """What a caller needs before a run: parameters, effect and steps."""
     _, data, owner = find_workflow(root, projects, name)
     workflow = data.get("workflow", {})
     return {

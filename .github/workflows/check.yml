@@ -18,8 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.x" }
-      # mcp and Playwright for tests/test_mcp_server.py, which runs search-issues
-      # through the MCP server; GitHub's ubuntu images ship Chrome.
+      # GitHub's ubuntu images ship Chrome.
       - run: pip install pyyaml "mcp>=2.3,<3" playwright
       - run: python scripts/check.py
       - run: python docs/tools/check-docs.py
