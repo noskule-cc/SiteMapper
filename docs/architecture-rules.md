@@ -34,8 +34,8 @@ repo, its wiki, or the generated dashboard.
   click mutates, so it never tries.
 - **Trust and permission are independent axes.** `trust: verified` means proven
   to run. It never means allowed to write.
-- **One tool, many trees.** `check.py`, `inventory.py`, `run.py` and `serve.py`
-  take `--root <path>` and keep their schemas from the framework. A forked
+- **One tool, many trees.** `check.py`, `inventory.py`, `run.py`, `serve.py` and
+  `mcp_server.py` take `--root <path>` and keep their schemas from the framework. A forked
   schema next to the maps is worse than no check.
 - **Patch the map, never the workflow.** Drift is a map problem. Editing a
   workflow step or weakening an assert to make a run green destroys the only
@@ -137,4 +137,4 @@ that `scripts/check.py` enforces.
 |------|-----------|--------|
 | — | — | — |
 
-**Last Updated:** 2026-09-19
+**Last Updated:** 2026-10-20

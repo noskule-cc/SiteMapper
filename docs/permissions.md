@@ -55,6 +55,10 @@ that scope when `permissions.write` is unset.
   page's confirmation click sends consent **for that one run only** — a
   browser click can never widen policy, and `deny` is refused server-side no
   matter what the page sends.
+- **Over MCP, the host's consent is the ask channel.** `scripts/mcp_server.py`
+  answers an unconsented `ask` with `needs-consent` and starts nothing, and
+  passes `--yes-<class>` for one run only where the preflight said `ask`.
+  `deny` is refused whatever the host sends.
 - **One preflight for every caller.** `preflight` in `scripts/run.py` decides
   a run without starting it: each action class the run needs, its verdict and
   the file whose rule decided it, the classes that still need consent, the
@@ -62,7 +66,7 @@ that scope when `permissions.write` is unset.
   then the persona: `iq-brita-net/brita-automated`).
   It opens no browser and writes nothing. `auth` is listed only when the run
   logs in by itself, and is decided by the run's lead site. The runner's gate,
-  `serve.py` and `run.py <workflow> --preflight [--json]` all read it; the
+  `serve.py`, `mcp_server.py` and `run.py <workflow> --preflight [--json]` all read it; the
   CLI form prints it and exits 0 whatever the outcome.
 - **`trust: verified` grants nothing.** Verified means proven to run, never
   allowed to write. The two axes stay independent.

@@ -1,6 +1,6 @@
 # Mechanical guards on every push/PR (#16). Two jobs:
 #   check        - scripts/check.py + docs/tools/check-docs.py, the mechanical checks,
-#                  and the runner tests in tests/
+#                  and the runner and MCP server tests in tests/
 #   runner-smoke - the headless runner end-to-end on the read-only acceptance
 #                  workflow (#26): public site, no login, effect: read-only,
 #                  so `ask` never triggers (in CI it would degrade to deny).
@@ -18,7 +18,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.x" }
-      - run: pip install pyyaml
+      # GitHub's ubuntu images ship Chrome.
+      - run: pip install pyyaml "mcp>=2.3,<3" playwright
       - run: python scripts/check.py
       - run: python docs/tools/check-docs.py
       - run: python -m unittest discover tests

@@ -82,10 +82,7 @@ class Owner:
         self.project = project or {}
 
 
-def find_workflow(root: Path, projects: Path, name: str):
-    """Locate a workflow YAML by name (filename stem or workflow.name) under
-    the sites tree and, recursively, the projects tree.
-    Returns (path, data, owner)."""
+def iter_workflows(root: Path, projects: Path) -> list[tuple[Path, Owner]]:
     candidates: list[tuple[Path, Owner]] = []
     for path in sorted(root.glob("sites/*/workflows/*.yaml")):
         candidates.append((path, Owner("site", path.parent.parent.name, path.parent.parent)))
@@ -94,6 +91,11 @@ def find_workflow(root: Path, projects: Path, name: str):
         project = (load_yaml(pdir / "project.yaml") or {}).get("project", {})
         for path in sorted((pdir / "workflows").glob("*.yaml")):
             candidates.append((path, Owner("project", rel, pdir, project)))
+    return candidates
+
+
+def find_workflow(root: Path, projects: Path, name: str):
+    candidates = iter_workflows(root, projects)
     for path, owner in candidates:
         if path.stem == name:
             return path, load_yaml(path), owner
@@ -305,10 +307,6 @@ class Bindings:
                 self.params[name] = value
             elif p.get("default") not in (None, ""):
                 self.params[name] = p["default"]
-            elif p.get("required"):
-                raise RunError(
-                    f"required parameter '{name}' missing — pass --param {name}=..."
-                )
         self.fixtures = self._flatten_fixtures(workflow.get("fixtures") or {})
         self.captures: dict = {}
 
@@ -961,6 +959,13 @@ class Runner:
 # ---------------------------------------------------------------------------
 # Scope: which tier, which sites
 
+def require_params(workflow: dict, cli_params: dict):
+    for p in workflow.get("parameters") or []:
+        if p.get("required") and p["name"] not in cli_params and p.get("default") in (None, ""):
+            name = p["name"]
+            raise RunError(f"required parameter '{name}' missing — pass --param {name}=...")
+
+
 def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
     """The tier this run targets and every site its steps touch.
 
@@ -970,7 +975,7 @@ def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
     permission gate is per step: the policy of each site a step runs on
     applies, never the policy of a site listed only to be read.
     Returns (tier, primary_site, sites)."""
-    bindings = Bindings(workflow, cli_params)  # params and fixtures; context comes later
+    bindings = Bindings(workflow, cli_params)
     tier, primary = "-", None
     tiers = workflow.get("tiers") or {}
     if tiers:
@@ -1248,6 +1253,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
     pre = preflight(root, workflow, owner, cli_params, persona_name, frozenset(pre_authorized))
     gate(pre)
+    require_params(workflow, cli_params)
     tier, primary = pre.tier, pre.sites[0]
     persona = load_persona(root, primary, persona_name)
     context = load_context(root, primary, context_name, workflow)
@@ -1284,6 +1290,45 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     return result, recorder.folder
 
 
+def step_label(step: dict) -> str:
+    lines = str(step.get("description") or "").strip().splitlines()
+    return lines[0] if lines else " ".join(
+        str(step[k]) for k in ("action", "page", "element", "script") if step.get(k))
+
+
+def parameters_schema(workflow: dict) -> dict:
+    properties, required = {}, []
+    for p in workflow.get("parameters") or []:
+        prop = {"type": "string"}
+        if p.get("description"):
+            prop["description"] = str(p["description"]).strip()
+        if p.get("type") == "select" and p.get("options"):
+            prop["enum"] = [str(o) for o in p["options"]]
+        if p.get("default") not in (None, ""):
+            prop["default"] = str(p["default"])
+        elif p.get("required"):
+            required.append(p["name"])
+        properties[p["name"]] = prop
+    return {"type": "object", "properties": properties, "required": required}
+
+
+def describe_workflow(root: Path, projects: Path, name: str) -> dict:
+    _, data, owner = find_workflow(root, projects, name)
+    workflow = data.get("workflow", {})
+    return {
+        "name": workflow.get("name", name),
+        "owner": owner.name,
+        "description": str(workflow.get("description") or "").strip(),
+        "mode": workflow.get("mode"),
+        "effect": workflow.get("effect"),
+        "parameters": parameters_schema(workflow),
+        "steps": [{"number": number, "phase": phase, "action": step.get("action"),
+                   "label": step_label(step)}
+                  for number, (phase, step) in enumerate(
+                      ((ph, s) for ph in tree.PHASES for s in workflow.get(ph) or []), 1)],
+    }
+
+
 def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, primary: str,
             result: dict):
     phase = "setup"
@@ -1293,6 +1338,8 @@ def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, p
         if needs_browser(workflow):
             runner.start(primary)
         for number, (phase, index, step) in enumerate(ordered, 1):
+            print(f"step {number}/{len(ordered)}: {step_label(step)}", file=sys.stderr,
+                  flush=True)
             runner.run_step(step, phase, index, number)
     except WaitForPerson as wait:
         if any(not a["pass"] for a in runner.assertions):
@@ -1540,7 +1587,7 @@ def main(argv=None):
     ap.add_argument("--record", action="store_true",
                     help="write the run folder to the runs store (schema/run.yaml); "
                          "always on for a workflow with rollback: snapshot")
-    ap.add_argument("--trigger", choices=("schedule", "manual"), default="manual",
+    ap.add_argument("--trigger", choices=("schedule", "manual", "ui"), default="manual",
                     help="who started the run, written to the record (default: manual)")
     ap.add_argument("--yes-write", action="store_true",
                     help="pre-authorize the 'write' class where policy says ask")

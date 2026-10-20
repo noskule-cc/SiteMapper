@@ -41,7 +41,7 @@ run:
                               # Absent while status is running
   status: ""                  # running | passed | failed | error | waiting
                               # (the final one mirrors result.json)
-  trigger: ""                 # schedule | manual: run.py --trigger, default manual
+  trigger: ""                 # schedule | manual | ui: run.py --trigger, default manual
   pid: 0                      # Process id of the runner on its instance
   keep: ""                    # How long the folder lives: <N>d (days),
                               # <N>h (hours), or "keep" (never swept). Copied
