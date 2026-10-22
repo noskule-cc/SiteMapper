@@ -179,6 +179,23 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual([(line["run_id"], line["status"], line["trigger"]) for line in lines],
                          [(out["run_id"], "running", "ui"), (out["run_id"], "waiting", "ui")])
 
+    async def test_a_scheduled_start_is_recorded_as_schedule(self):
+        res, _ = await self.call("run_workflow", name="nap", params={"size": "small"},
+                                 trigger="schedule")
+        out = res.structured_content
+        lines = [json.loads(line) for line in
+                 next((self.runs / "SiteMapper").glob("index.*.jsonl")).read_text(
+                     encoding="utf-8").splitlines()]
+        self.assertEqual([(line["run_id"], line["status"], line["trigger"]) for line in lines],
+                         [(out["run_id"], "running", "schedule"),
+                          (out["run_id"], "waiting", "schedule")])
+
+    async def test_a_trigger_the_contract_does_not_name_starts_nothing(self):
+        res, _ = await self.call("run_workflow", name="nap", params={"size": "small"},
+                                 trigger="cron")
+        self.assertTrue(res.is_error)
+        self.assertFalse((self.runs / "SiteMapper").exists())
+
     async def test_finish_run_ends_a_waiting_run_once(self):
         res, _ = await self.call("run_workflow", name="nap", params={"size": "small"})
         run_id = res.structured_content["run_id"]
@@ -258,7 +275,7 @@ class StartRunTest(unittest.IsolatedAsyncioTestCase):
         test = self
 
         class FakeRunner(mcp_server.Tree):
-            def command(self, name, params, persona, pre):
+            def command(self, name, params, persona, pre, trigger="ui"):
                 return [sys.executable, "-c", test.child]
 
         self.tree = FakeRunner(root, root / "projects", Path(self.tmp.name) / "runs")
