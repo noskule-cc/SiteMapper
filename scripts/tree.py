@@ -55,8 +55,7 @@ DEFAULT_KEEP = "1d"
 
 
 def shape_problem(shape, where: str = "shape") -> str:
-    """What makes a script step's `shape` malformed, or "" (schema/workflow.yaml).
-    A bare YAML null stands for the type name null."""
+    """A bare YAML null stands for the type name null."""
     if shape is None:
         return ""
     if isinstance(shape, str):

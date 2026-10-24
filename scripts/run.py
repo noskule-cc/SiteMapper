@@ -40,7 +40,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Literal
+from typing import Literal, NamedTuple
 
 import yaml
 
@@ -457,12 +457,14 @@ def evaluate_capture(bindings: "Bindings", step: dict, expect):
     raise RunError(f"expect {expect!r} does not apply to a captured value")
 
 
-# ---------------------------------------------------------------------------
-# Script output shape (schema/workflow.yaml `shape`): an API that dropped a key
-# or changed a type is drift, caught on the step instead of downstream.
-
 JSON_TYPES = {type(None): "null", bool: "bool", int: "number", float: "number",
               str: "string", list: "list", dict: "object"}
+
+
+class LearnedShape(NamedTuple):
+    phase: str
+    index: int
+    shape: object
 
 
 def _type_name(value) -> str:
@@ -470,8 +472,6 @@ def _type_name(value) -> str:
 
 
 def _merge_shapes(a, b):
-    """The shape both a and b match: common keys only, and null where they disagree.
-    null means unknown, so it yields to the other side."""
     if a == "null":
         return b
     if b == "null":
@@ -484,8 +484,6 @@ def _merge_shapes(a, b):
 
 
 def infer_shape(value):
-    """The shape of a script's parsed output. A list's item shape is the one
-    every item matches, so a run always matches the shape it taught."""
     if isinstance(value, dict):
         return {k: infer_shape(v) for k, v in value.items()}
     if isinstance(value, list):
@@ -498,20 +496,16 @@ def infer_shape(value):
     return _type_name(value)
 
 
-def shape_mismatch(shape, value) -> str:
-    """Why `value` does not match `shape`, as "<path>: <what>", or "" when it
-    does. Extra keys and an empty list match. A null value matches any shape and
-    a null shape any value: an empty field is not an API change."""
+def shape_mismatch(shape, value) -> str | None:
+    """Where and how `value` departs from `shape` (schema/workflow.yaml), or None."""
     found = _mismatch(shape, value)
     if not found:
-        return ""
+        return None
     path, what = found
     return "$" + "".join(reversed(path)) + ": " + what
 
 
 def _mismatch(shape, value):
-    """(reversed path parts, what) or None. The path is built only on the way
-    out of a mismatch, so a 1 MB output that matches formats no strings."""
     if value is None or shape is None or shape == "null":
         return None
     if type(shape) is str:
@@ -526,7 +520,7 @@ def _mismatch(shape, value):
             got = value[key]
             if sub is None or type(sub) is str and (got is None or sub == "null"
                                                     or JSON_TYPES[type(got)] == sub):
-                continue  # the common leaf, without a call
+                continue  # inlined: a call per leaf breaks the 20 ms budget on 1 MB
             found = _mismatch(sub, got)
             if found:
                 found[0].append(f".{key}")
@@ -623,9 +617,9 @@ class Runner:
         self.snapshot: dict = {}  # captures of the snapshot phase, the pre-state
         self.current: dict = {}  # {phase, index, step} of the step in flight
         self.fingerprints: dict[str, str] = {}  # page -> ok | mismatch (watch, #24)
-        self.scripts: dict[str, str] = {}  # script step -> ok | mismatch against its shape
+        self.scripts: dict[str, Literal["ok", "mismatch"]] = {}
         self.learn_shape = learn_shape
-        self.learned: list[tuple[str, int, object]] = []  # (phase, index, shape)
+        self.learned: list[LearnedShape] = []
         self._last_page: str | None = None
         self._pw = None
         self.browser = None
@@ -1171,15 +1165,12 @@ class Runner:
             self.bindings.captures[step["capture"]] = parsed
         if self.learn_shape:
             if is_json:
-                self.learned.append((self.current["phase"], self.current["index"],
-                                     infer_shape(parsed)))
+                self.learned.append(LearnedShape(self.current["phase"], self.current["index"],
+                                                 infer_shape(parsed)))
         elif step.get("shape") is not None:
             self.check_shape(step, parsed if is_json else None, is_json)
 
     def check_shape(self, step: dict, output, is_json: bool):
-        """A script whose output lost its stored shape is drift: the API changed
-        under the workflow. It stops the run, so no later step reads data of the
-        wrong shape."""
         problem = tree.shape_problem(step["shape"])
         if problem:
             raise RunError(f"script '{step['script']}' has a malformed {problem}", "error",
@@ -1588,9 +1579,6 @@ def _child(node, key: str):
 
 
 def _set_step_shape(wf_path: Path, phase: str, index: int, shape):
-    """Write one step's `shape:` in place, as text, so every comment, key order
-    and the rest of the file survive: a stored shape's lines are replaced, a new
-    one goes after the step's last line."""
     text = wf_path.read_text(encoding="utf-8")
     _, steps = _child(_child(yaml.compose(text), "workflow")[1], phase)
     step = steps.value[index]
@@ -1616,9 +1604,7 @@ def _set_step_shape(wf_path: Path, phase: str, index: int, shape):
     wf_path.write_text("".join(lines), encoding="utf-8")
 
 
-def learn_shapes(wf_path: Path, learned: list, result: dict):
-    """--learn-shape: on a passing run, store each script step's output shape in
-    the workflow YAML. Nothing else changes, trust and verified_at included."""
+def learn_shapes(wf_path: Path, learned: list[LearnedShape], result: dict):
     if result["status"] != "passed" or result["class"] != "ok":
         print(f"learn-shape: the run did not pass ({result['class']}); "
               f"{wf_path.name} is unchanged", file=sys.stderr)
