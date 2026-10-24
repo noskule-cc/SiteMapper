@@ -26,6 +26,22 @@ run_workflow(ref, params)    -> result        # schema/result.yaml
 - **Input** = the workflow's `parameters` (+ pinned `fixtures`) — see `schema/workflow.yaml`.
 - **Output** = the `result` object — see `schema/result.yaml`.
 
+## Failure classes
+
+Every result carries `class` and `next` beside `status`. `class` says what the outcome means for the map. `next` names the one step that addresses it. Both are additive, so a host that reads only `status` and the exit code keeps working.
+
+| `class` | Means | `next`, for example | Sets `trust: broken` |
+|---|---|---|---|
+| `ok` | passed or waiting, no drift | empty | no |
+| `input` | a parameter, persona, context or workflow name is missing or wrong | `run nap again with --param size=...` | no |
+| `refused` | policy or the runner refused the run | `pass --yes-write to consent to this one run` | no |
+| `auth` | no session: missing or expired saved state, a missing secret, a rejected login | `refresh the persona's session: ...` | no |
+| `drift` | the page is not what the map says | `/repair <workflow>` | yes |
+| `assert` | an assertion failed | `compare assertion <id> with the live page before you patch the map` | yes |
+| `error` | anything else, such as a script that exited non-zero | fix script 'x.py' (its stderr is in `error`), then run &lt;workflow&gt; again | no |
+
+The table is `CLASSES` in `scripts/run.py`. A run refused before its first step still prints a result with `--json`, with `status: error`, exit code 2 and no run record. The run record's `run.yaml` and index line gain no keys. The class is in `result.json`.
+
 ## Two hosts, one contract
 
 The same three verbs and the same `result` shape serve both kinds of host:
@@ -54,16 +70,15 @@ A stdio server (the `mcp` package, 2.x). It reads the tree at start, so a host s
 
 A run is `run.py <workflow> --json --record --trigger ui` in a child process, so the gate and the run record are the runner's own. Before it starts, the server runs the preflight:
 
-- `deny` returns `status: denied` and starts nothing.
-- An `ask` that `consent` does not answer returns `status: needs-consent` with `needs_consent` and starts nothing.
+- `deny` returns `status: denied`, `class: refused` and a `next`, and starts nothing.
+- An `ask` that `consent` does not answer returns `status: needs-consent` with `needs_consent`, `class: refused` and a `next`, and starts nothing.
 - Otherwise the run starts, with `--yes-<class>` only for the classes the preflight reported as `ask`. Consent covers this one run, never the policy.
 
-Each step sends a progress notification (`step N/M: label` on the runner's stderr). The result is `{run_id, status, waiting_for, error, record}`; a run that reaches a `human` step returns `status: waiting`. A run tool exists only where the lock key is known before the run: a workflow with `tiers`, or with a site given as `$name`, takes its sites from the run's parameters or context, so it has no `run-<workflow>` tool and runs through `run_workflow`, whose lock key is the preflight's.
+Each step sends a progress notification (`step N/M: label` on the runner's stderr). The result is `{run_id, status, class, next, waiting_for, error, record}`; a run that reaches a `human` step returns `status: waiting`. A runner error before the first step, such as a missing parameter, is a result with `status: error`, its class and no `run_id`. A run tool exists only where the lock key is known before the run: a workflow with `tiers`, or with a site given as `$name`, takes its sites from the run's parameters or context, so it has no `run-<workflow>` tool and runs through `run_workflow`, whose lock key is the preflight's.
 
 These are tool errors, each naming the cause:
 
 - A parameter the workflow does not declare. Nothing starts.
-- A runner error before the run starts, such as a missing parameter, with the runner's last output lines.
 - Runner output that is not a result with a `status`, with the last output lines.
 - A run longer than its timeout, which is then stopped. The timeout is `timeout_s` when the call gives it, else `--run-timeout`, default 1800 seconds. The workflow schema has no run-time key, so a host such as TeamOS sets `timeout_s` and its own read timeout above it.
 - A child the server cannot place in its Job Object. It is stopped before it runs.

@@ -17,6 +17,28 @@ result:
                               #   waiting - stopped at a `human` step with every
                               #             assertion so far passed; teardown skipped.
                               #             Not a failure: trust is unchanged, exit 0
+  class: ""                   # What the outcome means for the map. Additive: a host
+                              # that reads only `status` keeps working.
+                              #   ok      - passed or waiting, no drift
+                              #   input   - a parameter, persona, context or workflow
+                              #             name the caller gave is missing or wrong
+                              #   refused - policy or the runner refused the run
+                              #             (deny, ask without consent, agentic mode,
+                              #             undeclared effect)
+                              #   auth    - the persona could not get a session: no or
+                              #             expired saved state, a missing secret, a
+                              #             rejected login
+                              #   drift   - the page is not what the map says: an
+                              #             element that never appeared, a page or
+                              #             element the map lacks, a fingerprint
+                              #             mismatch
+                              #   assert  - the run completed and an assertion failed
+                              #   error   - anything else the runner hit (a script that
+                              #             exited non-zero, a navigation error)
+                              # Only drift and assert set the workflow's trust to broken.
+  next: ""                    # The one next step for this class, e.g.
+                              # "/repair search-issues" or
+                              # "run nap again with --param size=...". Empty when ok.
   waiting_for: {}             # Set when status == waiting: the person step the run
                               # stopped at, {step, label, reason} (schema/workflow.yaml)
   started_at: ""              # ISO-8601 timestamp (set by the runner/host)
@@ -49,13 +71,17 @@ result:
 
   fingerprints: {}            # Watch (#24): per-page fingerprint outcome, ok | mismatch,
                               # for every fingerprinted page the run arrived at. Same
-                              # drift vocabulary as /verify-map. A mismatch degrades
-                              # the workflow's `trust` to broken in its YAML.
+                              # drift vocabulary as /verify-map. A mismatch makes the
+                              # class drift and degrades the workflow's `trust` to
+                              # broken in its YAML.
 
   trust_change: ""            # Set when this run downgraded the workflow's trust,
                               # e.g. "draft -> broken". Its run record then gets
                               # keep: keep (schema/run.yaml).
-  error: ""                   # Populated when status == error: what went wrong
+  error: ""                   # Populated when status == error: what went wrong. A run
+                              # refused before its first step still prints a result
+                              # with --json: status error, its class and next, no
+                              # steps, no run record, exit code 2.
 
   failure:                    # Populated by the headless runner when status == error —
                               # everything the repair loop (the repair skill) needs to fix
@@ -74,6 +100,8 @@ result:
                               #   fingerprint state at failure time
     screenshot: ""            #   failure screenshot — a LOCAL, gitignored path
                               #   (.runner/); referenced, never committed
+    class: ""                 #   the result's class, repeated for the repair loop
+    next: ""                  #   the result's next step
 
 # Summary convenience (a runner may also include):
 #   counts: { total: N, passed: N, failed: N }
