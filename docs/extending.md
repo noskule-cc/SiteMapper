@@ -109,7 +109,11 @@ weeks — that is the failure mode this list exists for.
    home that does not cover them; a project calling another project's script
    is a note, the sign that the script may belong to an app or to the lib.
 3. Prefer `--json` output so step `capture` gets structured data.
-4. Once a step's script passes, run `python scripts/run.py <workflow>
+4. When the script calls the API behind a mapped page, start from that page's
+   confirmed `endpoints` (`schema/page.yaml`). They give the request's shape
+   only. The script takes its credentials from a persona's `env:` or `keyring:`
+   reference, never from the map.
+5. Once a step's script passes, run `python scripts/run.py <workflow>
    --learn-shape` to store its output `shape`, so an API change reads as drift.
 
 ## Add a project, a group or an app

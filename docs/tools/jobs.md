@@ -69,6 +69,7 @@ failure. What each one catches, and what to do when it fires:
 | `rollback` | a mutating workflow without `rollback`, `none` without a reason, `snapshot` without a capturing phase | declare it |
 | `produced` | a `results/` or `state/` folder under a site or a project | move it to the runs or state store |
 | `links` | markdown links, path refs and `screenshot:` targets that do not resolve (case-sensitively — Linux CI is the honest judge) | fix the reference, not the check |
+| `endpoints` | a page `endpoints` entry with a key outside the schema (a header, a cookie, a description), a field of the wrong type, a name that is not snake_case, a token-shaped path segment, host label, query key or placeholder, a literal query value, a fragment, an undeclared `effect` or an input that names no element; `gotchas` that are not a list of strings; a secret header, credential or token in `purpose`, `gotchas` or `settings` | replace the value with a `{placeholder}` or delete it; the message never shows the value |
 | `bindings` | a skill or agent in `.claude/` that is unregistered in `docs/skills-and-agents.md`, or a project doc unreachable from `docs/project-index.md` | finish the registration (framework repo only) |
 | `inventory` / `overview` | generated views out of date | `python scripts/inventory.py` |
 
