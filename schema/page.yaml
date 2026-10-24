@@ -78,17 +78,22 @@ page:
                               # /map-site from the page's network listing and kept only
                               # when a person confirms them. It maps a request's SHAPE,
                               # never one request: values, headers, cookies and tokens are
-                              # never stored, and check.py's `endpoints` check fails on
-                              # them. Each entry:
-                              #   - name: ""            semantic name (search-issues)
+                              # never stored. The format is closed, with no free-text
+                              # field; the page's `purpose` and the entry's `name` carry
+                              # the meaning. Each entry:
+                              #   - name: ""            snake_case identifier, at most 40
+                              #                         characters (search_issues)
                               #     method: GET         GET | POST | PUT | PATCH | DELETE
                               #     url_pattern: ""     the request URL with a {placeholder}
                               #                         for every record id and every query
-                              #                         value: "/issues?q={query}&page={page}".
-                              #                         Literal path segments are lower-case
-                              #                         words; no fragment. A path relative
-                              #                         to the site's base_url, or a full
-                              #                         URL when the request leaves it
+                              #                         value: "/issues?q={query}&page={page}",
+                              #                         "/issues/{id}.json". A placeholder is a
+                              #                         short lower-case name, never a value.
+                              #                         A fixed query value may be a short
+                              #                         lower-case word or number (format=json).
+                              #                         No fragment. A path relative to the
+                              #                         site's base_url, or a full URL when
+                              #                         the request leaves it
                               #     inputs: []          element names from `elements` whose
                               #                         values appear in the request
                               #     returns: []         top-level keys of the JSON response
@@ -96,8 +101,12 @@ page:
                               #     effect: read-only   read-only | mutating | destructive.
                               #                         Declared by the person, never inferred
                               #                         from the method
-                              #     description: ""     optional: what it answers, and what a
-                              #                         script must know to call it
+                              # check.py's `endpoints` check fails on a token-shaped path
+                              # segment, host label, query key or placeholder, and on secret
+                              # headers, credentials and tokens in `purpose`, `gotchas` and
+                              # `settings`. It is defence in depth, not the guard: it cannot
+                              # see a percent-encoded value or a short id in prose. The
+                              # guard is /map-site's rule that it never copies a value.
 
   settings: {}                # Optional page-scope settings block — most specific
                               # scope, overrides site.yaml and config.yaml. Usually

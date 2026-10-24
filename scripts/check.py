@@ -310,68 +310,98 @@ def check_credentials():
     return fails
 
 
+# An endpoint entry is closed and typed: no free-text field, so a captured value
+# has nowhere to sit but a URL piece, a key name or an identifier, and each of
+# those has a shape. The token tests are defence in depth; the skill's rule that
+# it never copies a value is the main guard. Percent-encoded values and short
+# ids are not caught.
 ENDPOINT_FIELDS = {"name": str, "method": str, "url_pattern": str, "inputs": list,
-                   "returns": list, "effect": str, "description": str}
+                   "returns": list, "effect": str}
 HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 EFFECTS = {"read-only", "mutating", "destructive"}
-PLACEHOLDER = re.compile(r"\{\w+\}")
-WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]*")
-SECRET_TEXT = [re.compile(p) for p in (
-    r"(?i)\b(?:set-)?cookie\s*:|\b(?:proxy-)?authorization\s*:|\bx-[a-z0-9-]+\s*:",
-    r"(?i)\b(?:bearer|basic|token)\s+[\w.+/=-]{6,}",
-    r"\b[\w.-]+=[\"']?(?=[\w.+/-]*\d)[\w.+/=-]{6,}",
-    r"\beyJ[\w-]+\.[\w-]+",
-    r"(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
-    r"\b[0-9a-fA-F]{16,}\b",
-    r"[A-Za-z]{32,}",
+ENDPOINT_NAME = re.compile(r"[a-z][a-z0-9_]{0,39}")
+PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
+PLACEHOLDER_NAME = re.compile(r"[a-z][a-z0-9_]{0,31}")
+QUERY_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_.\[\]-]{0,39}")
+FIXED_QUERY_VALUE = re.compile(r"[a-z]+(?:[-_][a-z]+)*|\d+(?:\.\d+)?")
+RESPONSE_KEY = re.compile(r"[A-Za-z_$@][\w.$@-]{0,63}")
+TOKEN_SHAPES = [re.compile(p) for p in (
+    r"[0-9a-fA-F]{16,}",
+    r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    r"eyJ[\w-]+\.[\w-]+",
+    r"(?<![A-Za-z0-9])(?:gh[pousr]_|github_pat_|glpat-|sk-|sk_live_|xox[abprs]-"
+    r"|AKIA[0-9A-Z]{8}|ASIA[0-9A-Z]{8}|AIza[\w-]{8})",
 )]
-OPAQUE_RUN = re.compile(r"[A-Za-z0-9+/_=-]{16,}")
+BASE64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}=*")
+SECRET_HEADER = re.compile(
+    r"(?i)[\"']?\b(?:set-cookie|cookie|(?:proxy-)?authorization|"
+    r"x-[\w-]*(?:key|token|auth|session|csrf|xsrf|secret|signature|password)[\w-]*|"
+    r"api[-_]?key|access[-_]?token|refresh[-_]?token|client[-_]?secret|password|passwd|"
+    r"phpsessid|jsessionid|session[-_]?id|user_session|csrftoken)\b[\"']?\s*[:=]\s*\S")
+CREDENTIAL_SCHEME = re.compile(r"(?i)\b(?:bearer|basic|token)\s+([A-Za-z0-9._~+/=-]{8,})")
 
 
-def secret_like(text):
-    """Free text that reads like a header, an assignment, or a token."""
-    return any(p.search(text) for p in SECRET_TEXT) or any(
-        re.search(r"\d", run) and re.search(r"[A-Za-z]", run)
-        for run in OPAQUE_RUN.findall(text))
+def token_shaped(word):
+    """A URL piece, key or word that reads like a credential rather than a name."""
+    transitions = len(re.findall(r"[A-Za-z](?=\d)|\d(?=[A-Za-z])", word))
+    return ((len(word) >= 12 and transitions >= 3)
+            or any(p.search(word) for p in TOKEN_SHAPES)
+            or any(re.search(r"[a-z]", run) and re.search(r"[A-Z]", run)
+                   and re.search(r"\d", run) for run in BASE64_RUN.findall(word)))
 
 
-def word_like(text, limit=24, lower=False):
-    """A path segment, host label or query key a person would name: no digit runs."""
-    return (len(text) < limit and bool(WORD.fullmatch(text))
-            and not (lower and text != text.lower())
-            and len(re.findall(r"\d", text)) <= 2 and not re.search(r"\d\d", text))
+def secret_text(text):
+    """Prose that holds a secret header, a credential scheme, or a token-shaped word."""
+    if SECRET_HEADER.search(text):
+        return True
+    for credential in CREDENTIAL_SCHEME.findall(text):
+        if re.search(r"\d", credential) or (re.search(r"[a-z]", credential)
+                                            and re.search(r"[A-Z]", credential)):
+            return True
+    return any(token_shaped(w) for w in re.split(r"[\s\"'`,;:()<>=/?&#\[\]{}]+", text) if w)
 
 
 def shown(name):
-    """A name as a failure may print it: only when it is word-like."""
-    return name if isinstance(name, str) and word_like(name, 64) else "<not shown>"
+    """A name as a failure may print it: only when it is shaped like a name."""
+    ok = isinstance(name, str) and QUERY_KEY.fullmatch(name) and not token_shaped(name)
+    return name if ok else "<not shown>"
 
 
 def url_fails(text):
-    url = urlsplit(text)
+    try:
+        url = urlsplit(text)
+        url.port
+    except ValueError:
+        return ["url_pattern has a host or port that does not parse; a port is a number"]
     fails = []
     if not url.path and not url.netloc:
         fails.append("url_pattern is missing")
     if url.username or url.password or "@" in url.netloc:
         fails.append("url_pattern carries a user or password before the host")
-    if any(not word_like(label) for label in (url.hostname or "").split(".") if label):
-        fails.append("url_pattern has a host label that is not word-like")
-    if url.port is None and ":" in url.netloc.replace(url.hostname or "", "", 1):
-        fails.append("url_pattern has a port that is not a number")
-    if any(not (PLACEHOLDER.fullmatch(seg) or word_like(seg, lower=True))
-           for seg in url.path.split("/") if seg):
-        fails.append("url_pattern has a literal path segment that is not word-like; "
-                     "write record ids and keys as {placeholders}")
+    if any(token_shaped(label) for label in (url.hostname or "").split(".")):
+        fails.append("url_pattern has a host label shaped like a token")
+    names = PLACEHOLDER.findall(text)
+    if any(not PLACEHOLDER_NAME.fullmatch(n) or re.search(r"\d{3}", n) for n in names):
+        fails.append("url_pattern has a {placeholder} that is not a short lower-case "
+                     "name")
+    for seg in filter(None, url.path.split("/")):
+        literal = PLACEHOLDER.sub("", seg)
+        if "{" in literal or "}" in literal or token_shaped(literal):
+            fails.append("url_pattern has a path segment shaped like a token; write it "
+                         "as a {placeholder}")
+            break
     if url.fragment or "#" in text:
         fails.append("url_pattern has a fragment")
     if ";" in url.query:
         fails.append("url_pattern query uses ';'")
     for pair in filter(None, url.query.split("&")):
-        name, sep, value = pair.partition("=")
-        if not word_like(name, 64):
-            fails.append("url_pattern has a query key that is not word-like")
-        elif not sep or not PLACEHOLDER.fullmatch(value):
-            fails.append(f"url_pattern query '{name}' has no {{placeholder}} value")
+        key, sep, value = pair.partition("=")
+        if not QUERY_KEY.fullmatch(key) or token_shaped(key):
+            fails.append("url_pattern has a query key that is not a plain name")
+        elif not sep or not (PLACEHOLDER.fullmatch(value)
+                             or (len(value) < 12 and FIXED_QUERY_VALUE.fullmatch(value))):
+            fails.append(f"url_pattern query '{key}' needs a {{placeholder}} value, or a "
+                         "short lower-case word or number")
     return fails
 
 
@@ -379,22 +409,19 @@ def endpoint_fails(entry, elements):
     """Why one `endpoints` entry could carry a captured request's values."""
     if not isinstance(entry, dict):
         return ["is not a mapping"]
-    fails = [f"{shown(key)} is not an endpoint key; headers, cookies and tokens are "
-             "never stored" for key in sorted(set(entry) - set(ENDPOINT_FIELDS), key=str)]
+    fails = [f"{shown(key)} is not an endpoint key; headers, cookies, tokens and free "
+             "text are never stored" for key in sorted(set(entry) - set(ENDPOINT_FIELDS),
+                                                       key=str)]
     for key, kind in ENDPOINT_FIELDS.items():
-        if key not in entry:
-            continue
-        value = entry[key]
-        if kind is str and not isinstance(value, str):
-            fails.append(f"{key} is not a string")
-        elif kind is list and not (isinstance(value, list)
-                                   and all(isinstance(v, str) for v in value)):
-            fails.append(f"{key} is not a list of strings")
-        elif key != "url_pattern" and any(
-                secret_like(v) for v in (value if kind is list else [value])):
-            fails.append(f"{key} holds a header, an assignment or a token-like string")
+        value = entry.get(key)
+        if key in entry and not (isinstance(value, str) if kind is str else
+                                 isinstance(value, list)
+                                 and all(isinstance(v, str) for v in value)):
+            fails.append(f"{key} is not {'a string' if kind is str else 'a list of strings'}")
     if fails:
         return fails
+    if not (ENDPOINT_NAME.fullmatch(entry.get("name", "")) and not token_shaped(entry["name"])):
+        fails.append("name is not a snake_case identifier of at most 40 characters")
     fails += url_fails(entry.get("url_pattern", ""))
     if entry.get("method") not in HTTP_METHODS:
         fails.append(f"method is not one of {sorted(HTTP_METHODS)}")
@@ -404,23 +431,54 @@ def endpoint_fails(entry, elements):
         if name not in elements:
             fails.append(f"inputs names '{shown(name)}', which is not an element of "
                          "this page")
+    if any(not RESPONSE_KEY.fullmatch(k) or token_shaped(k) for k in entry.get("returns", [])):
+        fails.append("returns holds something that is not a response key name")
+    return fails
+
+
+def strings_in(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from strings_in(k)
+            yield from strings_in(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from strings_in(v)
+
+
+def page_text_fails(page):
+    """Free text on a page (purpose, gotchas, settings) that holds a secret."""
+    fails = []
+    gotchas = page.get("gotchas")
+    if gotchas is not None and not (isinstance(gotchas, list)
+                                    and all(isinstance(g, str) for g in gotchas)):
+        fails.append("gotchas is not a list of strings")
+    elif any(secret_text(g) for g in gotchas or []):
+        fails.append("gotchas holds a secret header, a credential or a token-shaped word")
+    for key in ("purpose", "settings"):
+        if any(secret_text(s) for s in strings_in(page.get(key))):
+            fails.append(f"{key} holds a secret header, a credential or a token-shaped word")
     return fails
 
 
 def check_endpoints():
-    """Page `endpoints` hold request shapes only: no header, cookie, token or query value.
+    """Page `endpoints` hold request shapes only, and page text holds no secret.
 
     /map-site proposes endpoints from a live network listing, which carries the
     session's tokens; this is the guard that one never reaches a page file. A
-    rejected endpoint's reason lands in `gotchas`, so those are scanned too.
+    rejected endpoint's reason lands in `gotchas`, so page text is scanned too.
     """
     fails = []
     for f in files(["sites/*/pages/*.yaml"]):
-        page = load(f).get("page") or {}
-        for i, gotcha in enumerate(page.get("gotchas") or []):
-            if isinstance(gotcha, str) and secret_like(gotcha):
-                fails.append(f"{show(f)}: gotchas[{i}] holds a header, an assignment or "
-                             "a token-like string (the value is not shown)")
+        try:
+            page = load(f).get("page")
+        except (yaml.YAMLError, AttributeError):
+            continue  # check_yaml and check_schema report it
+        if not isinstance(page, dict):
+            continue
+        fails += [f"{show(f)}: {msg} (the value is not shown)" for msg in page_text_fails(page)]
         entries = page.get("endpoints")
         if entries is None:
             continue
