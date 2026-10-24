@@ -264,18 +264,18 @@ def state_path(root: Path, site_name: str, persona: dict) -> Path:
 
 
 def state_expired(state: Path) -> str:
-    """When a saved state has cookies, every one has an expiry in the past, and no
-    origin keeps localStorage (where a token session lives), the UTC time the
-    last cookie ran out; else "". A browser-session cookie (expires -1) counts
-    as live. An expired state would land on the login page and read as drift,
-    so it fails as auth before the browser opens."""
+    """When a saved state has cookies and every one has an expiry in the past,
+    the UTC time the last one ran out; else "". A browser-session cookie
+    (expires -1) counts as live. A state with no cookies (a localStorage token
+    session) is never judged: analytics keys make localStorage useless as a
+    session signal next to cookies. An expired state would land on the login
+    page and read as drift, so it fails as auth before the browser opens."""
     try:
-        saved = json.loads(state.read_text(encoding="utf-8")) or {}
-        expiries = [float(c.get("expires", -1)) for c in saved.get("cookies") or []]
-        stored = any(o.get("localStorage") for o in saved.get("origins") or [])
+        cookies = (json.loads(state.read_text(encoding="utf-8")) or {}).get("cookies") or []
+        expiries = [float(c.get("expires", -1)) for c in cookies]
     except (OSError, ValueError, TypeError, AttributeError):
         return ""
-    if stored or not expiries or min(expiries) <= 0 or max(expiries) > time.time():
+    if not expiries or min(expiries) <= 0 or max(expiries) > time.time():
         return ""
     return _dt.datetime.fromtimestamp(max(expiries), _dt.timezone.utc).isoformat(
         timespec="seconds").replace("+00:00", "Z")
@@ -460,9 +460,19 @@ def evaluate_capture(bindings: "Bindings", step: dict, expect):
 # ---------------------------------------------------------------------------
 # Browser execution
 
-def from_playwright(exc: BaseException) -> bool:
-    """Playwright's Error and TimeoutError, without importing Playwright."""
-    return type(exc).__module__.startswith("playwright.")
+# Playwright errors that say the browser or the network went away, not that the
+# page changed: a closed window mid-click must not mark a working map broken.
+NOT_THE_MAP = ("Target crashed", "Execution context was destroyed",
+               "Target page, context or browser has been closed", "net::ERR_")
+
+
+def element_drifted(exc: BaseException) -> bool:
+    """A Playwright Error or TimeoutError about the element itself, without
+    importing Playwright. A closed or crashed browser or a network error is not
+    drift."""
+    return (type(exc).__module__.startswith("playwright.")
+            and type(exc).__name__ != "TargetClosedError"
+            and not any(cause in str(exc) for cause in NOT_THE_MAP))
 
 
 def build_locator(pw_page, element: dict, scope_value: str | None = None):
@@ -715,7 +725,7 @@ class Runner:
             # The browser failing on a mapped element (gone, timed out, no
             # longer an input) is the map's problem; any other exception stays
             # the runner's (class error).
-            if step.get("element") and from_playwright(exc):
+            if step.get("element") and element_drifted(exc):
                 raise RunError(f"{type(exc).__name__}: {str(exc).splitlines()[0]}",
                                "drift") from None
             raise
@@ -819,7 +829,8 @@ class Runner:
             if re.search(r"[{<]", pattern):
                 raise RunError(
                     f"page '{step['page']}' url_pattern '{pattern}' has unresolved "
-                    "placeholders — navigate with an explicit `value:` instead", "drift"
+                    "placeholders — navigate with an explicit `value:` instead", "input",
+                    "a navigate step whose `value:` fills the placeholders"
                 )
             url = site.base_url + pattern
         else:

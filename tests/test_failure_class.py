@@ -14,6 +14,7 @@ import run  # noqa: E402
 try:
     from playwright.sync_api import Error as PlaywrightError
     from playwright.sync_api import TimeoutError as PlaywrightTimeout
+    from playwright._impl._errors import TargetClosedError as PlaywrightClosed
 except ImportError:
     PlaywrightError = None
 
@@ -131,6 +132,21 @@ class StepFailureTest(unittest.TestCase):
                          ("drift", "TimeoutError: Locator.click: Timeout 10000ms exceeded."))
 
     @unittest.skipIf(PlaywrightError is None, "playwright is not installed")
+    def test_a_browser_that_went_away_mid_click_stays_the_runners(self):
+        gone = [PlaywrightClosed("Locator.click: Target page, context or browser has been "
+                                 "closed"),
+                PlaywrightError("Locator.click: Target crashed"),
+                PlaywrightError("Locator.fill: Execution context was destroyed, most likely "
+                                "because of a navigation"),
+                PlaywrightError("Locator.click: net::ERR_CONNECTION_RESET")]
+        for exc in gone:
+            def click(exc=exc):
+                raise exc
+            caught = failing(bare_runner(), {"action": "click", "page": "list",
+                                             "element": "save"}, click)
+            self.assertIs(caught, exc)
+
+    @unittest.skipIf(PlaywrightError is None, "playwright is not installed")
     def test_a_playwright_error_without_an_element_stays_the_runners(self):
         def goto():
             raise PlaywrightError("net::ERR_NAME_NOT_RESOLVED")
@@ -236,6 +252,18 @@ class LoginTest(unittest.TestCase):
                          ("auth", "check the credentials of persona 'bot'; the runner did "
                                   "not retry"))
 
+    def test_a_navigate_to_a_page_with_placeholders_is_input(self):
+        (self.root / "sites" / "shop" / "pages" / "order.yaml").write_text(
+            "page:\n  name: order\n  url_pattern: /orders/{id}\n", encoding="utf-8")
+        runner = bare_runner(FakePage())
+        runner.root, runner.sites, runner.default_site = self.root, {}, "shop"
+        runner.bindings = run.Bindings({}, {})
+        exc = failing(runner, {"action": "navigate", "page": "order"},
+                      lambda: run.Runner.do_navigate(runner, {"page": "order"}))
+        self.assertEqual((exc.cls, run.next_step(exc.cls, "buy", exc.hint)),
+                         ("input", "run buy again with a navigate step whose `value:` fills "
+                                   "the placeholders"))
+
     def test_a_failure_outside_the_map_and_the_login_is_error(self):
         page = FakePage()
         page.goto = lambda url: (_ for _ in ()).throw(OSError("network unreachable"))
@@ -266,10 +294,15 @@ class StateExpiredTest(unittest.TestCase):
     def test_a_browser_session_cookie_keeps_the_state(self):
         self.assertEqual(self.expired([self.PAST, -1]), "")
 
-    def test_a_local_storage_session_keeps_the_state(self):
+    def test_a_local_storage_session_without_cookies_keeps_the_state(self):
         token = {"origin": "https://app.invalid",
                  "localStorage": [{"name": "token", "value": "jwt"}]}
-        self.assertEqual(self.expired([self.PAST], [token]), "")
+        self.assertEqual(self.expired([], [token]), "")
+
+    def test_expired_cookies_beside_analytics_local_storage_are_expired(self):
+        analytics = {"origin": "https://app.invalid",
+                     "localStorage": [{"name": "_ga_seen", "value": "1"}]}
+        self.assertEqual(self.expired([self.PAST], [analytics]), "2023-11-14T22:13:20Z")
 
     def test_a_state_without_cookies_is_not_expired(self):
         self.assertEqual(self.expired([]), "")
