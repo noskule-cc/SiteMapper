@@ -90,7 +90,8 @@ page:
                               #                         "/issues/{id}.json". A placeholder is a
                               #                         short lower-case name, never a value.
                               #                         A fixed query value may be a short
-                              #                         lower-case word or number (format=json).
+                              #                         word, list or number (format=json,
+                              #                         include=author,comments, sort=-created_at).
                               #                         No fragment. A path relative to the
                               #                         site's base_url, or a full URL when
                               #                         the request leaves it
@@ -105,7 +106,8 @@ page:
                               # segment, host label, query key or placeholder, and on secret
                               # headers, credentials and tokens in `purpose`, `gotchas` and
                               # `settings`. It is defence in depth, not the guard: it cannot
-                              # see a percent-encoded value or a short id in prose. The
+                              # see a percent-encoded value, a short id in prose, or a
+                              # letters-only random string, which reads like a word. The
                               # guard is /map-site's rule that it never copies a value.
 
   settings: {}                # Optional page-scope settings block — most specific

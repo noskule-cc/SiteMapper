@@ -313,8 +313,9 @@ def check_credentials():
 # An endpoint entry is closed and typed: no free-text field, so a captured value
 # has nowhere to sit but a URL piece, a key name or an identifier, and each of
 # those has a shape. The token tests are defence in depth; the skill's rule that
-# it never copies a value is the main guard. Percent-encoded values and short
-# ids are not caught.
+# it never copies a value is the main guard. Percent-encoded values, short ids
+# and letters-only random strings are not caught: a run of letters cannot be told
+# apart from a word.
 ENDPOINT_FIELDS = {"name": str, "method": str, "url_pattern": str, "inputs": list,
                    "returns": list, "effect": str}
 HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
@@ -323,13 +324,15 @@ ENDPOINT_NAME = re.compile(r"[a-z][a-z0-9_]{0,39}")
 PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
 PLACEHOLDER_NAME = re.compile(r"[a-z][a-z0-9_]{0,31}")
 QUERY_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_.\[\]-]{0,39}")
-FIXED_QUERY_VALUE = re.compile(r"[a-z]+(?:[-_][a-z]+)*|\d+(?:\.\d+)?")
+FIXED_QUERY_VALUE = re.compile(r"-?[A-Za-z][A-Za-z0-9_]*(?:[,.-][A-Za-z0-9_]+)*"
+                               r"|\d{1,6}(?:\.\d{1,6})?")
 RESPONSE_KEY = re.compile(r"[A-Za-z_$@][\w.$@-]{0,63}")
 TOKEN_SHAPES = [re.compile(p) for p in (
     r"[0-9a-fA-F]{16,}",
     r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
     r"eyJ[\w-]+\.[\w-]+",
-    r"(?<![A-Za-z0-9])(?:gh[pousr]_|github_pat_|glpat-|sk-|sk_live_|xox[abprs]-"
+    r"(?<![A-Za-z0-9])(?:gh[pousr]_|github_pat_|glpat-|sk-|[spr]k_(?:live|test)_|ya29\."
+    r"|xox[abprs]-"
     r"|AKIA[0-9A-Z]{8}|ASIA[0-9A-Z]{8}|AIza[\w-]{8})",
 )]
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}=*")
@@ -347,7 +350,7 @@ def token_shaped(word):
     return ((len(word) >= 12 and transitions >= 3)
             or any(p.search(word) for p in TOKEN_SHAPES)
             or any(re.search(r"[a-z]", run) and re.search(r"[A-Z]", run)
-                   and re.search(r"\d", run) for run in BASE64_RUN.findall(word)))
+                   and re.search(r"\d[A-Za-z]", run) for run in BASE64_RUN.findall(word)))
 
 
 def secret_text(text):
@@ -381,7 +384,8 @@ def url_fails(text):
     if any(token_shaped(label) for label in (url.hostname or "").split(".")):
         fails.append("url_pattern has a host label shaped like a token")
     names = PLACEHOLDER.findall(text)
-    if any(not PLACEHOLDER_NAME.fullmatch(n) or re.search(r"\d{3}", n) for n in names):
+    if any(not PLACEHOLDER_NAME.fullmatch(n) or re.search(r"\d{3}", n) or token_shaped(n)
+           for n in names):
         fails.append("url_pattern has a {placeholder} that is not a short lower-case "
                      "name")
     for seg in filter(None, url.path.split("/")):
@@ -399,9 +403,10 @@ def url_fails(text):
         if not QUERY_KEY.fullmatch(key) or token_shaped(key):
             fails.append("url_pattern has a query key that is not a plain name")
         elif not sep or not (PLACEHOLDER.fullmatch(value)
-                             or (len(value) < 12 and FIXED_QUERY_VALUE.fullmatch(value))):
+                             or (len(value) < 40 and FIXED_QUERY_VALUE.fullmatch(value)
+                                 and not token_shaped(value))):
             fails.append(f"url_pattern query '{key}' needs a {{placeholder}} value, or a "
-                         "short lower-case word or number")
+                         "short word, list or number")
     return fails
 
 
