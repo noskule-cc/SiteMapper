@@ -33,8 +33,10 @@ result:
                               #             could not act on, a page or element the
                               #             map lacks, a table without the header or
                               #             row, a field that reverts its value, a
-                              #             fingerprint mismatch. Also on the login
-                              #             page: its map is broken, not the login
+                              #             fingerprint mismatch, a script output
+                              #             that lost its `shape` (`scripts`). Also on
+                              #             the login page: its map is broken, not the
+                              #             login
                               #   assert  - the run completed and an assertion failed
                               #   error   - anything else the runner hit (a script that
                               #             exited non-zero, a navigation error)
@@ -77,6 +79,20 @@ result:
                               # drift vocabulary as /verify-map. A mismatch makes the
                               # class drift and degrades the workflow's `trust` to
                               # broken in its YAML.
+  scripts: {}                 # Per script step with a `shape` (schema/workflow.yaml),
+                              # keyed by its capture name or else its script name:
+                              # ok | mismatch. A mismatch makes the class drift, stops
+                              # the run at that step (`error` says what differs, e.g.
+                              # "$.items[0].title: expected string, got list" or "not
+                              # JSON") and degrades trust to broken. The drift is the
+                              # script's or its API's, never a locator's.
+  learned_shapes: {}          # Only with run.py --learn-shape: per script step,
+                              # "<phase>[<index>]", what happened to its shape:
+                              # written | not JSON | not written: <why>. Every step's
+                              # shape is written or none is: one output that is not
+                              # JSON, or one step that cannot be edited, blocks the
+                              # write. A stored shape is still checked first, so a
+                              # step that fails it ends the run as drift.
 
   trust_change: ""            # Set when this run downgraded the workflow's trust,
                               # e.g. "draft -> broken". Its run record then gets
@@ -119,7 +135,9 @@ result:
                               #           refused - the gate refused the replay; the
                               #                     class stands
                               #           skipped - not eligible; the class stands
-                              #   reason: why skipped or refused (mutating or
+                              #   reason: why skipped or refused (a script output that
+                              #           lost its shape, which is the API whatever
+                              #           the inputs; mutating or
                               #           destructive effect, a human step, no
                               #           parameters, no fixture named like a
                               #           parameter, the run already used the

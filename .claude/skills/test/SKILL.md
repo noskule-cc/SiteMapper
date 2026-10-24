@@ -55,7 +55,9 @@ Workflow argument: $workflow
    - `script` → **run script** declared by the step's site, this workflow's
      project or the site's app (in that order), `value` carrying its CLI
      arguments and `capture` storing its parsed stdout. Preferred over driving
-     the browser wherever the data is reachable from the site's API
+     the browser wherever the data is reachable from the site's API. A step
+     with a `shape` checks the output against it (`schema/workflow.yaml`); a
+     mismatch is drift: record `scripts.<capture>: mismatch` and stop the run
    - `assert` → locate the element and evaluate `expect` (see below). Record one
      entry in `result.assertions` with `{ id, page, element, expect, actual,
      pass }`. **Do not abort on a failed assertion** — continue so the run

@@ -69,6 +69,11 @@ same answer, without a browser, and it survives the next UI redesign.
 Record the promotion in the workflow's companion `.md`, so the next person can
 see the path rather than re-deriving it.
 
+Then pin the output. `python scripts/run.py <workflow> --learn-shape` on a
+passing run writes each script step's `shape`, and every later run checks
+the output against it. An API that dropped a key or changed a type is drift,
+reported on the script step, the way a fingerprint reports a changed page.
+
 ## Worked examples in this repo
 
 | Was | Became | Why it was the right move |
@@ -77,6 +82,7 @@ see the path rather than re-deriving it.
 | `/list-workflows` parsing every workflow YAML per question | `scripts/inventory.py` → `docs/inventory.md` | Enumeration is mechanical; the skill now presents a generated answer |
 | Reading every doc to find drift | `scripts/check.py` | 7 of 9 findings in the 2026-08-05 audit were mechanically detectable |
 | An LLM deciding whether a mapped page still matches | the runner's fingerprint watch (`scripts/run.py`) | A URL pattern plus one anchor element is a comparison, not a judgement |
+| Reading a script's JSON to see whether the API changed | a script step's `shape`, checked by `scripts/run.py` | Keys and types are a comparison, not a judgement |
 
 ## Prefer a script over fan-out
 

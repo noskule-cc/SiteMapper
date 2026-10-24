@@ -159,10 +159,12 @@ class Recorded:
     """The parts of a Runner that execute reads, with a fingerprint mismatch."""
     assertions, evidence, snapshot = [], [], {}
     confirm_drift = run.Runner.confirm_drift
+    learn_shape = False
 
     def __init__(self, raise_exc=None):
         self.raise_exc = raise_exc
         self.fingerprints = {}
+        self.scripts = {}
 
     def run_step(self, step, phase="steps", index=0, number=0):
         self.fingerprints["list"] = "mismatch"

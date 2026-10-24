@@ -645,5 +645,296 @@ class FinishRaceTest(unittest.TestCase):
             self.assertEqual([line["status"] for line in ended], won)
             self.assertEqual(run_yaml(self.runs, run_id)["status"], won[0])
 
+
+ISSUES_PY = """\
+import json, sys
+items = [{"title": "a", "number": 1, "closed_at": None},
+         {"title": "b", "number": 2, "closed_at": "2026-10-01"}]
+variant = sys.argv[1]
+if variant == "additive":
+    items = [dict(i, labels=["bug"]) for i in items]
+elif variant == "removed":
+    items = [{k: v for k, v in i.items() if k != "title"} for i in items]
+elif variant == "typed":
+    items = [dict(i, title=[i["title"]]) for i in items]
+elif variant == "empty":
+    items = []
+if variant == "text":
+    print("Service Unavailable")
+elif variant == "null":
+    print("null")
+elif variant == "nullitems":
+    print(json.dumps({"total_count": 0, "items": None}))
+else:
+    print(json.dumps({"total_count": len(items), "items": items}))
+"""
+
+SHAPE = """\
+      shape:
+        total_count: number
+        items:
+          - title: string
+            number: number
+            closed_at: "null"
+"""
+
+SHAPED = """\
+workflow:
+  name: {name}
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: read-only   # read only, the API is never written
+  parameters:
+    - name: variant
+      type: text
+      default: base
+  steps:
+    # the issue list through the API, not the page
+    - action: script
+      script: issues.py
+      value: "$variant"
+      capture: issues
+{shape}    - action: assert
+      element: issues
+      expect: visible
+"""
+
+
+class ScriptShapeTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        site = self.root / "sites" / "fixture"
+        (site / "site.yaml").write_text(SITE + "    - name: issues.py\n", encoding="utf-8")
+        (site / "scripts" / "issues.py").write_text(ISSUES_PY, encoding="utf-8")
+        self.shaped = site / "workflows" / "shaped.yaml"
+        self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE), encoding="utf-8")
+        self.bare = site / "workflows" / "bare.yaml"
+        self.bare.write_text(SHAPED.format(name="bare", shape=""), encoding="utf-8")
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_json(self, workflow: str, variant: str, *flags: str) -> tuple[int, dict, str]:
+        proc = subprocess.run(runner(self.root, self.runs, workflow, "--json",
+                                     "--param", f"variant={variant}", *flags),
+                              env=self.env, capture_output=True, text=True, timeout=60)
+        path = self.root / "sites" / "fixture" / "workflows" / f"{workflow}.yaml"
+        trust = yaml.safe_load(path.read_text(encoding="utf-8"))["workflow"]["trust"]
+        return proc.returncode, json.loads(proc.stdout), trust
+
+    def outcome(self, result: dict) -> tuple:
+        return result["status"], result["class"], result["scripts"]
+
+    def test_an_added_key_still_matches(self):
+        code, result, trust = self.run_json("shaped", "additive")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {"issues": "ok"}, "verified"))
+
+    def test_a_removed_key_is_drift_and_breaks_trust(self):
+        code, result, trust = self.run_json("shaped", "removed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual(result["error"], "[steps] script 'issues.py' output does not match "
+                                          "its shape: $.items[0].title: missing")
+        self.assertEqual((result["next"], result["failure"]["action"]),
+                         ("/repair shaped", "script"))
+        self.assertEqual(result["trust_change"], "verified -> broken")
+
+    def test_a_changed_type_is_drift(self):
+        code, result, trust = self.run_json("shaped", "typed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertTrue(result["error"].endswith(
+            "$.items[0].title: expected string, got list"), result["error"])
+
+    def test_an_empty_list_matches(self):
+        code, result, trust = self.run_json("shaped", "empty")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {"issues": "ok"}, "verified"))
+
+    def test_output_that_is_not_json_is_drift(self):
+        code, result, trust = self.run_json("shaped", "text")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertTrue(result["error"].endswith("does not match its shape: not JSON"))
+
+    def test_a_step_without_a_shape_is_not_checked(self):
+        code, result, trust = self.run_json("bare", "removed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {}, "verified"))
+
+    def test_learn_shape_writes_only_the_shape_and_the_next_run_matches_it(self):
+        code, result, _ = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual((code, result["class"]), (0, "ok"))
+        learned = ("      shape:\n"
+                   "        total_count: number\n"
+                   "        items:\n"
+                   "        - title: string\n"
+                   "          number: number\n"
+                   "          closed_at: string\n")
+        self.assertEqual(self.bare.read_text(encoding="utf-8"),
+                         SHAPED.format(name="bare", shape=learned))
+        code, result, trust = self.run_json("bare", "base")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {"issues": "ok"}, "verified"))
+
+    def test_learn_shape_replaces_a_stored_shape_and_nothing_else(self):
+        code, result, _ = self.run_json("shaped", "additive", "--learn-shape")
+        self.assertEqual((code, result["learned_shapes"]), (0, {"steps[0]": "written"}))
+        learned = ("      shape:\n"
+                   "        total_count: number\n"
+                   "        items:\n"
+                   "        - title: string\n"
+                   "          number: number\n"
+                   "          closed_at: string\n"
+                   "          labels:\n"
+                   "          - string\n")
+        self.assertEqual(self.shaped.read_bytes(),
+                         SHAPED.format(name="shaped", shape=learned).encode("utf-8"))
+
+    def test_learn_shape_on_a_failing_run_writes_no_shape_and_breaks_trust(self):
+        failing = SHAPED.format(name="bare", shape="").replace("expect: visible",
+                                                               "expect: {equals: x}")
+        self.bare.write_text(failing, encoding="utf-8")
+        code, result, trust = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual((code, result["class"], trust, result["trust_change"]),
+                         (1, "assert", "broken", "verified -> broken"))
+        self.assertEqual(result["learned_shapes"],
+                         {"steps[0]": "not written: the run did not pass"})
+        self.assertEqual(self.bare.read_text(encoding="utf-8"),
+                         failing.replace("trust: verified", "trust: broken"))
+
+    def test_learn_shape_reports_output_that_is_not_json(self):
+        code, result, _ = self.run_json("bare", "text", "--learn-shape")
+        self.assertEqual((code, result["learned_shapes"]), (0, {"steps[0]": "not JSON"}))
+        self.assertEqual(self.bare.read_text(encoding="utf-8"),
+                         SHAPED.format(name="bare", shape=""))
+
+    def test_learn_shape_writes_nothing_when_one_output_is_not_json(self):
+        two = SHAPED.format(name="bare", shape="") + (
+            "    - action: script\n      script: issues.py\n      value: text\n")
+        self.bare.write_text(two, encoding="utf-8")
+        code, result, _ = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual((code, result["learned_shapes"]),
+                         (0, {"steps[0]": "not written: steps[2] blocks the write",
+                              "steps[2]": "not JSON"}))
+        self.assertEqual(self.bare.read_text(encoding="utf-8"), two)
+
+    def test_learn_shape_checks_a_stored_shape_first(self):
+        before = self.shaped.read_text(encoding="utf-8")
+        code, result, trust = self.run_json("shaped", "removed", "--learn-shape")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual(result["learned_shapes"], {})
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"),
+                         before.replace("trust: verified", "trust: broken"))
+
+    def test_learn_shape_keeps_crlf_line_endings(self):
+        crlf = SHAPED.format(name="bare", shape="").replace("\n", "\r\n").encode("utf-8")
+        self.bare.write_bytes(crlf)
+        self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual(self.bare.read_bytes(), crlf.replace(
+            b"      capture: issues\r\n",
+            b"      capture: issues\r\n      shape:\r\n        total_count: number\r\n"
+            b"        items:\r\n        - title: string\r\n          number: number\r\n"
+            b"          closed_at: string\r\n"))
+
+    def test_learn_shape_keeps_the_comment_on_a_one_line_shape(self):
+        self.shaped.write_text(SHAPED.format(name="shaped", shape="      shape: {}  # pinned\n"),
+                               encoding="utf-8")
+        self.run_json("shaped", "empty", "--learn-shape")
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"), SHAPED.format(
+            name="shaped", shape="      shape:  # pinned\n        total_count: number\n"
+                                 "        items: []\n"))
+
+    def test_learn_shape_writes_nothing_when_one_step_cannot_take_it(self):
+        flow = SHAPED.format(name="bare", shape="") + (
+            "    - {action: script, script: issues.py, value: base}\n")
+        self.bare.write_text(flow, encoding="utf-8")
+        code, result, _ = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual(result["learned_shapes"], {
+            "steps[0]": "not written: steps[2] blocks the write",
+            "steps[2]": "not written: steps[2] is written in flow style; write it as a "
+                        "block to learn its shape"})
+        self.assertEqual(self.bare.read_text(encoding="utf-8"), flow)
+
+    def test_a_null_where_an_object_or_list_belongs_is_drift(self):
+        for variant, why in (("null", "$: expected object, got null"),
+                             ("nullitems", "$.items: expected list, got null")):
+            self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE),
+                                   encoding="utf-8")
+            code, result, trust = self.run_json("shaped", variant)
+            self.assertEqual((code, *self.outcome(result), trust),
+                             (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+            self.assertTrue(result["error"].endswith(why), result["error"])
+
+    def replayable(self, shape: str) -> str:
+        """`shaped` with a fixture for its parameter, asserting the items are there."""
+        text = SHAPED.format(name="shaped", shape=shape).replace(
+            "  steps:\n", "  fixtures:\n    variant: base\n  steps:\n", 1).replace(
+            "      element: issues\n      expect: visible",
+            "      element: issues\n      value: \"$issues.items\"\n      expect: visible")
+        self.shaped.write_text(text, encoding="utf-8")
+        return text
+
+    def test_a_shape_mismatch_is_never_replayed(self):
+        self.replayable(SHAPE)
+        code, result, trust = self.run_json("shaped", "removed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual((result["next"], result["failure"]["replay"]),
+                         ("/repair shaped", {"status": "skipped", "reason":
+                          "a script's output lost its shape: that is the API, whatever "
+                          "the inputs"}))
+
+    def test_an_empty_list_that_matches_its_shape_replays_to_input(self):
+        self.replayable(SHAPE)
+        code, result, trust = self.run_json("shaped", "empty")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (1, "failed", "input", {"issues": "ok"}, "verified"))
+        replay = result["failure"]["replay"]
+        self.assertEqual((replay["status"], replay["class"], replay["inputs"]),
+                         ("passed", "ok", {"variant": "base"}))
+        self.assertNotIn("trust_change", result)
+
+    def test_learn_shape_never_learns_from_a_replay(self):
+        before = self.replayable("")
+        code, result, trust = self.run_json("shaped", "empty", "--learn-shape")
+        self.assertEqual((code, result["class"], result["failure"]["replay"]["status"], trust),
+                         (1, "input", "passed", "verified"))
+        self.assertEqual(result["learned_shapes"],
+                         {"steps[0]": "not written: the run did not pass"})
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"), before)
+
+    def test_a_mismatch_in_teardown_is_an_error(self):
+        self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE) + (
+            "  teardown:\n    - action: script\n      script: issues.py\n"
+            "      value: removed\n" + SHAPE), encoding="utf-8")
+        code, result, trust = self.run_json("shaped", "base")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (2, "error", "drift", "broken"))
+        self.assertEqual(result["error"], "teardown incomplete: script 'issues.py' output does "
+                                          "not match its shape: $.items[0].title: missing")
+
+    def check_actions(self) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(RUN_PY.parent / "check.py"), "--root",
+                               str(self.root), "--only", "actions"],
+                              capture_output=True, text=True, timeout=60)
+
+    def test_check_accepts_a_valid_shape_and_names_a_malformed_one(self):
+        (self.root / "sites" / "fixture" / "workflows" / "person.yaml").unlink()
+        proc = self.check_actions()
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE.replace(
+            "number: number", "number: integer")), encoding="utf-8")
+        proc = self.check_actions()
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("sites/fixture/workflows/shaped.yaml: steps[0]: shape.items[0].number: "
+                      "'integer' is not string | number | bool | null", proc.stdout)
+
+
 if __name__ == "__main__":
     unittest.main()

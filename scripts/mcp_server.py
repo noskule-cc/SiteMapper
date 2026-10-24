@@ -249,6 +249,7 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
                         f"last output:\n{tail(messages)}") from None
     return {"run_id": record.name if record else None, "status": status,
             "class": result.get("class"), "next": result.get("next") or "",
+            "scripts": result.get("scripts") or {},
             "waiting_for": result.get("waiting_for"), "error": result.get("error") or "",
             "replay": (result.get("failure") or {}).get("replay"),
             "record": str(record) if record else None}
@@ -308,7 +309,7 @@ def build(tree_: Tree) -> MCPServer:
     async def run_workflow(name: str, ctx: Context, params: dict[str, str] | None = None,
                            persona: str | None = None, consent: list[Consent] | None = None,
                            timeout_s: float | None = None) -> dict[str, Any]:
-        """Run a workflow and return its run_id, status, class, next and waiting_for.
+        """Run a workflow and return its run_id, status, class, next, scripts and waiting_for.
 
         `consent` answers an `ask` for this run only. Without it an ask returns
         status needs-consent and starts nothing; a deny returns status denied.

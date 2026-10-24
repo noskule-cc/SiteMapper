@@ -96,6 +96,7 @@ Before implementing new logic, check this table. If what you need exists, use it
 | Decide what a run may do without running it: classes, rule files, lock key | `preflight` | `scripts/run.py` |
 | Gate a whole run up front, strictest site wins | `gate` | `scripts/run.py` |
 | Write `trust:` / `verified_at:` back into a workflow YAML | `update_trust` | `scripts/run.py` |
+| Check a script step's output against its `shape`, or learn the shape | `shape_mismatch`, `infer_shape` (`tree.shape_problem` validates one) | `scripts/run.py` |
 
 ### Views
 
@@ -137,4 +138,4 @@ that `scripts/check.py` enforces.
 |------|-----------|--------|
 | — | — | — |
 
-**Last Updated:** 2026-10-20
+**Last Updated:** 2026-10-24
