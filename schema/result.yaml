@@ -135,7 +135,9 @@ result:
                               #           refused - the gate refused the replay; the
                               #                     class stands
                               #           skipped - not eligible; the class stands
-                              #   reason: why skipped or refused (mutating or
+                              #   reason: why skipped or refused (a script output that
+                              #           lost its shape, which is the API whatever
+                              #           the inputs; mutating or
                               #           destructive effect, a human step, no
                               #           parameters, no fixture named like a
                               #           parameter, the run already used the

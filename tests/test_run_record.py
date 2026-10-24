@@ -871,6 +871,44 @@ class ScriptShapeTest(unittest.TestCase):
                              (2, "error", "drift", {"issues": "mismatch"}, "broken"))
             self.assertTrue(result["error"].endswith(why), result["error"])
 
+    def replayable(self, shape: str) -> str:
+        """`shaped` with a fixture for its parameter, asserting the items are there."""
+        text = SHAPED.format(name="shaped", shape=shape).replace(
+            "  steps:\n", "  fixtures:\n    variant: base\n  steps:\n", 1).replace(
+            "      element: issues\n      expect: visible",
+            "      element: issues\n      value: \"$issues.items\"\n      expect: visible")
+        self.shaped.write_text(text, encoding="utf-8")
+        return text
+
+    def test_a_shape_mismatch_is_never_replayed(self):
+        self.replayable(SHAPE)
+        code, result, trust = self.run_json("shaped", "removed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual((result["next"], result["failure"]["replay"]),
+                         ("/repair shaped", {"status": "skipped", "reason":
+                          "a script's output lost its shape: that is the API, whatever "
+                          "the inputs"}))
+
+    def test_an_empty_list_that_matches_its_shape_replays_to_input(self):
+        self.replayable(SHAPE)
+        code, result, trust = self.run_json("shaped", "empty")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (1, "failed", "input", {"issues": "ok"}, "verified"))
+        replay = result["failure"]["replay"]
+        self.assertEqual((replay["status"], replay["class"], replay["inputs"]),
+                         ("passed", "ok", {"variant": "base"}))
+        self.assertNotIn("trust_change", result)
+
+    def test_learn_shape_never_learns_from_a_replay(self):
+        before = self.replayable("")
+        code, result, trust = self.run_json("shaped", "empty", "--learn-shape")
+        self.assertEqual((code, result["class"], result["failure"]["replay"]["status"], trust),
+                         (1, "input", "passed", "verified"))
+        self.assertEqual(result["learned_shapes"],
+                         {"steps[0]": "not written: the run did not pass"})
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"), before)
+
     def test_a_mismatch_in_teardown_is_an_error(self):
         self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE) + (
             "  teardown:\n    - action: script\n      script: issues.py\n"

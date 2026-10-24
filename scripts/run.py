@@ -949,7 +949,8 @@ class Runner:
         data, so the class becomes input. Any other replay outcome leaves the
         class alone. The replay goes into failure.replay of the same result.
         A run whose steps passed drifted only in a fingerprint: that is the
-        page, never the data, so it is not replayed."""
+        page, never the data, so it is not replayed. Nor is a script output
+        that lost its shape: other inputs cannot make an API change go away."""
         cls = result["class"]
         if cls not in ("drift", "assert") or result["status"] == "passed":
             return
@@ -961,7 +962,11 @@ class Runner:
                  for p in self.workflow.get("parameters") or []
                  if p.get("name") in self.bindings.fixtures}
         differs = {k: v for k, v in known.items() if self.bindings.lookup(k) != v}
-        if effect != "read-only":
+        if "mismatch" in self.scripts.values():
+            replay = {"status": "skipped",
+                      "reason": "a script's output lost its shape: that is the API, "
+                                "whatever the inputs"}
+        elif effect != "read-only":
             replay = {"status": "skipped",
                       "reason": f"effect is {effect}: a replay would repeat what the run did"}
         elif human:
