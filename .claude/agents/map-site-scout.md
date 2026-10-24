@@ -27,10 +27,10 @@ host without it gets a draft with no `endpoints` and a note saying so.
   `{placeholders}`, candidate elements with semantic names and the most
   stable locator it can see (prefer `data-testid`/`aria-label` over `text`)
 - Draft `endpoints` from the page's network listing, filtered the way
-  `/map-site` step 1b filters it (no assets, analytics or beacons): method,
-  `url_pattern` with a `{placeholder}` for every record id and query value,
-  `inputs`, `returns`. Mark every entry `# scout: unsure` and leave `effect`
-  for the human to declare
+  `/map-site` step 1b filters it (no assets, analytics or beacons): a snake_case
+  `name`, method, `url_pattern` with a `{placeholder}` for every record id and
+  query value, `inputs`, `returns`, and no description. Mark every entry
+  `# scout: unsure` and leave `effect` for the human to declare
 - Flag what it is unsure about (`# scout: unsure —` comments in the draft)
 - Return the draft as text — **never write it into `sites/`**
 

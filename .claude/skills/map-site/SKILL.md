@@ -49,11 +49,14 @@ For each page the user wants to map:
      collector, stats, telemetry or tracking hosts;
    - keep requests that return data (usually JSON) from the site or its API host.
 
-   Draft one entry per candidate per `schema/page.yaml` `endpoints`: the URL with a
-   `{placeholder}` for every record id and every query value, the elements whose
-   values appear in it as `inputs`, and the top-level keys of a JSON response as
-   `returns`. The listing carries the user's session, so never copy a header, a
-   cookie, a token or a query value into the draft, the conversation or a file.
+   Draft one entry per candidate per `schema/page.yaml` `endpoints`: a snake_case
+   `name`, the URL with a `{placeholder}` for every record id and every query value,
+   the elements whose values appear in it as `inputs`, and the top-level keys of a
+   JSON response as `returns`. An entry has no description: the name and the page's
+   `purpose` carry the meaning. The listing carries the user's session, so never
+   copy a header, a cookie, a token or a query value into the draft, the
+   conversation or a file. This rule is the guard. `check.py` backs it up but cannot
+   see a percent-encoded value or a short id written into prose.
 2. **Analyze the page** and suggest:
    - Page name and purpose
    - Key interactive elements (buttons, inputs, links, selects) with semantic locators
