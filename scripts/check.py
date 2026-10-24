@@ -310,24 +310,69 @@ def check_credentials():
     return fails
 
 
-ENDPOINT_KEYS = {"name", "method", "url_pattern", "inputs", "returns", "effect",
-                 "description"}
+ENDPOINT_FIELDS = {"name": str, "method": str, "url_pattern": str, "inputs": list,
+                   "returns": list, "effect": str, "description": str}
 HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
 EFFECTS = {"read-only", "mutating", "destructive"}
 PLACEHOLDER = re.compile(r"\{\w+\}")
-TOKEN_LIKE = re.compile(r"(?i)\b(?:bearer|basic|token)\s+\S{8,}|\beyJ[\w-]+\.[\w-]+")
-OPAQUE_RUN = re.compile(r"[A-Za-z0-9_\-]{24,}")
+WORD = re.compile(r"[A-Za-z_][A-Za-z0-9_.-]*")
+SECRET_TEXT = [re.compile(p) for p in (
+    r"(?i)\b(?:set-)?cookie\s*:|\b(?:proxy-)?authorization\s*:|\bx-[a-z0-9-]+\s*:",
+    r"(?i)\b(?:bearer|basic|token)\s+[\w.+/=-]{6,}",
+    r"\b[\w.-]+=[\"']?(?=[\w.+/-]*\d)[\w.+/=-]{6,}",
+    r"\beyJ[\w-]+\.[\w-]+",
+    r"(?i)\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b",
+    r"\b[0-9a-fA-F]{16,}\b",
+    r"[A-Za-z]{32,}",
+)]
+OPAQUE_RUN = re.compile(r"[A-Za-z0-9+/_=-]{16,}")
 
 
-def token_like(text):
-    return bool(TOKEN_LIKE.search(text)) or any(
+def secret_like(text):
+    """Free text that reads like a header, an assignment, or a token."""
+    return any(p.search(text) for p in SECRET_TEXT) or any(
         re.search(r"\d", run) and re.search(r"[A-Za-z]", run)
         for run in OPAQUE_RUN.findall(text))
 
 
+def word_like(text, limit=24, lower=False):
+    """A path segment, host label or query key a person would name: no digit runs."""
+    return (len(text) < limit and bool(WORD.fullmatch(text))
+            and not (lower and text != text.lower())
+            and len(re.findall(r"\d", text)) <= 2 and not re.search(r"\d\d", text))
+
+
 def shown(name):
-    """A key or name as a failure may print it: never when it looks like a token."""
-    return "<token-like>" if token_like(str(name)) else name
+    """A name as a failure may print it: only when it is word-like."""
+    return name if isinstance(name, str) and word_like(name, 64) else "<not shown>"
+
+
+def url_fails(text):
+    url = urlsplit(text)
+    fails = []
+    if not url.path and not url.netloc:
+        fails.append("url_pattern is missing")
+    if url.username or url.password or "@" in url.netloc:
+        fails.append("url_pattern carries a user or password before the host")
+    if any(not word_like(label) for label in (url.hostname or "").split(".") if label):
+        fails.append("url_pattern has a host label that is not word-like")
+    if url.port is None and ":" in url.netloc.replace(url.hostname or "", "", 1):
+        fails.append("url_pattern has a port that is not a number")
+    if any(not (PLACEHOLDER.fullmatch(seg) or word_like(seg, lower=True))
+           for seg in url.path.split("/") if seg):
+        fails.append("url_pattern has a literal path segment that is not word-like; "
+                     "write record ids and keys as {placeholders}")
+    if url.fragment or "#" in text:
+        fails.append("url_pattern has a fragment")
+    if ";" in url.query:
+        fails.append("url_pattern query uses ';'")
+    for pair in filter(None, url.query.split("&")):
+        name, sep, value = pair.partition("=")
+        if not word_like(name, 64):
+            fails.append("url_pattern has a query key that is not word-like")
+        elif not sep or not PLACEHOLDER.fullmatch(value):
+            fails.append(f"url_pattern query '{name}' has no {{placeholder}} value")
+    return fails
 
 
 def endpoint_fails(entry, elements):
@@ -335,27 +380,27 @@ def endpoint_fails(entry, elements):
     if not isinstance(entry, dict):
         return ["is not a mapping"]
     fails = [f"{shown(key)} is not an endpoint key; headers, cookies and tokens are "
-             "never stored" for key in sorted(set(entry) - ENDPOINT_KEYS, key=str)]
-    for key in sorted(set(entry) & ENDPOINT_KEYS):
+             "never stored" for key in sorted(set(entry) - set(ENDPOINT_FIELDS), key=str)]
+    for key, kind in ENDPOINT_FIELDS.items():
+        if key not in entry:
+            continue
         value = entry[key]
-        texts = value if isinstance(value, list) else [value]
-        if any(isinstance(t, str) and token_like(t) for t in texts):
-            fails.append(f"{key} holds a token-like string")
-    url = urlsplit(str(entry.get("url_pattern") or ""))
-    if not url.path and not url.netloc:
-        fails.append("url_pattern is missing")
-    if url.username or url.password:
-        fails.append("url_pattern carries a user or password before the host")
-    for pair in filter(None, url.query.split("&")):
-        name, sep, value = pair.partition("=")
-        if sep and not PLACEHOLDER.fullmatch(value):
-            fails.append(f"url_pattern query '{shown(name)}' has a literal value; "
-                         "write it as a {placeholder}")
+        if kind is str and not isinstance(value, str):
+            fails.append(f"{key} is not a string")
+        elif kind is list and not (isinstance(value, list)
+                                   and all(isinstance(v, str) for v in value)):
+            fails.append(f"{key} is not a list of strings")
+        elif key != "url_pattern" and any(
+                secret_like(v) for v in (value if kind is list else [value])):
+            fails.append(f"{key} holds a header, an assignment or a token-like string")
+    if fails:
+        return fails
+    fails += url_fails(entry.get("url_pattern", ""))
     if entry.get("method") not in HTTP_METHODS:
         fails.append(f"method is not one of {sorted(HTTP_METHODS)}")
     if entry.get("effect") not in EFFECTS:
         fails.append(f"effect is not one of {sorted(EFFECTS)}")
-    for name in entry.get("inputs") or []:
+    for name in entry.get("inputs", []):
         if name not in elements:
             fails.append(f"inputs names '{shown(name)}', which is not an element of "
                          "this page")
@@ -366,11 +411,16 @@ def check_endpoints():
     """Page `endpoints` hold request shapes only: no header, cookie, token or query value.
 
     /map-site proposes endpoints from a live network listing, which carries the
-    session's tokens; this is the guard that one never reaches a page file.
+    session's tokens; this is the guard that one never reaches a page file. A
+    rejected endpoint's reason lands in `gotchas`, so those are scanned too.
     """
     fails = []
     for f in files(["sites/*/pages/*.yaml"]):
         page = load(f).get("page") or {}
+        for i, gotcha in enumerate(page.get("gotchas") or []):
+            if isinstance(gotcha, str) and secret_like(gotcha):
+                fails.append(f"{show(f)}: gotchas[{i}] holds a header, an assignment or "
+                             "a token-like string (the value is not shown)")
         entries = page.get("endpoints")
         if entries is None:
             continue

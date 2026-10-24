@@ -85,9 +85,10 @@ page:
                               #     url_pattern: ""     the request URL with a {placeholder}
                               #                         for every record id and every query
                               #                         value: "/issues?q={query}&page={page}".
-                              #                         A path relative to the site's
-                              #                         base_url, or a full URL when the
-                              #                         request leaves it
+                              #                         Literal path segments are lower-case
+                              #                         words; no fragment. A path relative
+                              #                         to the site's base_url, or a full
+                              #                         URL when the request leaves it
                               #     inputs: []          element names from `elements` whose
                               #                         values appear in the request
                               #     returns: []         top-level keys of the JSON response
