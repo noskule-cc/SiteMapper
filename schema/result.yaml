@@ -86,6 +86,10 @@ result:
                               # "$.items[0].title: expected string, got list" or "not
                               # JSON") and degrades trust to broken. The drift is the
                               # script's or its API's, never a locator's.
+  learned_shapes: {}          # Only with run.py --learn-shape: per script step,
+                              # "<phase>[<index>]", what happened to its shape:
+                              # written | not JSON | not written: <why>. Either every
+                              # step's shape is written or the file is untouched.
 
   trust_change: ""            # Set when this run downgraded the workflow's trust,
                               # e.g. "draft -> broken". Its run record then gets

@@ -228,13 +228,21 @@ workflow:
                               #       items:
                               #         - title: string
                               #           closed_at: "null"
-                              #   Extra keys and an empty list match. A missing key, a
-                              #   changed type or output that is not JSON is drift:
+                              #   Extra keys and an empty list match. `{}` is any object
+                              #   and `[]` any list. A missing key, a changed type or
+                              #   output that is not JSON is drift, in any phase:
                               #   result.scripts.<capture or script> = mismatch, class
-                              #   drift, trust broken, the run stops at the step. A null
-                              #   value matches any shape and "null" any value, since an
-                              #   empty field is not an API change. Write it with
-                              #   `run.py <workflow> --learn-shape` on a passing run.
+                              #   drift, status error, trust broken, the run stops at
+                              #   the step. A null value matches a scalar type, since an
+                              #   empty field is not an API change; a null where an
+                              #   object or a list belongs, or a null output, does not.
+                              #   "null" matches any value: only nulls were seen there.
+                              # Write it with `run.py <workflow> --learn-shape` on a
+                              #   passing run (on a failing one it writes nothing and the
+                              #   run counts as usual). Learning keeps a key only where
+                              #   every list item has it with one type, else drops it (a
+                              #   list item becomes []), and learns a mapping keyed by
+                              #   ids (digits, hex, UUIDs) as {}.
       row: ""                 # For action: read on a table — text the one row must contain
                               #   (a "$fixture" works). Needs `column`; see "action: read" below.
       column: ""              # For action: read on a table — the header text of the cell to read

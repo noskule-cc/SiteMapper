@@ -92,6 +92,10 @@ class RunError(Exception):
         self.hint = hint
 
 
+class ShapeMismatch(RunError):
+    """A script's output lost its stored shape: drift, in any phase."""
+
+
 class WaitForPerson(Exception):
     def __init__(self, step: int, label: str, reason: str):
         super().__init__(f"step {step}: {label}")
@@ -464,7 +468,11 @@ JSON_TYPES = {type(None): "null", bool: "bool", int: "number", float: "number",
 class LearnedShape(NamedTuple):
     phase: str
     index: int
-    shape: object
+    shape: object  # None when the output was not JSON
+
+
+ID_KEY = re.compile(r"\d+|[0-9a-fA-F]{8,}|[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")
+UNCONSTRAINED = object()  # where merged items disagree; never written into a shape
 
 
 def _type_name(value) -> str:
@@ -472,32 +480,67 @@ def _type_name(value) -> str:
 
 
 def _merge_shapes(a, b):
-    if a == "null":
-        return b
-    if b == "null":
+    """A shape every value behind a and behind b matches. A null value matches
+    a scalar type, so null merges into one; beside an object or a list, and
+    wherever types disagree, the position is left unconstrained: the key is
+    dropped, the list item becomes []."""
+    if a is UNCONSTRAINED or b is UNCONSTRAINED:
+        return UNCONSTRAINED
+    if a == b:
         return a
+    if a == "null" or b == "null":
+        other = b if a == "null" else a
+        return other if isinstance(other, str) else UNCONSTRAINED
     if isinstance(a, dict) and isinstance(b, dict):
-        return {k: _merge_shapes(a[k], b[k]) for k in a if k in b}
+        merged = {}
+        for key in a:
+            if key in b:
+                sub = _merge_shapes(a[key], b[key])
+                if sub is not UNCONSTRAINED:
+                    merged[key] = sub
+        return merged
     if isinstance(a, list) and isinstance(b, list):
-        return [_merge_shapes(a[0], b[0])] if a and b else a or b
-    return a if a == b else "null"
+        if not a or not b:
+            return a or b
+        return [_merge_shapes(a[0], b[0])]
+    return UNCONSTRAINED
 
 
 def infer_shape(value):
+    return _written(_infer(value))
+
+
+def _infer(value):
+    """[UNCONSTRAINED] is a list of anything, kept apart from [] (only empty
+    lists seen) until the end, because only the second yields to a merge."""
     if isinstance(value, dict):
-        return {k: infer_shape(v) for k, v in value.items()}
+        if value and all(ID_KEY.fullmatch(k) for k in value):
+            return {}  # keyed by id: the ids are data, not shape
+        return {k: _infer(v) for k, v in value.items()}
     if isinstance(value, list):
         if not value:
             return []
-        item = infer_shape(value[0])
+        item = _infer(value[0])
         for other in value[1:]:
-            item = _merge_shapes(item, infer_shape(other))
+            item = _merge_shapes(item, _infer(other))
+            if item is UNCONSTRAINED:
+                break
         return [item]
     return _type_name(value)
 
 
+def _written(shape):
+    if isinstance(shape, dict):
+        return {k: _written(v) for k, v in shape.items()}
+    if isinstance(shape, list):
+        return [] if not shape or shape[0] is UNCONSTRAINED else [_written(shape[0])]
+    return shape
+
+
 def shape_mismatch(shape, value) -> str | None:
     """Where and how `value` departs from `shape` (schema/workflow.yaml), or None."""
+    if value is None and shape is not None and shape != "null":
+        return f"$: expected {_shape_kind(shape)}, got null"
     found = _mismatch(shape, value)
     if not found:
         return None
@@ -505,10 +548,16 @@ def shape_mismatch(shape, value) -> str | None:
     return "$" + "".join(reversed(path)) + ": " + what
 
 
+def _shape_kind(shape) -> str:
+    return shape if isinstance(shape, str) else "list" if isinstance(shape, list) else "object"
+
+
 def _mismatch(shape, value):
-    if value is None or shape is None or shape == "null":
+    if shape is None or shape == "null":
         return None
     if type(shape) is str:
+        if value is None:
+            return None
         got = JSON_TYPES[type(value)]
         return None if got == shape else ([], f"expected {shape}, got {got}")
     if type(shape) is dict:
@@ -1164,9 +1213,8 @@ class Runner:
         if step.get("capture"):
             self.bindings.captures[step["capture"]] = parsed
         if self.learn_shape:
-            if is_json:
-                self.learned.append(LearnedShape(self.current["phase"], self.current["index"],
-                                                 infer_shape(parsed)))
+            self.learned.append(LearnedShape(self.current["phase"], self.current["index"],
+                                             infer_shape(parsed) if is_json else None))
         elif step.get("shape") is not None:
             self.check_shape(step, parsed if is_json else None, is_json)
 
@@ -1180,8 +1228,8 @@ class Runner:
         why = shape_mismatch(step["shape"], output) if is_json else "not JSON"
         self.scripts[key] = "mismatch" if why or self.scripts.get(key) == "mismatch" else "ok"
         if why:
-            raise RunError(f"script '{step['script']}' output does not match its shape: "
-                           f"{why}", "drift")
+            raise ShapeMismatch(f"script '{step['script']}' output does not match its shape: "
+                                f"{why}", "drift")
 
     def do_human(self, step):
         number = self.current["number"]
@@ -1559,16 +1607,20 @@ def update_trust(wf_path: Path, workflow: dict, result: dict):
         _set_workflow_key(wf_path, "verified_at", f'"{result["finished_at"][:10]}"')
 
 
-def _last_line(node) -> int:
+def _last_line(node, lines: list[str]) -> int:
     """The 0-based last line a node's own text is on. A block collection's
     end mark sits at the next token, past any trailing comment, so it is
-    found through its last child instead."""
+    found through its last child; a block scalar's end mark is past its
+    trailing blank lines."""
     if isinstance(node, yaml.MappingNode) and node.value and not node.flow_style:
-        return _last_line(node.value[-1][1])
+        return _last_line(node.value[-1][1], lines)
     if isinstance(node, yaml.SequenceNode) and node.value and not node.flow_style:
-        return _last_line(node.value[-1])
+        return _last_line(node.value[-1], lines)
     end = node.end_mark
-    return end.line - 1 if end.column == 0 else end.line
+    last = end.line - 1 if end.column == 0 else end.line
+    while last > node.start_mark.line and not lines[last].strip():
+        last -= 1
+    return last
 
 
 def _child(node, key: str):
@@ -1578,13 +1630,15 @@ def _child(node, key: str):
     return None, None
 
 
-def _set_step_shape(wf_path: Path, phase: str, index: int, shape):
-    text = wf_path.read_text(encoding="utf-8")
+def _with_step_shape(text: str, phase: str, index: int, shape) -> str:
+    """`text` with one step's `shape:` written in place: every comment, key
+    order and line ending survive, a stored shape's lines are replaced (with
+    its trailing comment), and a new one goes after the step's last line."""
     _, steps = _child(_child(yaml.compose(text), "workflow")[1], phase)
     step = steps.value[index]
-    if step.flow_style:
-        raise RunError(f"{wf_path.name}: {phase}[{index}] is a flow mapping; write it as a "
-                       "block to learn its shape")
+    if steps.flow_style or step.flow_style:
+        raise ValueError(f"{phase}[{index}] is written in flow style; write it as a block "
+                         "to learn its shape")
     indent = " " * step.value[0][0].start_mark.column
     if isinstance(shape, str) or not shape:
         block = [f"shape: {json.dumps(shape)}"]
@@ -1595,24 +1649,47 @@ def _set_step_shape(wf_path: Path, phase: str, index: int, shape):
     newline = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
     key, value = _child(step, "shape")
     if key is not None:
-        start, end = key.start_mark.line, _last_line(value) + 1
+        start, end = key.start_mark.line, _last_line(value, lines) + 1
+        if end - start == 1:
+            rest = lines[start][value.end_mark.column:].strip()
+            if rest.startswith("#"):
+                block[0] += "  " + rest
     else:
-        start = end = _last_line(step) + 1
-        if lines and not lines[start - 1].endswith(("\n", "\r")):
+        start = end = _last_line(step, lines) + 1
+        if not lines[start - 1].endswith(("\n", "\r")):
             lines[start - 1] += newline
     lines[start:end] = [indent + line + newline for line in block]
-    wf_path.write_text("".join(lines), encoding="utf-8")
+    return "".join(lines)
 
 
-def learn_shapes(wf_path: Path, learned: list[LearnedShape], result: dict):
-    if result["status"] != "passed" or result["class"] != "ok":
-        print(f"learn-shape: the run did not pass ({result['class']}); "
-              f"{wf_path.name} is unchanged", file=sys.stderr)
-        return
-    for phase, index, shape in learned:
-        _set_step_shape(wf_path, phase, index, shape)
-        print(f"learn-shape: {phase}[{index}] shape written to {wf_path.name}",
-              file=sys.stderr)
+def learn_shapes(wf_path: Path, learned: list[LearnedShape], passed: bool) -> dict[str, str]:
+    """--learn-shape: on a passing run, store every script step's output shape in
+    the workflow YAML in one write, or none when any step cannot take it. Each
+    step's outcome: written, not JSON, or not written and why."""
+    raw = wf_path.read_bytes().decode("utf-8")
+    text, failed = raw, None
+    for s in learned:
+        if passed and s.shape is not None and not failed:
+            try:
+                text = _with_step_shape(text, s.phase, s.index, s.shape)
+            except (ValueError, yaml.YAMLError) as exc:
+                failed, text = (s, exc), raw
+    outcome = {}
+    for s in learned:
+        label = f"{s.phase}[{s.index}]"
+        if s.shape is None:
+            outcome[label] = "not JSON"
+        elif not passed:
+            outcome[label] = "not written: the run did not pass"
+        elif failed:
+            outcome[label] = (f"not written: {failed[1]}" if s is failed[0] else
+                              "not written: another step's shape could not be written")
+        else:
+            outcome[label] = "written"
+        print(f"learn-shape: {label} {outcome[label]}", file=sys.stderr)
+    if text != raw:
+        wf_path.write_bytes(text.encode("utf-8"))
+    return outcome
 
 
 # ---------------------------------------------------------------------------
@@ -1736,9 +1813,10 @@ def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, p
             result: dict):
     attempt(runner, workflow, bindings, primary, result)
     runner.confirm_drift(result, primary)
+    passed = result["status"] == "passed" and result["class"] == "ok"
     if runner.learn_shape:
-        learn_shapes(wf_path, runner.learned, result)
-    else:
+        result["learned_shapes"] = learn_shapes(wf_path, runner.learned, passed)
+    if not (runner.learn_shape and passed):
         update_trust(wf_path, workflow, result)
 
 
@@ -1778,6 +1856,8 @@ def attempt(runner: Runner, workflow: dict, bindings: Bindings, primary: str, re
         except Exception as exc:
             note = f"teardown incomplete: {str(exc).splitlines()[0]}"
             result["error"] = (result["error"] + "; " + note).lstrip("; ")
+            if isinstance(exc, ShapeMismatch):
+                result["status"] = "error"
             if "failure" not in result:
                 result["failure"] = runner.build_failure()
         runner.stop()
