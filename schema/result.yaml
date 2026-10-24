@@ -88,7 +88,8 @@ result:
 
   failure:                    # Populated by the headless runner when status == error —
                               # everything the repair loop (the repair skill) needs to fix
-                              # the map without re-exploring. Absent on passed/failed.
+                              # the map without re-exploring. Absent on passed; on failed
+                              # it holds only class, next and replay.
     phase: ""                 #   setup | steps | teardown
     step_index: 0             #   0-based index of the failing step in that phase
     action: ""                #   the step's action
@@ -105,6 +106,35 @@ result:
                               #   (.runner/); referenced, never committed
     class: ""                 #   the result's class, repeated for the repair loop
     next: ""                  #   the result's next step
+    replay: {}                #   Set when a failed or errored run's class was drift
+                              #   or assert: the fixture replay that tells drift from
+                              #   missing data, run once through the same gate (consent
+                              #   given at the prompt carries over) and recorded in
+                              #   this run. A passed run with a fingerprint mismatch is
+                              #   page drift and never replays, so it has no failure.
+                              #   status: passed  - the replay's class was ok, so the
+                              #                     run's class became input and
+                              #                     trust is unchanged
+                              #           failed  - the class stands, trust is broken
+                              #           refused - the gate refused the replay; the
+                              #                     class stands
+                              #           skipped - not eligible; the class stands
+                              #   reason: why skipped or refused (mutating or
+                              #           destructive effect, a human step, no
+                              #           parameters, no fixture named like a
+                              #           parameter, the run already used the
+                              #           fixtures, the failing step used no
+                              #           parameter). Where a fixture would have
+                              #           helped, next says to add one
+                              #   inputs: the parameters the replay set to fixtures
+                              #   class, error, counts, started_at, finished_at:
+                              #           the replay's own, when it ran
+                              #   With a replay, status, error, assertions, counts and
+                              #   captures stay the first attempt's. class and next are
+                              #   the verdict after the replay, evidence holds both
+                              #   attempts' screenshots, and finished_at is when the
+                              #   replay ended. run.yaml takes status, finished_at and
+                              #   headline from these same fields.
 
 # Summary convenience (a runner may also include):
 #   counts: { total: N, passed: N, failed: N }

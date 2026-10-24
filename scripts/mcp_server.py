@@ -250,6 +250,7 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
     return {"run_id": record.name if record else None, "status": status,
             "class": result.get("class"), "next": result.get("next") or "",
             "waiting_for": result.get("waiting_for"), "error": result.get("error") or "",
+            "replay": (result.get("failure") or {}).get("replay"),
             "record": str(record) if record else None}
 
 
