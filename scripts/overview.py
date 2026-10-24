@@ -188,6 +188,11 @@ h3.group { margin: 18px 0 6px; font-size: 14px; color: var(--muted); text-transf
 .tag.trust-verified { background: var(--dev-bg); color: var(--dev-fg); }
 .tag.trust-broken { background: var(--prod-bg); color: var(--prod-fg); }
 .tag.trust-draft { color: var(--muted); }
+/* A run's class (schema/result.yaml): red only where the map is at fault. */
+.tag.class-ok { background: var(--dev-bg); color: var(--dev-fg); }
+.tag.class-drift, .tag.class-assert { background: var(--prod-bg); color: var(--prod-fg); }
+.tag.class-auth, .tag.class-input, .tag.class-refused {
+  background: var(--staging-bg); color: var(--staging-fg); }
 .tag.effect-read-only { color: var(--deterministic); }
 .tag.effect-mutating { background: var(--staging-bg); color: var(--staging-fg); }
 .tag.effect-destructive { background: var(--prod-bg); color: var(--prod-fg); }
@@ -510,10 +515,19 @@ async function postRun(btn, params, consent) {
     if (res.waiting_for) lines.push('waiting for a person at step ' + res.waiting_for.step
                                     + ': ' + res.waiting_for.label + ' (' + res.waiting_for.reason + ')');
     if (res.error) lines.push('error: ' + res.error);
+    if (res.next) lines.push('next: ' + res.next);
     box.textContent = lines.join('\\n');
+    if (res.class) {
+      const chip = document.createElement('span');
+      chip.className = 'tag class-' + res.class;
+      chip.textContent = res.class;
+      box.prepend(chip, ' ');
+    }
     if (res.status === 'waiting') box.classList.add('wait');
-    else if (res.status !== 'passed') {
-      box.classList.add('fail');
+    else if (res.status !== 'passed') box.classList.add('fail');
+    // Only a failure the map caused (drift, assert) downgrades trust; the
+    // runner says so with trust_change, so the page never guesses.
+    if (res.trust_change) {
       const tag = btn.closest('.proc').querySelector('[class*="trust-"]');
       if (tag) { tag.textContent = 'broken'; tag.className = 'tag trust-broken'; }
     }

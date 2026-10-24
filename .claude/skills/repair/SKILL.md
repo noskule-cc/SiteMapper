@@ -23,6 +23,20 @@ locator **as tried**, resolved variables, actual URL and title, the page's
 fingerprint state, and a failure screenshot path. Ask for the JSON (or re-run
 the workflow to produce it) if only a prose description is offered.
 
+## Branch on the class first
+
+Read `class` and `next` from the result (`docs/interface.md` → Failure
+classes). Only `drift` is a map problem.
+
+- **`drift`** → run the Sequence below.
+- **`assert`** → follow `next` once: compare the failed assertion with the
+  live page. A page that changed is drift, so run the Sequence. A site that
+  broke is a finding for the user, and the map stays as it is.
+- **`input`, `refused`, `auth`, `error`** → do not touch the map. Follow
+  `next` once if it is a step you can take without bending a permission rule
+  (re-run with the missing parameter, for example), then report the class,
+  `next` and what happened. Consent, credentials and policy are the user's.
+
 ## Sequence
 
 1. **Look before touching.** Open the failure screenshot; open the live page

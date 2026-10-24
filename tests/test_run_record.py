@@ -194,6 +194,123 @@ class RunRecordTest(unittest.TestCase):
 
 
 
+CRASH_PY = """\
+import sys
+print("first line", file=sys.stderr)
+print("upstream said 503", file=sys.stderr)
+sys.exit(1)
+"""
+
+VERIFIED = """\
+workflow:
+  name: {name}
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: {effect}
+{extra}  steps:
+{steps}
+"""
+
+CLASSED = {
+    "ok": ("read-only", "", QUICK),
+    "input": ("read-only", "  parameters:\n    - name: size\n      required: true\n", QUICK),
+    "refused": ("mutating", "", QUICK),
+    "error": ("read-only", "",
+              "    - action: script\n      script: crash.py"),
+    "assert": ("read-only", "", STEPS["wrong"]),
+    "auth": ("read-only", "", "    - action: navigate\n      value: /issues"),
+}
+
+SESSION = """\
+persona:
+  name: reader
+  auth: session
+  storage_state: {state}
+"""
+EXPIRED = {"cookies": [{"name": "s", "value": "x", "domain": "example.invalid", "path": "/",
+                        "expires": 1700000000}], "origins": []}
+
+
+class FailureClassTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        site = self.root / "sites" / "fixture"
+        (site / "site.yaml").write_text(SITE + "    - name: crash.py\n", encoding="utf-8")
+        (site / "scripts" / "crash.py").write_text(CRASH_PY, encoding="utf-8")
+        state = base / "reader.json"
+        state.write_text(json.dumps(EXPIRED), encoding="utf-8")
+        (site / "personas").mkdir()
+        (site / "personas" / "reader.yaml").write_text(SESSION.format(state=state.as_posix()),
+                                                       encoding="utf-8")
+        for name, (effect, extra, steps) in CLASSED.items():
+            (site / "workflows" / f"c-{name}.yaml").write_text(
+                VERIFIED.format(name=f"c-{name}", effect=effect, extra=extra, steps=steps),
+                encoding="utf-8")
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_json(self, cls: str) -> tuple[int, dict, str]:
+        proc = subprocess.run(runner(self.root, self.runs, f"c-{cls}", "--json"),
+                              env=self.env, stdin=subprocess.DEVNULL,
+                              capture_output=True, text=True, timeout=60)
+        workflow = self.root / "sites" / "fixture" / "workflows" / f"c-{cls}.yaml"
+        trust = yaml.safe_load(workflow.read_text(encoding="utf-8"))["workflow"]["trust"]
+        return proc.returncode, json.loads(proc.stdout), trust
+
+    def test_a_passing_run_is_ok_with_no_next_step(self):
+        code, result, trust = self.run_json("ok")
+        self.assertEqual((code, result["status"], result["class"], result["next"], trust),
+                         (0, "passed", "ok", "", "verified"))
+
+    def test_a_missing_parameter_is_input_and_names_it(self):
+        code, result, trust = self.run_json("input")
+        self.assertEqual((code, result["status"], result["class"], result["next"], trust),
+                         (2, "error", "input", "run c-input again with --param size=...",
+                          "verified"))
+        self.assertEqual(result["error"],
+                         "required parameter 'size' missing — pass --param size=...")
+        self.assertNotIn("trust_change", result)
+
+    def test_an_ask_without_consent_is_refused(self):
+        code, result, trust = self.run_json("refused")
+        self.assertEqual((code, result["status"], result["class"], result["next"], trust),
+                         (2, "error", "refused", "pass --yes-write to consent to this one run",
+                          "verified"))
+
+    def test_a_script_that_exits_non_zero_is_error_and_keeps_trust(self):
+        code, result, trust = self.run_json("error")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (2, "error", "error", "verified"))
+        self.assertEqual(result["next"], "fix script 'crash.py' (its stderr is in `error`), "
+                                         "then run c-error again")
+        self.assertEqual(result["error"],
+                         "[steps] script 'crash.py' failed:\nfirst line\nupstream said 503")
+        self.assertEqual((result["failure"]["class"], result["failure"]["next"]),
+                         ("error", result["next"]))
+        self.assertNotIn("trust_change", result)
+
+    def test_an_expired_session_is_auth_and_keeps_trust(self):
+        code, result, trust = self.run_json("auth")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (2, "error", "auth", "verified"))
+        self.assertEqual(result["next"], "refresh the session of persona 'reader': run c-auth "
+                                         "once --headed with a persona whose auth is human")
+        self.assertIn("every cookie in", result["error"])
+        self.assertIn("expired, the last at 2023-11-14T22:13:20Z", result["error"])
+
+    def test_a_failed_assertion_is_assert_and_breaks_trust(self):
+        code, result, trust = self.run_json("assert")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (1, "failed", "assert", "broken"))
+        self.assertEqual(result["next"], "compare assertion .out.equals with the live page "
+                                         "before you patch the map")
+        self.assertEqual(result["trust_change"], "verified -> broken")
+
+
 class FinishWaitingTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)

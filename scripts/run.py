@@ -53,8 +53,43 @@ FRAMEWORK_ROOT = Path(__file__).resolve().parent.parent
 # its presence (or mode: agentic) makes the workflow un-runnable here.
 MECHANICAL_ACTIONS = set(tree.ACTIONS) - {"verify"}
 
+@dataclasses.dataclass(frozen=True)
+class FailureClass:
+    next: str                  # the one next step; {workflow} and {hint} are filled in
+    hint: str                  # {hint} when the raise site gives none
+    may_downgrade_trust: bool  # only a failure the map caused may set trust: broken
+
+
+# What a run's outcome means for the map, and the one thing to do about it
+# (schema/result.yaml). Only drift and assert are the map's fault.
+CLASSES = {
+    "ok": FailureClass("", "", False),
+    "input": FailureClass("run {workflow} again with {hint}", "the inputs the error names",
+                          False),
+    "refused": FailureClass("{hint}", "ask the site's owner whether this run may happen "
+                            "(docs/permissions.md)", False),
+    "auth": FailureClass("{hint}", "refresh the persona's session: run {workflow} once "
+                         "--headed with a persona whose auth is human", False),
+    "drift": FailureClass("/repair {workflow}", "", True),
+    "assert": FailureClass("compare {hint} with the live page before you patch the map",
+                           "the failed assertion", True),
+    "error": FailureClass("{hint}", "fix what the error names, then run {workflow} again",
+                          False),
+}
+
+
+def next_step(cls: str, workflow: str, hint: str = "") -> str:
+    entry = CLASSES[cls]
+    return entry.next.replace("{hint}", hint or entry.hint).replace("{workflow}", workflow)
+
+
 class RunError(Exception):
-    """Fatal runner error — maps to result.status = error."""
+    """Fatal runner error — maps to result.status = error, with its class."""
+
+    def __init__(self, message: str, cls: str = "error", hint: str = ""):
+        super().__init__(message)
+        self.cls = cls
+        self.hint = hint
 
 
 class WaitForPerson(Exception):
@@ -106,8 +141,8 @@ def find_workflow(root: Path, projects: Path, name: str):
         if wf.get("name") == name:
             return path, data, owner
     raise RunError(
-        f"no workflow named '{name}' under {root}/sites/*/workflows or {projects}"
-    )
+        f"no workflow named '{name}' under {root}/sites/*/workflows or {projects}",
+        "input", "a workflow name that list_workflows shows")
 
 
 class Site:
@@ -129,7 +164,7 @@ class Site:
 
     def page(self, page_name: str):
         if page_name not in self.pages:
-            raise RunError(f"site '{self.name}' has no page map '{page_name}'")
+            raise RunError(f"site '{self.name}' has no page map '{page_name}'", "drift")
         return self.pages[page_name]
 
     def element(self, page_name: str, element_name: str):
@@ -140,7 +175,7 @@ class Site:
                 if child.get("name") == element_name:
                     return child
         raise RunError(
-            f"page '{page_name}' ({self.name}) maps no element '{element_name}'"
+            f"page '{page_name}' ({self.name}) maps no element '{element_name}'", "drift"
         )
 
 
@@ -171,13 +206,15 @@ def load_persona(root: Path, site_name: str, persona_name: str | None):
             if f.stem == persona_name:
                 return (load_yaml(f) or {}).get("persona") or {}
         raise RunError(f"site '{site_name}' has no persona '{persona_name}' "
-                       f"({[f.stem for f in files] or 'none defined'})")
+                       f"({[f.stem for f in files] or 'none defined'})", "input",
+                       f"--persona <one of {[f.stem for f in files]}>")
     if len(files) == 1:
         return (load_yaml(files[0]) or {}).get("persona") or {}
     if not files:
         return None
     raise RunError(f"site '{site_name}' has several personas "
-                   f"({[f.stem for f in files]}) — pass --persona")
+                   f"({[f.stem for f in files]}) — pass --persona", "input",
+                   f"--persona <one of {[f.stem for f in files]}>")
 
 
 def load_context(root: Path, site_name: str, context_name: str | None,
@@ -192,13 +229,15 @@ def load_context(root: Path, site_name: str, context_name: str | None,
         match = [f for f in files if f.stem == context_name]
         if not match:
             raise RunError(f"site '{site_name}' has no context '{context_name}' "
-                           f"({[f.stem for f in files] or 'none defined'})")
+                           f"({[f.stem for f in files] or 'none defined'})", "input",
+                           f"--context <one of {[f.stem for f in files]}>")
         context = load_yaml(match[0]).get("context", {})
     elif required and len(files) == 1:
         context = load_yaml(files[0]).get("context", {})
     elif required and files:
         raise RunError(f"workflow requires a context and site '{site_name}' has "
-                       f"several ({[f.stem for f in files]}) — pass --context")
+                       f"several ({[f.stem for f in files]}) — pass --context", "input",
+                       f"--context <one of {[f.stem for f in files]}>")
     elif required:
         raise RunError(f"workflow declares `requires.context` but site "
                        f"'{site_name}' has no contexts/ directory")
@@ -211,7 +250,8 @@ def load_context(root: Path, site_name: str, context_name: str | None,
             raise RunError(
                 f"context '{context.get('name')}' does not satisfy the workflow's "
                 f"requires: missing {missing} — a bad pairing fails up front, "
-                "not mid-run (schema/context.yaml)")
+                "not mid-run (schema/context.yaml)", "input",
+                "--context <one that has the roles and ids the workflow requires>")
     return context
 
 
@@ -223,28 +263,52 @@ def state_path(root: Path, site_name: str, persona: dict) -> Path:
     return root / ".runner" / "state" / f"{site_name}.{persona.get('name', 'default')}.json"
 
 
+def state_expired(state: Path) -> str:
+    """When a saved state has cookies and every one has an expiry in the past,
+    the UTC time the last one ran out; else "". A browser-session cookie
+    (expires -1) counts as live. A state with no cookies (a localStorage token
+    session) is never judged: analytics keys make localStorage useless as a
+    session signal next to cookies. An expired state would land on the login
+    page and read as drift, so it fails as auth before the browser opens."""
+    try:
+        cookies = (json.loads(state.read_text(encoding="utf-8")) or {}).get("cookies") or []
+        expiries = [float(c.get("expires", -1)) for c in cookies]
+    except (OSError, ValueError, TypeError, AttributeError):
+        return ""
+    if not expiries or min(expiries) <= 0 or max(expiries) > time.time():
+        return ""
+    return _dt.datetime.fromtimestamp(max(expiries), _dt.timezone.utc).isoformat(
+        timespec="seconds").replace("+00:00", "Z")
+
+
 def read_secret(ref: str, what: str) -> str:
     ref = ref or ""
     if ref.startswith("env:"):
         value = os.environ.get(ref[4:])
         if not value:
-            raise RunError(f"environment variable '{ref[4:]}' ({what}) is not set")
+            raise RunError(f"environment variable '{ref[4:]}' ({what}) is not set", "auth",
+                           f"set the environment variable {ref[4:]}, then run {{workflow}} "
+                           "again")
         return value
     if ref.startswith("keyring:"):
         service, _, name = ref[8:].partition("/")
         if not service or not name:
-            raise RunError(f"persona {what} '{ref}' must read keyring:<service>/<name>")
+            raise RunError(f"persona {what} '{ref}' must read keyring:<service>/<name>",
+                           "auth", f"write {what} as keyring:<service>/<name>")
         try:
             import keyring
         except ImportError:
             raise RunError(f"persona {what} is a keyring: reference, but keyring is not "
-                           "installed: pip install keyring") from None
+                           "installed: pip install keyring", "auth",
+                           "pip install keyring") from None
         value = keyring.get_password(service, name)
         if not value:
-            raise RunError(f"keyring entry '{ref}' ({what}) does not exist")
+            raise RunError(f"keyring entry '{ref}' ({what}) does not exist", "auth",
+                           f"store the keyring entry {ref[8:]}")
         return value
     raise RunError(f"persona {what} must be an env: or keyring: reference, not a value "
-                   "— committed files never contain secrets (schema/persona.yaml)")
+                   "— committed files never contain secrets (schema/persona.yaml)", "auth",
+                   f"replace {what} with an env: or keyring: reference")
 
 
 def deep_merge(base: dict, override: dict) -> dict:
@@ -303,8 +367,8 @@ class Bindings:
                 options = p.get("options")
                 if p.get("type") == "select" and options and value not in options:
                     raise RunError(
-                        f"parameter '{name}' must be one of {options}, got '{value}'"
-                    )
+                        f"parameter '{name}' must be one of {options}, got '{value}'",
+                        "input", f"--param {name}=<one of {options}>")
                 self.params[name] = value
             elif p.get("default") not in (None, ""):
                 self.params[name] = p["default"]
@@ -329,7 +393,8 @@ class Bindings:
             if name in source:
                 return str(source[name])
         raise RunError(f"unresolved variable '${name}' (not a parameter, context "
-                       "role/id, fixture or capture)")
+                       "role/id, fixture or capture)", "input",
+                       f"a parameter, context or fixture that defines ${name}")
 
     def resolve(self, text):
         if not isinstance(text, str):
@@ -395,12 +460,27 @@ def evaluate_capture(bindings: "Bindings", step: dict, expect):
 # ---------------------------------------------------------------------------
 # Browser execution
 
+# Playwright errors that say the browser or the network went away, not that the
+# page changed: a closed window mid-click must not mark a working map broken.
+NOT_THE_MAP = ("Target crashed", "Execution context was destroyed",
+               "Target page, context or browser has been closed", "net::ERR_")
+
+
+def element_drifted(exc: BaseException) -> bool:
+    """A Playwright Error or TimeoutError about the element itself, without
+    importing Playwright. A closed or crashed browser or a network error is not
+    drift."""
+    return (type(exc).__module__.startswith("playwright.")
+            and type(exc).__name__ != "TargetClosedError"
+            and not any(cause in str(exc) for cause in NOT_THE_MAP))
+
+
 def build_locator(pw_page, element: dict, scope_value: str | None = None):
     """Map a page-map locator onto Playwright. One strategy, one call."""
     strategy = (element.get("locator") or {}).get("strategy")
     value = (element.get("locator") or {}).get("value")
     if not strategy or value is None:
-        raise RunError(f"element '{element.get('name')}' has no usable locator")
+        raise RunError(f"element '{element.get('name')}' has no usable locator", "drift")
     if strategy == "text":
         loc = pw_page.get_by_text(value)
     elif strategy == "aria-label":
@@ -412,7 +492,7 @@ def build_locator(pw_page, element: dict, scope_value: str | None = None):
     elif strategy == "css":
         loc = pw_page.locator(value)
     else:
-        raise RunError(f"unknown locator strategy '{strategy}'")
+        raise RunError(f"unknown locator strategy '{strategy}'", "drift")
     if scope_value:
         # value-scoped match inside a container/table: pick the matching item
         loc = loc.get_by_text(scope_value)
@@ -473,14 +553,6 @@ class Runner:
 
     # -- browser lifecycle -------------------------------------------------
     def start(self, primary_site: str):
-        try:
-            from playwright.sync_api import sync_playwright
-        except ImportError:
-            raise RunError(
-                "Playwright is not installed. The runner needs it (the rest of "
-                "SiteMapper does not): pip install playwright  — no browser "
-                "download required, the installed Chrome is used."
-            )
         context_args = {}
         credentials = None
         if self.persona:
@@ -490,38 +562,62 @@ class Runner:
                 if fresh:
                     raise RunError(f"persona '{self.persona.get('name')}' is auth: session "
                                    "and fresh_login: true — a session persona only reuses "
-                                   "saved state (schema/persona.yaml)")
+                                   "saved state (schema/persona.yaml)", "auth",
+                                   "drop fresh_login from the session persona")
+                refresh = (f"refresh the session of persona '{self.persona.get('name')}': "
+                           "run {workflow} once --headed with a persona whose auth is human")
                 if not state.is_file():
                     raise RunError(
                         f"persona '{self.persona.get('name')}' is auth: session but "
                         f"{state} does not exist — run once with a persona whose auth "
                         "is `human` (headed) to create it. The runner never logs in "
-                        "silently."
+                        "silently.", "auth", refresh
                     )
+                expired = state_expired(state)
+                if expired:
+                    raise RunError(
+                        f"persona '{self.persona.get('name')}' is auth: session but every "
+                        f"cookie in {state} expired, the last at {expired}. The runner "
+                        "never logs in silently.", "auth", refresh)
                 context_args["storage_state"] = str(state)
             elif state.is_file() and not fresh:
                 context_args["storage_state"] = str(state)
             elif self.persona.get("auth") == "automated":
                 credentials = self._login_credentials(primary_site)
+        try:  # after the persona checks, so an auth failure needs no browser to report
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            raise RunError(
+                "Playwright is not installed. The runner needs it (the rest of "
+                "SiteMapper does not): pip install playwright  — no browser "
+                "download required, the installed Chrome is used."
+            )
         self._pw = sync_playwright().start()
         self.browser = self._pw.chromium.launch(channel="chrome", headless=not self.headed)
         self.context = self.browser.new_context(**context_args)
         self.pw_page = self.context.new_page()
         self.pw_page.set_default_timeout(self.DEFAULT_TIMEOUT_MS)
         if self.persona and "storage_state" not in context_args:
-            failed = None
-            try:
-                self._establish_session(primary_site, credentials)
-            except RunError as exc:
-                failed = str(exc)
-            except Exception as exc:
-                failed = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
-            if failed:
-                # Raised outside the except block: the Playwright exception's
-                # call log holds fill("<password>") and must not ride along as
-                # __context__. A login screen shows the username, so no screenshot.
-                self.login_failed = True
-                raise RunError(f"{failed} (no screenshot taken: the failure was in the login)")
+            self.log_in(primary_site, credentials)
+
+    def log_in(self, primary_site: str, credentials: tuple[str, str] | None):
+        """Establish the persona's session. A failure keeps the class its raise
+        site named: drift in the login page's map stays drift, a rejected login
+        is auth, anything else (a network error) is error."""
+        failed, cls, hint = None, "error", ""
+        try:
+            self._establish_session(primary_site, credentials)
+        except RunError as exc:
+            failed, cls, hint = str(exc), exc.cls, exc.hint
+        except Exception as exc:
+            failed = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
+        if failed:
+            # Raised outside the except block: the Playwright exception's
+            # call log holds fill("<password>") and must not ride along as
+            # __context__. A login screen shows the username, so no screenshot.
+            self.login_failed = True
+            raise RunError(f"{failed} (no screenshot taken: the failure was in the login)",
+                           cls, hint)
 
     def _login_credentials(self, site_name: str) -> tuple[str, str]:
         site = Site(self.root, site_name)
@@ -533,10 +629,13 @@ class Runner:
                 f"automated login is '{verdict}' for site '{site_name}' "
                 f"(environment: {env})" +
                 (" — pass --yes-auth to pre-authorize" if verdict == "ask" else
-                 ". Use a `human`-seeded session instead (docs/permissions.md).")
+                 ". Use a `human`-seeded session instead (docs/permissions.md)."),
+                "refused", "pass --yes-auth to consent to this one run" if verdict == "ask"
+                else ""
             )
         if not (self.persona.get("login") or {}).get("page"):
-            raise RunError("auth: automated needs a `login:` block (schema/persona.yaml)")
+            raise RunError("auth: automated needs a `login:` block (schema/persona.yaml)",
+                           "auth", "give the persona a `login:` block")
         creds = self.persona.get("credential_ref") or {}
         return (read_secret(creds.get("username"), "credential_ref.username"),
                 read_secret(creds.get("password"), "credential_ref.password"))
@@ -550,7 +649,8 @@ class Runner:
             if not self.headed:
                 raise RunError(
                     f"persona '{persona.get('name')}' needs a first login by a human — "
-                    "re-run with --headed, log in when the browser opens"
+                    "re-run with --headed, log in when the browser opens", "auth",
+                    "run {workflow} again with --headed and log in when the browser opens"
                 )
             login_page = (persona.get("login") or {}).get("page")
             self.pw_page.goto(site.base_url + (site.page(login_page).get("url_pattern", "")
@@ -558,7 +658,9 @@ class Runner:
             try:
                 input("Log in in the browser window, then press Enter here... ")
             except (EOFError, KeyboardInterrupt):
-                raise RunError("no interactive console to wait on — auth: human needs one")
+                raise RunError("no interactive console to wait on — auth: human needs one",
+                               "auth", "run {workflow} again --headed from a terminal and "
+                               "log in when the browser opens")
         elif method == "automated":
             login = persona["login"]
             user, pw = credentials
@@ -575,8 +677,8 @@ class Runner:
                         locator.fill(value)
                 except Exception as exc:
                     raise RunError(f"login.{key} '{login[key]}' on page '{login['page']}': "
-                                   f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
-                                   ) from None
+                                   f"{type(exc).__name__}: {str(exc).splitlines()[0]}",
+                                   "drift") from None
             self.pw_page.wait_for_load_state()
             password = build_locator(self.pw_page,
                                      site.element(login["page"], login["password_element"]))
@@ -585,9 +687,11 @@ class Runner:
             except Exception:
                 raise RunError(f"login rejected on site '{site_name}': the password element "
                                f"'{login['password_element']}' still shows after submit. "
-                               "Not retried.") from None
+                               "Not retried.", "auth", f"check the credentials of persona "
+                               f"'{persona.get('name')}'; the runner did not retry") from None
         else:
-            raise RunError(f"persona auth method '{method}' is not session|human|automated")
+            raise RunError(f"persona auth method '{method}' is not session|human|automated",
+                           "auth", "set the persona's auth to session, human or automated")
         if persona.get("fresh_login"):
             return
         state.parent.mkdir(parents=True, exist_ok=True)
@@ -615,7 +719,16 @@ class Runner:
         if (page_name and page_name != self._last_page and action != "navigate"
                 and self.pw_page):
             self.check_fingerprint(self.site(step), page_name)
-        getattr(self, f"do_{action}")(step)
+        try:
+            getattr(self, f"do_{action}")(step)
+        except Exception as exc:
+            # The browser failing on a mapped element (gone, timed out, no
+            # longer an input) is the map's problem; any other exception stays
+            # the runner's (class error).
+            if step.get("element") and element_drifted(exc):
+                raise RunError(f"{type(exc).__name__}: {str(exc).splitlines()[0]}",
+                               "drift") from None
+            raise
         if page_name:
             self._last_page = page_name
         # The snapshot phase's captures are the pre-state: kept apart so the
@@ -716,7 +829,8 @@ class Runner:
             if re.search(r"[{<]", pattern):
                 raise RunError(
                     f"page '{step['page']}' url_pattern '{pattern}' has unresolved "
-                    "placeholders — navigate with an explicit `value:` instead"
+                    "placeholders — navigate with an explicit `value:` instead", "input",
+                    "a navigate step whose `value:` fills the placeholders"
                 )
             url = site.base_url + pattern
         else:
@@ -768,8 +882,8 @@ class Runner:
             if locator.input_value() != value:
                 raise RunError(
                     f"field did not accept '{value}' "
-                    f"(reads '{locator.input_value()}') - fill and typing were both reverted"
-                )
+                    f"(reads '{locator.input_value()}') - fill and typing were both reverted",
+                    "drift")
         except RunError:
             raise
         except Exception:
@@ -805,13 +919,13 @@ class Runner:
             or [i for i, h in enumerate(headers) if h.startswith(column)]
         if len(index) != 1:
             raise RunError(f"header '{column}' matches {len(index)} of the columns "
-                           f"{headers}, expected 1")
+                           f"{headers}, expected 1", "drift")
         if len(grid["rows"]) != 1:
-            raise RunError(f"{len(grid['rows'])} rows contain '{row}', expected 1")
+            raise RunError(f"{len(grid['rows'])} rows contain '{row}', expected 1", "drift")
         cells = grid["rows"][0]
         if index[0] >= len(cells):
             raise RunError(f"the row containing '{row}' has {len(cells)} cells, "
-                           f"no cell under header '{column}'")
+                           f"no cell under header '{column}'", "drift")
         return cells[index[0]]
 
     def do_wait(self, step):
@@ -855,7 +969,9 @@ class Runner:
         cmd = [sys.executable, str(path)] + args.split()
         proc = subprocess.run(cmd, capture_output=True, text=True, cwd=self.root)
         if proc.returncode != 0:
-            raise RunError(f"script '{step.get('script')}' failed:\n{proc.stderr.strip()}")
+            raise RunError(f"script '{step.get('script')}' failed:\n{proc.stderr.strip()}",
+                           "error", f"fix script '{step.get('script')}' (its stderr is in "
+                           "`error`), then run {workflow} again")
         if step.get("capture"):
             out = proc.stdout.strip()
             try:
@@ -964,7 +1080,8 @@ def require_params(workflow: dict, cli_params: dict):
     for p in workflow.get("parameters") or []:
         if p.get("required") and p["name"] not in cli_params and p.get("default") in (None, ""):
             name = p["name"]
-            raise RunError(f"required parameter '{name}' missing — pass --param {name}=...")
+            raise RunError(f"required parameter '{name}' missing — pass --param {name}=...",
+                           "input", f"--param {name}=...")
 
 
 def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
@@ -987,7 +1104,8 @@ def resolve_scope(root: Path, workflow: dict, owner: Owner, cli_params: dict):
         tier = bindings.params.get("environment")
         allowed = tiers.get("allowed") or tiers.get("required") or []
         if tier not in allowed:
-            raise RunError(f"parameter 'environment' must be one of {allowed}, got '{tier}'")
+            raise RunError(f"parameter 'environment' must be one of {allowed}, got '{tier}'",
+                           "input", f"--param environment=<one of {allowed}>")
         primary = (apps[app_name].get("tiers") or {}).get(tier)
         if not primary:
             raise RunError(f"app '{app_name}' maps no site for tier '{tier}'")
@@ -1115,14 +1233,16 @@ def preflight(root: Path, workflow: dict, owner: Owner, cli_params: dict,
     if mode != "deterministic":
         raise RunError(
             f"'{name}' is mode: {mode or 'unset'} — only deterministic workflows can run "
-            "headless. An agentic workflow needs an LLM host (the /run skill)."
+            "headless. An agentic workflow needs an LLM host (the /run skill).",
+            "refused", "run {workflow} through the /run skill on an LLM host"
         )
     for phase in tree.PHASES + ("teardown",):
         for step in workflow.get(phase) or []:
             if step.get("action") == "verify":
                 raise RunError(
                     f"step in `{phase}` uses action: verify (judgement) — the workflow "
-                    "cannot be deterministic; fix its mode or the step"
+                    "cannot be deterministic; fix its mode or the step",
+                    "refused", "run {workflow} through the /run skill on an LLM host"
                 )
     if workflow.get("rollback") == "snapshot" and not any(
             s.get("capture") for s in (workflow.get("snapshot") or []) if isinstance(s, dict)):
@@ -1134,7 +1254,8 @@ def preflight(root: Path, workflow: dict, owner: Owner, cli_params: dict,
     if effect not in EFFECT_CLASS:
         raise RunError(
             f"effect: {effect or 'undeclared'} — a headless run needs the workflow to "
-            "declare read-only | mutating | destructive (schema/workflow.yaml)"
+            "declare read-only | mutating | destructive (schema/workflow.yaml)",
+            "refused", "declare the effect of {workflow} (schema/workflow.yaml)"
         )
     by_site = {s: site_decisions(root, s) for s in sites}
     action_class = EFFECT_CLASS[effect]
@@ -1162,10 +1283,12 @@ def gate(pre: Preflight):
     """
     action_class = EFFECT_CLASS[pre.effect]
     decision = pre.classes[action_class]
+    consent = f"pass --yes-{action_class} to consent to this one run"
     if decision.verdict == "deny":
         raise RunError(
             f"permission denied: effect '{pre.effect}' needs class '{action_class}' which is "
-            f"'deny' for {decision.where()}. This is policy, not a bug — see docs/permissions.md."
+            f"'deny' for {decision.where()}. This is policy, not a bug — see docs/permissions.md.",
+            "refused"
         )
     if decision.verdict == "ask":
         if action_class in pre.consent:
@@ -1182,12 +1305,13 @@ def gate(pre: Preflight):
                 return
             raise RunError(
                 f"not authorized: class '{action_class}' is 'ask' for {decision.where()} and "
-                f"no consent was given. Pass --yes-{action_class} to pre-authorize."
+                f"no consent was given. Pass --yes-{action_class} to pre-authorize.",
+                "refused", consent
             )
         raise RunError(
             f"class '{action_class}' is 'ask' for {decision.where()}, and this run is "
             f"non-interactive — `ask` degrades to deny. Pass --yes-{action_class} to "
-            "pre-authorize."
+            "pre-authorize.", "refused", consent
         )
 
 
@@ -1211,13 +1335,14 @@ def _set_workflow_key(wf_path: Path, key: str, value: str):
 
 
 def update_trust(wf_path: Path, workflow: dict, result: dict):
-    """broken on failure/drift; verified_at refresh on a green verified run;
-    a green draft run promotes NOTHING — promotion is a review decision.
-    A downgrade is noted on the result as `trust_change`, so write_run keeps
-    the one run that explains the flag (#52)."""
+    """broken when the run's class may downgrade trust (drift, assert); verified_at
+    refresh on a green verified run; a green draft run promotes NOTHING —
+    promotion is a review decision. Auth, input, refused and runner errors leave
+    trust alone: the map did not cause them. A downgrade is noted on the result
+    as `trust_change`, so write_run keeps the one run that explains the flag (#52)."""
     trust = workflow.get("trust")
     drifted = [p for p, s in result.get("fingerprints", {}).items() if s == "mismatch"]
-    if result["status"] in ("failed", "error") or drifted:
+    if CLASSES[result["class"]].may_downgrade_trust:
         if trust != "broken":
             _set_workflow_key(wf_path, "trust", "broken")
             result["trust_change"] = f"{trust or 'unset'} -> broken"
@@ -1268,6 +1393,8 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         "site": primary,
         "tier": tier,
         "status": "passed",
+        "class": "ok",
+        "next": "",
         "started_at": utc_now(),
         "finished_at": "",
         "parameters": dict(bindings.params),
@@ -1289,6 +1416,17 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         recorder.stopped(result, exc)
         raise
     return result, recorder.folder
+
+
+def unstarted_result(name: str, exc: RunError) -> dict:
+    """The result of a run refused before its first step: no record, nothing
+    ran, trust untouched."""
+    now = utc_now()
+    return {"workflow": name, "site": "", "tier": "-", "status": "error",
+            "class": exc.cls, "next": next_step(exc.cls, name, exc.hint),
+            "started_at": now, "finished_at": now, "parameters": {}, "fixtures": {},
+            "captures": {}, "assertions": [], "evidence": [], "fingerprints": {},
+            "counts": {"total": 0, "passed": 0, "failed": 0}, "error": str(exc)}
 
 
 def step_label(step: dict) -> str:
@@ -1335,6 +1473,7 @@ def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, p
     phase = "setup"
     ordered = [(ph, index, step) for ph in tree.PHASES
                for index, step in enumerate(workflow.get(ph) or [])]
+    cls, hint = "error", ""
     try:
         if needs_browser(workflow):
             runner.start(primary)
@@ -1352,6 +1491,7 @@ def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, p
         result["status"] = "error"
         result["error"] = f"[{phase}] {exc}"
         result["failure"] = runner.build_failure()
+        cls, hint = exc.cls, exc.hint
     except Exception as exc:  # Playwright timeouts, navigation errors, ...
         result["status"] = "error"
         result["error"] = f"[{phase}] {type(exc).__name__}: {str(exc).splitlines()[0]}"
@@ -1377,6 +1517,20 @@ def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, p
     result["fingerprints"] = runner.fingerprints
     if result["status"] == "passed" and any(not a["pass"] for a in runner.assertions):
         result["status"] = "failed"
+    failed = [a for a in runner.assertions if not a["pass"]]
+    drifted = "mismatch" in runner.fingerprints.values()
+    # A drifted page explains whatever followed it, unless the raise site
+    # named a cause of its own.
+    if result["status"] != "error":
+        cls = "drift" if drifted else "assert" if failed else "ok"
+    elif cls == "error" and drifted:
+        cls = "drift"
+    if cls == "assert":
+        hint = f"assertion {failed[0]['id']}"
+    result["class"] = cls
+    result["next"] = next_step(cls, result["workflow"], hint)
+    if "failure" in result:
+        result["failure"].update({"class": cls, "next": result["next"]})
     total = len(runner.assertions)
     passed = sum(1 for a in runner.assertions if a["pass"])
     result["counts"] = {"total": total, "passed": passed, "failed": total - passed}
@@ -1748,6 +1902,9 @@ def main(argv=None):
                                       args.context, runs, args.record, args.trigger)
     except RunError as exc:
         print(f"error: {exc}", file=sys.stderr)
+        if args.json:
+            print(json.dumps(unstarted_result(args.workflow, exc), indent=2,
+                             ensure_ascii=False))
         return 2
 
     if record:
@@ -1772,6 +1929,8 @@ def main(argv=None):
             print(f"  waiting for a person at step {w['step']}: {w['label']} ({w['reason']})")
         if result["error"]:
             print(f"  error: {result['error']}")
+        if result["next"]:
+            print(f"  {result['class']}, next: {result['next']}")
     return {"passed": 0, "waiting": 0, "failed": 1, "error": 2}[result["status"]]
 
 
