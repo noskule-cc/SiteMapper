@@ -5,6 +5,7 @@ import sys
 import tempfile
 import time
 import unittest
+import unittest.mock
 from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent.parent / "scripts"
@@ -157,6 +158,7 @@ class StepFailureTest(unittest.TestCase):
 class Recorded:
     """The parts of a Runner that execute reads, with a fingerprint mismatch."""
     assertions, evidence, snapshot = [], [], {}
+    confirm_drift = run.Runner.confirm_drift
 
     def __init__(self, raise_exc=None):
         self.raise_exc = raise_exc
@@ -181,10 +183,11 @@ class FingerprintTest(unittest.TestCase):
         wf_path = Path(tmp.name) / "watch.yaml"
         wf_path.write_text("workflow:\n  name: watch\n  mode: deterministic\n"
                            "  trust: verified\n", encoding="utf-8")
-        workflow = {"name": "watch", "trust": "verified",
+        workflow = {"name": "watch", "trust": "verified", "effect": "read-only",
                     "steps": [{"action": "script", "script": "noop.py"}]}
         result = {"workflow": "watch", "status": "passed", "error": ""}
-        run.execute(runner, workflow, run.Bindings(workflow, {}), wf_path, "site", result)
+        runner.workflow, runner.bindings = workflow, run.Bindings(workflow, {})
+        run.execute(runner, workflow, runner.bindings, wf_path, "site", result)
         return result, wf_path.read_text(encoding="utf-8")
 
     def test_a_fingerprint_mismatch_on_a_passing_run_is_drift(self):
@@ -306,6 +309,92 @@ class StateExpiredTest(unittest.TestCase):
 
     def test_a_state_without_cookies_is_not_expired(self):
         self.assertEqual(self.expired([]), "")
+
+
+ROWS_SITE = "site:\n  name: tracker\n  base_url: https://tracker.invalid\n"
+ROWS_PAGE = """\
+page:
+  name: list
+  url_pattern: /list
+  elements:
+    - {name: table, locator: {strategy: css, value: "table"}}
+"""
+ROWS_WORKFLOW = """\
+workflow:
+  name: lookup
+  site: tracker
+  mode: deterministic
+  trust: verified
+  effect: read-only
+  parameters:
+    - {name: title, type: text, required: true}
+  fixtures:
+    title: Issue 1
+  steps:
+    - {action: read, page: list, element: table, row: $title, column: State, capture: state}
+"""
+
+
+class TablePage(FakePage):
+    """A table whose one row is 'Issue 1'; a read finds the rows containing its needle."""
+
+    def locator(self, value):
+        page = self
+
+        class Rows(FakeLocator):
+            def evaluate(self, js, needle):
+                return {"headers": ["Title", "State"],
+                        "rows": [r for r in [["Issue 1", "open"]] if needle in r[0]]}
+        return Rows(page, value)
+
+
+class TableRowReplayTest(unittest.TestCase):
+    """A row the table lacks is drift on its own; the fixture replay tells it apart."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        site = self.root / "sites" / "tracker"
+        (site / "pages").mkdir(parents=True)
+        (site / "workflows").mkdir()
+        (self.root / "projects").mkdir()
+        (self.root / "config.yaml").write_text(
+            "settings:\n  policy:\n    permissions:\n      read: allow\n", encoding="utf-8")
+        (site / "site.yaml").write_text(ROWS_SITE, encoding="utf-8")
+        (site / "pages" / "list.yaml").write_text(ROWS_PAGE, encoding="utf-8")
+        self.wf_path = site / "workflows" / "lookup.yaml"
+        self.wf_path.write_text(ROWS_WORKFLOW, encoding="utf-8")
+        starts = self.starts = []
+
+        def start(runner, primary):
+            starts.append(primary)
+            runner.pw_page = TablePage()
+        for name, value in (("start", start), ("DEFAULT_TIMEOUT_MS", 0)):
+            patcher = unittest.mock.patch.object(run.Runner, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def lookup(self, title: str) -> dict:
+        result, _ = run.run_workflow(self.root, self.root / "projects", "lookup",
+                                     {"title": title}, False)
+        return result
+
+    def test_a_missing_row_that_the_fixture_finds_is_input(self):
+        result = self.lookup("Issue 9")
+        self.assertEqual((result["status"], result["class"], result["failure"]["replay"]["status"]),
+                         ("error", "input", "passed"))
+        self.assertEqual(result["error"], "[steps] 0 rows contain 'Issue 9', expected 1")
+        self.assertEqual(self.starts, ["tracker", "tracker"])
+        self.assertIn("trust: verified", self.wf_path.read_text(encoding="utf-8"))
+
+    def test_a_missing_row_on_the_fixture_too_is_drift(self):
+        self.wf_path.write_text(ROWS_WORKFLOW.replace("title: Issue 1", "title: Issue 7"),
+                                encoding="utf-8")
+        result = self.lookup("Issue 9")
+        self.assertEqual((result["class"], result["failure"]["replay"]["status"],
+                          result["failure"]["replay"]["class"]), ("drift", "failed", "drift"))
+        self.assertIn("trust: broken", self.wf_path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":
