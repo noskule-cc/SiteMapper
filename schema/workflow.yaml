@@ -219,6 +219,22 @@ workflow:
       value: ""               # Value to input, a URL to navigate to, CLI args for a script,
                               #   or a reference like "$param", "$fixture", "$captured_var"
       capture: ""             # Store step output in a named variable (e.g., "offline_devices")
+      shape: null             # For action: script, optional — the expected JSON shape
+                              #   of the step's output. A shape is a type name (string |
+                              #   number | bool | null), a mapping of key to shape, or a
+                              #   one-item list whose item every element must match:
+                              #     shape:
+                              #       total_count: number
+                              #       items:
+                              #         - title: string
+                              #           closed_at: "null"
+                              #   Extra keys and an empty list match. A missing key, a
+                              #   changed type or output that is not JSON is drift:
+                              #   result.scripts.<capture or script> = mismatch, class
+                              #   drift, trust broken, the run stops at the step. A null
+                              #   value matches any shape and "null" any value, since an
+                              #   empty field is not an API change. Write it with
+                              #   `run.py <workflow> --learn-shape` on a passing run.
       row: ""                 # For action: read on a table — text the one row must contain
                               #   (a "$fixture" works). Needs `column`; see "action: read" below.
       column: ""              # For action: read on a table — the header text of the cell to read

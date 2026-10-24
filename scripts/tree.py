@@ -50,7 +50,31 @@ ROLLBACK_VALUES = ("snapshot", "none")
 ACTIONS = ("navigate", "click", "input", "read", "assert", "verify", "wait", "key",
            "script", "human")
 HUMAN_KINDS = ("approve", "login", "physical", "other")
+SHAPE_TYPES = ("string", "number", "bool", "null")
 DEFAULT_KEEP = "1d"
+
+
+def shape_problem(shape, where: str = "shape") -> str:
+    """What makes a script step's `shape` malformed, or "" (schema/workflow.yaml).
+    A bare YAML null stands for the type name null."""
+    if shape is None:
+        return ""
+    if isinstance(shape, str):
+        return "" if shape in SHAPE_TYPES else \
+            f"{where}: '{shape}' is not {' | '.join(SHAPE_TYPES)}"
+    if isinstance(shape, list):
+        if len(shape) > 1:
+            return f"{where}: a list shape holds one item shape, not {len(shape)}"
+        return shape_problem(shape[0], f"{where}[0]") if shape else ""
+    if isinstance(shape, dict):
+        for key, sub in shape.items():
+            if not isinstance(key, str):
+                return f"{where}: key {key!r} is not a string"
+            problem = shape_problem(sub, f"{where}.{key}")
+            if problem:
+                return problem
+        return ""
+    return f"{where}: {shape!r} is not a type name, a mapping or a one-item list"
 
 PHASES = ("setup", "snapshot", "steps")
 

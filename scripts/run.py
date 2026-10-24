@@ -458,6 +458,93 @@ def evaluate_capture(bindings: "Bindings", step: dict, expect):
 
 
 # ---------------------------------------------------------------------------
+# Script output shape (schema/workflow.yaml `shape`): an API that dropped a key
+# or changed a type is drift, caught on the step instead of downstream.
+
+JSON_TYPES = {type(None): "null", bool: "bool", int: "number", float: "number",
+              str: "string", list: "list", dict: "object"}
+
+
+def _type_name(value) -> str:
+    return JSON_TYPES[type(value)]
+
+
+def _merge_shapes(a, b):
+    """The shape both a and b match: common keys only, and null where they disagree.
+    null means unknown, so it yields to the other side."""
+    if a == "null":
+        return b
+    if b == "null":
+        return a
+    if isinstance(a, dict) and isinstance(b, dict):
+        return {k: _merge_shapes(a[k], b[k]) for k in a if k in b}
+    if isinstance(a, list) and isinstance(b, list):
+        return [_merge_shapes(a[0], b[0])] if a and b else a or b
+    return a if a == b else "null"
+
+
+def infer_shape(value):
+    """The shape of a script's parsed output. A list's item shape is the one
+    every item matches, so a run always matches the shape it taught."""
+    if isinstance(value, dict):
+        return {k: infer_shape(v) for k, v in value.items()}
+    if isinstance(value, list):
+        if not value:
+            return []
+        item = infer_shape(value[0])
+        for other in value[1:]:
+            item = _merge_shapes(item, infer_shape(other))
+        return [item]
+    return _type_name(value)
+
+
+def shape_mismatch(shape, value) -> str:
+    """Why `value` does not match `shape`, as "<path>: <what>", or "" when it
+    does. Extra keys and an empty list match. A null value matches any shape and
+    a null shape any value: an empty field is not an API change."""
+    found = _mismatch(shape, value)
+    if not found:
+        return ""
+    path, what = found
+    return "$" + "".join(reversed(path)) + ": " + what
+
+
+def _mismatch(shape, value):
+    """(reversed path parts, what) or None. The path is built only on the way
+    out of a mismatch, so a 1 MB output that matches formats no strings."""
+    if value is None or shape is None or shape == "null":
+        return None
+    if type(shape) is str:
+        got = JSON_TYPES[type(value)]
+        return None if got == shape else ([], f"expected {shape}, got {got}")
+    if type(shape) is dict:
+        if type(value) is not dict:
+            return [], f"expected object, got {JSON_TYPES[type(value)]}"
+        for key, sub in shape.items():
+            if key not in value:
+                return [f".{key}"], "missing"
+            got = value[key]
+            if sub is None or type(sub) is str and (got is None or sub == "null"
+                                                    or JSON_TYPES[type(got)] == sub):
+                continue  # the common leaf, without a call
+            found = _mismatch(sub, got)
+            if found:
+                found[0].append(f".{key}")
+                return found
+        return None
+    if type(value) is not list:
+        return [], f"expected list, got {JSON_TYPES[type(value)]}"
+    if shape:
+        item = shape[0]
+        for i, entry in enumerate(value):
+            found = _mismatch(item, entry)
+            if found:
+                found[0].append(f"[{i}]")
+                return found
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Browser execution
 
 # Playwright errors that say the browser or the network went away, not that the
@@ -519,7 +606,7 @@ class Runner:
 
     def __init__(self, root: Path, wf_path: Path, workflow: dict, bindings: Bindings,
                  owner: Owner, headed: bool = False, persona: dict | None = None,
-                 pre_authorized: set = frozenset()):
+                 pre_authorized: set = frozenset(), learn_shape: bool = False):
         self.root = root
         self.wf_path = wf_path
         self.workflow = workflow
@@ -536,6 +623,9 @@ class Runner:
         self.snapshot: dict = {}  # captures of the snapshot phase, the pre-state
         self.current: dict = {}  # {phase, index, step} of the step in flight
         self.fingerprints: dict[str, str] = {}  # page -> ok | mismatch (watch, #24)
+        self.scripts: dict[str, str] = {}  # script step -> ok | mismatch against its shape
+        self.learn_shape = learn_shape
+        self.learned: list[tuple[str, int, object]] = []  # (phase, index, shape)
         self._last_page: str | None = None
         self._pw = None
         self.browser = None
@@ -1072,12 +1162,35 @@ class Runner:
             raise RunError(f"script '{step.get('script')}' failed:\n{proc.stderr.strip()}",
                            "error", f"fix script '{step.get('script')}' (its stderr is in "
                            "`error`), then run {workflow} again")
+        out = proc.stdout.strip()
+        try:
+            parsed, is_json = json.loads(out), True
+        except json.JSONDecodeError:
+            parsed, is_json = out, False
         if step.get("capture"):
-            out = proc.stdout.strip()
-            try:
-                self.bindings.captures[step["capture"]] = json.loads(out)
-            except json.JSONDecodeError:
-                self.bindings.captures[step["capture"]] = out
+            self.bindings.captures[step["capture"]] = parsed
+        if self.learn_shape:
+            if is_json:
+                self.learned.append((self.current["phase"], self.current["index"],
+                                     infer_shape(parsed)))
+        elif step.get("shape") is not None:
+            self.check_shape(step, parsed if is_json else None, is_json)
+
+    def check_shape(self, step: dict, output, is_json: bool):
+        """A script whose output lost its stored shape is drift: the API changed
+        under the workflow. It stops the run, so no later step reads data of the
+        wrong shape."""
+        problem = tree.shape_problem(step["shape"])
+        if problem:
+            raise RunError(f"script '{step['script']}' has a malformed {problem}", "error",
+                           "fix the shape (python scripts/check.py names it), then run "
+                           "{workflow} again")
+        key = step.get("capture") or step["script"]
+        why = shape_mismatch(step["shape"], output) if is_json else "not JSON"
+        self.scripts[key] = "mismatch" if why or self.scripts.get(key) == "mismatch" else "ok"
+        if why:
+            raise RunError(f"script '{step['script']}' output does not match its shape: "
+                           f"{why}", "drift")
 
     def do_human(self, step):
         number = self.current["number"]
@@ -1442,7 +1555,8 @@ def update_trust(wf_path: Path, workflow: dict, result: dict):
     trust alone: the map did not cause them. A downgrade is noted on the result
     as `trust_change`, so write_run keeps the one run that explains the flag (#52)."""
     trust = workflow.get("trust")
-    drifted = [p for p, s in result.get("fingerprints", {}).items() if s == "mismatch"]
+    drifted = [name for outcomes in (result.get("fingerprints", {}), result.get("scripts", {}))
+               for name, s in outcomes.items() if s == "mismatch"]
     if CLASSES[result["class"]].may_downgrade_trust:
         if trust != "broken":
             _set_workflow_key(wf_path, "trust", "broken")
@@ -1452,6 +1566,67 @@ def update_trust(wf_path: Path, workflow: dict, result: dict):
                   file=sys.stderr)
     elif result["status"] == "passed" and trust == "verified":
         _set_workflow_key(wf_path, "verified_at", f'"{result["finished_at"][:10]}"')
+
+
+def _last_line(node) -> int:
+    """The 0-based last line a node's own text is on. A block collection's
+    end mark sits at the next token, past any trailing comment, so it is
+    found through its last child instead."""
+    if isinstance(node, yaml.MappingNode) and node.value and not node.flow_style:
+        return _last_line(node.value[-1][1])
+    if isinstance(node, yaml.SequenceNode) and node.value and not node.flow_style:
+        return _last_line(node.value[-1])
+    end = node.end_mark
+    return end.line - 1 if end.column == 0 else end.line
+
+
+def _child(node, key: str):
+    for k, v in node.value:
+        if k.value == key:
+            return k, v
+    return None, None
+
+
+def _set_step_shape(wf_path: Path, phase: str, index: int, shape):
+    """Write one step's `shape:` in place, as text, so every comment, key order
+    and the rest of the file survive: a stored shape's lines are replaced, a new
+    one goes after the step's last line."""
+    text = wf_path.read_text(encoding="utf-8")
+    _, steps = _child(_child(yaml.compose(text), "workflow")[1], phase)
+    step = steps.value[index]
+    if step.flow_style:
+        raise RunError(f"{wf_path.name}: {phase}[{index}] is a flow mapping; write it as a "
+                       "block to learn its shape")
+    indent = " " * step.value[0][0].start_mark.column
+    if isinstance(shape, str) or not shape:
+        block = [f"shape: {json.dumps(shape)}"]
+    else:
+        block = ["shape:"] + ["  " + line for line in yaml.safe_dump(
+            shape, default_flow_style=False, sort_keys=False).splitlines()]
+    lines = text.splitlines(keepends=True)
+    newline = "\r\n" if lines and lines[0].endswith("\r\n") else "\n"
+    key, value = _child(step, "shape")
+    if key is not None:
+        start, end = key.start_mark.line, _last_line(value) + 1
+    else:
+        start = end = _last_line(step) + 1
+        if lines and not lines[start - 1].endswith(("\n", "\r")):
+            lines[start - 1] += newline
+    lines[start:end] = [indent + line + newline for line in block]
+    wf_path.write_text("".join(lines), encoding="utf-8")
+
+
+def learn_shapes(wf_path: Path, learned: list, result: dict):
+    """--learn-shape: on a passing run, store each script step's output shape in
+    the workflow YAML. Nothing else changes, trust and verified_at included."""
+    if result["status"] != "passed" or result["class"] != "ok":
+        print(f"learn-shape: the run did not pass ({result['class']}); "
+              f"{wf_path.name} is unchanged", file=sys.stderr)
+        return
+    for phase, index, shape in learned:
+        _set_step_shape(wf_path, phase, index, shape)
+        print(f"learn-shape: {phase}[{index}] shape written to {wf_path.name}",
+              file=sys.stderr)
 
 
 # ---------------------------------------------------------------------------
@@ -1474,7 +1649,8 @@ def run_id_of(result: dict, instance: str) -> str:
 def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed: bool,
                  pre_authorized: set[str] = frozenset(), persona_name: str | None = None,
                  context_name: str | None = None, runs: Path | None = None,
-                 record: bool = False, trigger: str = "manual") -> tuple[dict, Path | None]:
+                 record: bool = False, trigger: str = "manual",
+                 learn_shape: bool = False) -> tuple[dict, Path | None]:
     wf_path, data, owner = find_workflow(root, projects, name)
     workflow = data.get("workflow", {})
 
@@ -1487,7 +1663,8 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
     bindings = Bindings(workflow, cli_params, context)
     runner = Runner(root, wf_path, workflow, bindings, owner, headed=headed,
-                    persona=persona, pre_authorized=set(pre_authorized) | consented)
+                    persona=persona, pre_authorized=set(pre_authorized) | consented,
+                    learn_shape=learn_shape)
 
     result = {
         "workflow": workflow.get("name", name),
@@ -1527,7 +1704,7 @@ def unstarted_result(name: str, exc: RunError) -> dict:
             "class": exc.cls, "next": next_step(exc.cls, name, exc.hint),
             "started_at": now, "finished_at": now, "parameters": {}, "fixtures": {},
             "captures": {}, "assertions": [], "evidence": [], "fingerprints": {},
-            "counts": {"total": 0, "passed": 0, "failed": 0}, "error": str(exc)}
+            "scripts": {}, "counts": {"total": 0, "passed": 0, "failed": 0}, "error": str(exc)}
 
 
 def step_label(step: dict) -> str:
@@ -1573,7 +1750,10 @@ def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, p
             result: dict):
     attempt(runner, workflow, bindings, primary, result)
     runner.confirm_drift(result, primary)
-    update_trust(wf_path, workflow, result)
+    if runner.learn_shape:
+        learn_shapes(wf_path, runner.learned, result)
+    else:
+        update_trust(wf_path, workflow, result)
 
 
 def attempt(runner: Runner, workflow: dict, bindings: Bindings, primary: str, result: dict):
@@ -1623,10 +1803,11 @@ def attempt(runner: Runner, workflow: dict, bindings: Bindings, primary: str, re
     result["assertions"] = runner.assertions
     result["evidence"] = runner.evidence
     result["fingerprints"] = runner.fingerprints
+    result["scripts"] = runner.scripts
     if result["status"] == "passed" and any(not a["pass"] for a in runner.assertions):
         result["status"] = "failed"
     failed = [a for a in runner.assertions if not a["pass"]]
-    drifted = "mismatch" in runner.fingerprints.values()
+    drifted = "mismatch" in [*runner.fingerprints.values(), *runner.scripts.values()]
     # A drifted page explains whatever followed it, unless the raise site
     # named a cause of its own.
     if result["status"] != "error":
@@ -1937,6 +2118,9 @@ def main(argv=None):
     ap.add_argument("--record", action="store_true",
                     help="write the run folder to the runs store (schema/run.yaml); "
                          "always on for a workflow with rollback: snapshot")
+    ap.add_argument("--learn-shape", action="store_true",
+                    help="on a passing run, write each script step's output shape into "
+                         "the workflow YAML instead of checking it; nothing else changes")
     ap.add_argument("--trigger", choices=("schedule", "manual", "ui"), default="manual",
                     help="who started the run, written to the record (default: manual)")
     ap.add_argument("--yes-write", action="store_true",
@@ -2006,7 +2190,8 @@ def main(argv=None):
     try:
         result, record = run_workflow(root, projects, args.workflow, cli_params,
                                       args.headed, pre_authorized, args.persona,
-                                      args.context, runs, args.record, args.trigger)
+                                      args.context, runs, args.record, args.trigger,
+                                      args.learn_shape)
     except RunError as exc:
         print(f"error: {exc}", file=sys.stderr)
         if args.json:
