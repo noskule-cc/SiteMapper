@@ -155,6 +155,17 @@ class PreflightTest(unittest.TestCase):
                          "'destructive' which is 'deny' for site 'prod' (environment: "
                          "production). This is policy, not a bug — see docs/permissions.md.")
 
+    def test_a_denied_run_with_json_prints_a_refused_result(self):
+        denied = self.cli("wipe-prod", "--json")
+        self.assertEqual(denied.returncode, 2)
+        result = json.loads(denied.stdout)
+        self.assertEqual((result["workflow"], result["status"], result["class"],
+                          result["next"], result["counts"]),
+                         ("wipe-prod", "error", "refused",
+                          "ask the site's owner whether this run may happen "
+                          "(docs/permissions.md)", {"total": 0, "passed": 0, "failed": 0}))
+        self.assertTrue(result["error"].startswith("permission denied: effect 'destructive'"))
+
 
 if __name__ == "__main__":
     unittest.main()

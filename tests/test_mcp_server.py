@@ -200,9 +200,10 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
 
     async def test_an_ask_without_consent_starts_nothing(self):
         res, _ = await self.call("run-edit")
-        self.assertEqual((res.structured_content["status"],
-                          res.structured_content["needs_consent"]),
-                         ("needs-consent", ["write"]))
+        out = res.structured_content
+        self.assertEqual((out["status"], out["needs_consent"], out["class"], out["next"]),
+                         ("needs-consent", ["write"], "refused",
+                          "call again with consent ['write'] to run edit this once"))
         self.assertFalse(self.runs.exists())
 
     async def test_one_run_consent_answers_the_ask(self):
@@ -214,12 +215,13 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(res.structured_content["status"], "denied")
         self.assertFalse(self.runs.exists())
 
-    async def test_a_missing_parameter_is_a_tool_error_naming_it(self):
+    async def test_a_missing_parameter_is_an_input_result_naming_it(self):
         res, _ = await self.call("run-nap")
-        self.assertEqual((res.is_error, res.content[0].text),
-                         (True, "Error executing tool run-nap: run.py exited 2 without a "
-                                "result; last output:\nrequired parameter 'size' missing — "
-                                "pass --param size=..."))
+        out = res.structured_content
+        self.assertEqual((res.is_error, out["status"], out["class"], out["next"], out["error"],
+                          out["run_id"]),
+                         (False, "error", "input", "run nap again with --param size=...",
+                          "required parameter 'size' missing — pass --param size=...", None))
 
     async def test_a_workflow_whose_site_is_a_parameter_runs_through_run_workflow(self):
         res, _ = await self.call("run_workflow", name="roam", params={"where": "lab"})
@@ -284,6 +286,13 @@ class StartRunTest(unittest.IsolatedAsyncioTestCase):
             "import sys, json; sys.stderr.write('x' * 2_000_000 + chr(10)); "
             "print(json.dumps({'status': 'passed'}))")
         self.assertEqual(out["status"], "passed")
+
+    async def test_the_class_and_next_step_reach_the_tool_result(self):
+        out = await self.start(
+            "import json; print(json.dumps({'status': 'error', 'class': 'drift', "
+            "'next': '/repair hold', 'error': '[steps] gone'}))")
+        self.assertEqual((out["status"], out["class"], out["next"], out["error"]),
+                         ("error", "drift", "/repair hold", "[steps] gone"))
 
     async def test_output_that_is_not_json_is_a_named_error_with_the_last_lines(self):
         with self.assertRaises(self.server.ToolError) as caught:
