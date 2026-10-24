@@ -106,6 +106,10 @@ weeks — that is the failure mode this list exists for.
    home that does not cover them; a project calling another project's script
    is a note, the sign that the script may belong to an app or to the lib.
 3. Prefer `--json` output so step `capture` gets structured data.
+4. When the script calls the API behind a mapped page, start from that page's
+   confirmed `endpoints` (`schema/page.yaml`). They give the request's shape
+   only. The script takes its credentials from a persona's `env:` or `keyring:`
+   reference, never from the map.
 
 ## Add a project, a group or an app
 
@@ -142,4 +146,4 @@ and the `placement` check fails them under a site.
 
 ---
 
-**Last Updated:** 2026-08-26
+**Last Updated:** 2026-10-24
