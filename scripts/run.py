@@ -837,10 +837,14 @@ class Runner:
         elif human:
             replay = {"status": "skipped",
                       "reason": f"step {human} is a human step: a replay would stop there"}
+        elif self.workflow.get("parameters") and not known:
+            replay = {"status": "skipped",
+                      "reason": "no parameter has a fixture of its name"
+                      if self.workflow.get("fixtures") else "the workflow has no fixtures"}
+            result["next"] += (f". To tell drift from missing data next time, give {name} a "
+                               "fixture named like each parameter (schema/workflow.yaml)")
         elif not self.workflow.get("fixtures"):
             replay = {"status": "skipped", "reason": "the workflow has no fixtures"}
-            result["next"] += (f". To tell drift from missing data next time, give {name} "
-                               "fixtures (schema/workflow.yaml)")
         elif not differs:
             replay = {"status": "skipped",
                       "reason": "the run already used the fixtures, so a replay would "

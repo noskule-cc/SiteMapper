@@ -117,7 +117,10 @@ result:
                               #           skipped - not eligible; the class stands
                               #   reason: why skipped or refused (mutating or
                               #           destructive effect, a human step, no
-                              #           fixtures, the run already used them)
+                              #           fixtures, no fixture named like a
+                              #           parameter, the run already used them).
+                              #           Where a fixture would have helped,
+                              #           next says to add one
                               #   inputs: the parameters the replay set to fixtures
                               #   class, error, counts, started_at, finished_at:
                               #           the replay's own, when it ran

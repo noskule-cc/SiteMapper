@@ -307,9 +307,9 @@ class FailureClassTest(unittest.TestCase):
         self.assertEqual((code, result["status"], result["class"], trust),
                          (1, "failed", "assert", "broken"))
         self.assertEqual(result["next"], "compare assertion .out.equals with the live page "
-                                         "before you patch the map. To tell drift from "
-                                         "missing data next time, give c-assert fixtures "
-                                         "(schema/workflow.yaml)")
+                                         "before you patch the map")
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the workflow has no fixtures"})
         self.assertEqual(result["trust_change"], "verified -> broken")
 
 
@@ -350,6 +350,7 @@ REPLAYED = {
     "gone": ("read-only", "  fixtures:\n    term: gone\n", ""),
     "write": ("mutating", "  fixtures:\n    term: known\n", ""),
     "bare": ("read-only", "", ""),
+    "other": ("read-only", "  fixtures:\n    title: known issue\n", ""),
     "person": ("read-only", "  fixtures:\n    term: known\n",
                "    - action: human\n      description: a person approves\n"
                "      reason: sign-off\n"),
@@ -427,8 +428,16 @@ class FixtureReplayTest(unittest.TestCase):
                          {"status": "skipped", "reason": "the workflow has no fixtures"})
         self.assertEqual(result["next"], "compare assertion .rows.visible with the live page "
                                          "before you patch the map. To tell drift from missing "
-                                         "data next time, give r-bare fixtures "
-                                         "(schema/workflow.yaml)")
+                                         "data next time, give r-bare a fixture named like "
+                                         "each parameter (schema/workflow.yaml)")
+
+    def test_fixtures_that_name_no_parameter_are_skipped_and_say_so(self):
+        code, result, trust, calls = self.run_json("other", "nothing")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "no parameter has a fixture of its name"})
+        self.assertTrue(result["next"].endswith("give r-other a fixture named like each "
+                                                "parameter (schema/workflow.yaml)"))
 
     def test_a_workflow_with_a_human_step_is_never_replayed(self):
         code, result, trust, calls = self.run_json("person", "nothing")
