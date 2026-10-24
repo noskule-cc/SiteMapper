@@ -129,6 +129,14 @@ workflow:
                               #     location_id: "10000"
                               #     location_name: "Example Corp (test)"
                               #
+                              # Fixtures are also the drift check's known-good inputs.
+                              # A fixture named like a parameter is that parameter's
+                              # known-good value. When a read-only run fails as drift
+                              # or assert, the runner replays it once with those
+                              # parameters set to their fixtures. A replay that passes
+                              # means the caller's arguments found no data: class
+                              # input, trust unchanged (result.failure.replay).
+                              #
                               # ENVIRONMENT-KEYED FIXTURES — when ONE workflow must run
                               # against several environments of the same app, key the
                               # fixtures by the value of a `select` parameter and add a

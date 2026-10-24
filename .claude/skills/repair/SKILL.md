@@ -28,10 +28,15 @@ the workflow to produce it) if only a prose description is offered.
 Read `class` and `next` from the result (`docs/interface.md` → Failure
 classes). Only `drift` is a map problem.
 
-- **`drift`** → run the Sequence below.
+- **`drift`** → run the Sequence below. A `failure.replay` that failed
+  too confirms it.
 - **`assert`** → follow `next` once: compare the failed assertion with the
   live page. A page that changed is drift, so run the Sequence. A site that
   broke is a finding for the user, and the map stays as it is.
+- **`input` with `failure.replay.status: passed`** → stop. The fixture
+  replay passed, so the map works and the arguments found no data. Make no
+  map edit; report the arguments the run used, the fixture inputs that
+  passed (`failure.replay.inputs`) and `next`.
 - **`input`, `refused`, `auth`, `error`** → do not touch the map. Follow
   `next` once if it is a step you can take without bending a permission rule
   (re-run with the missing parameter, for example), then report the class,

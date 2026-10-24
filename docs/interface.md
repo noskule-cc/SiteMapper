@@ -40,6 +40,8 @@ Every result carries `class` and `next` beside `status`. `class` says what the o
 | `assert` | an assertion failed | `compare assertion <id> with the live page before you patch the map` | yes |
 | `error` | anything else, such as a script that exited non-zero | fix script 'x.py' (its stderr is in `error`), then run &lt;workflow&gt; again | no |
 
+Before a `drift` or `assert` class breaks trust, the runner replays the run once with the workflow's fixtures as known-good inputs: each parameter that has a fixture of its name is set to that fixture. The replay goes through the same `gate`. When it passes, the map is fine and the caller's arguments found no data, so the class becomes `input` and trust stays. Any other replay outcome keeps the class. Only a `read-only` workflow without a `human` step replays, and only when its fixtures differ from the run's own arguments. The replay is `failure.replay` in the same result (`schema/result.yaml`), so `--record` writes one run record.
+
 The table is `CLASSES` in `scripts/run.py`. A run refused before its first step still prints a result with `--json`, with `status: error`, exit code 2 and no run record. The run record's `run.yaml` and index line gain no keys. The class is in `result.json`.
 
 ## Two hosts, one contract
@@ -74,7 +76,7 @@ A run is `run.py <workflow> --json --record --trigger ui` in a child process, so
 - An `ask` that `consent` does not answer returns `status: needs-consent` with `needs_consent`, `class: refused` and a `next`, and starts nothing.
 - Otherwise the run starts, with `--yes-<class>` only for the classes the preflight reported as `ask`. Consent covers this one run, never the policy.
 
-Each step sends a progress notification (`step N/M: label` on the runner's stderr). The result is `{run_id, status, class, next, waiting_for, error, record}`; a run that reaches a `human` step returns `status: waiting`. A runner error before the first step, such as a missing parameter, is a result with `status: error`, its class and no `run_id`. A run tool exists only where the lock key is known before the run: a workflow with `tiers`, or with a site given as `$name`, takes its sites from the run's parameters or context, so it has no `run-<workflow>` tool and runs through `run_workflow`, whose lock key is the preflight's.
+Each step sends a progress notification (`step N/M: label` on the runner's stderr). The result is `{run_id, status, class, next, waiting_for, error, replay, record}`, with `replay` the result's `failure.replay` or null; a run that reaches a `human` step returns `status: waiting`. A runner error before the first step, such as a missing parameter, is a result with `status: error`, its class and no `run_id`. A run tool exists only where the lock key is known before the run: a workflow with `tiers`, or with a site given as `$name`, takes its sites from the run's parameters or context, so it has no `run-<workflow>` tool and runs through `run_workflow`, whose lock key is the preflight's.
 
 These are tool errors, each naming the cause:
 

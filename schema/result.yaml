@@ -88,7 +88,8 @@ result:
 
   failure:                    # Populated by the headless runner when status == error —
                               # everything the repair loop (the repair skill) needs to fix
-                              # the map without re-exploring. Absent on passed/failed.
+                              # the map without re-exploring. Absent on passed; on failed
+                              # it holds only class, next and replay.
     phase: ""                 #   setup | steps | teardown
     step_index: 0             #   0-based index of the failing step in that phase
     action: ""                #   the step's action
@@ -105,6 +106,21 @@ result:
                               #   (.runner/); referenced, never committed
     class: ""                 #   the result's class, repeated for the repair loop
     next: ""                  #   the result's next step
+    replay: {}                #   Set when the class was drift or assert: the fixture
+                              #   replay that tells drift from missing data, run once
+                              #   through the same gate and recorded in this run.
+                              #   status: passed  - the fixtures passed, so the class
+                              #                     became input and trust is unchanged
+                              #           failed  - the class stands, trust is broken
+                              #           refused - the gate refused the replay; the
+                              #                     class stands
+                              #           skipped - not eligible; the class stands
+                              #   reason: why skipped or refused (mutating or
+                              #           destructive effect, a human step, no
+                              #           fixtures, the run already used them)
+                              #   inputs: the parameters the replay set to fixtures
+                              #   class, error, counts, started_at, finished_at:
+                              #           the replay's own, when it ran
 
 # Summary convenience (a runner may also include):
 #   counts: { total: N, passed: N, failed: N }
