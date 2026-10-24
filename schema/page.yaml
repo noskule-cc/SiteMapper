@@ -74,6 +74,30 @@ page:
                               #   - element: ""           an element name from `elements`
                               #     state: visible        visible | hidden | attached
 
+  endpoints: []               # Optional: the API requests behind this page, proposed by
+                              # /map-site from the page's network listing and kept only
+                              # when a person confirms them. It maps a request's SHAPE,
+                              # never one request: values, headers, cookies and tokens are
+                              # never stored, and check.py's `endpoints` check fails on
+                              # them. Each entry:
+                              #   - name: ""            semantic name (search-issues)
+                              #     method: GET         GET | POST | PUT | PATCH | DELETE
+                              #     url_pattern: ""     the request URL with a {placeholder}
+                              #                         for every record id and every query
+                              #                         value: "/issues?q={query}&page={page}".
+                              #                         A path relative to the site's
+                              #                         base_url, or a full URL when the
+                              #                         request leaves it
+                              #     inputs: []          element names from `elements` whose
+                              #                         values appear in the request
+                              #     returns: []         top-level keys of the JSON response
+                              #                         ([meta, payload]); [] when there is none
+                              #     effect: read-only   read-only | mutating | destructive.
+                              #                         Declared by the person, never inferred
+                              #                         from the method
+                              #     description: ""     optional: what it answers, and what a
+                              #                         script must know to call it
+
   settings: {}                # Optional page-scope settings block — most specific
                               # scope, overrides site.yaml and config.yaml. Usually
                               # `form_defaults` (field prefills keyed by element

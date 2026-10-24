@@ -27,6 +27,7 @@ import glob
 import os
 import re
 import sys
+from urllib.parse import urlsplit
 
 try:
     import yaml
@@ -306,6 +307,80 @@ def check_credentials():
             if ref and not SECRET_REF.fullmatch(str(ref)):
                 fails.append(f"{show(f)}: credential_ref.{key} is not an env: or keyring: "
                              "reference (the value is not shown)")
+    return fails
+
+
+ENDPOINT_KEYS = {"name", "method", "url_pattern", "inputs", "returns", "effect",
+                 "description"}
+HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+EFFECTS = {"read-only", "mutating", "destructive"}
+PLACEHOLDER = re.compile(r"\{\w+\}")
+TOKEN_LIKE = re.compile(r"(?i)\b(?:bearer|basic|token)\s+\S{8,}|\beyJ[\w-]+\.[\w-]+")
+OPAQUE_RUN = re.compile(r"[A-Za-z0-9_\-]{24,}")
+
+
+def token_like(text):
+    return bool(TOKEN_LIKE.search(text)) or any(
+        re.search(r"\d", run) and re.search(r"[A-Za-z]", run)
+        for run in OPAQUE_RUN.findall(text))
+
+
+def shown(name):
+    """A key or name as a failure may print it: never when it looks like a token."""
+    return "<token-like>" if token_like(str(name)) else name
+
+
+def endpoint_fails(entry, elements):
+    """Why one `endpoints` entry could carry a captured request's values."""
+    if not isinstance(entry, dict):
+        return ["is not a mapping"]
+    fails = [f"{shown(key)} is not an endpoint key; headers, cookies and tokens are "
+             "never stored" for key in sorted(set(entry) - ENDPOINT_KEYS, key=str)]
+    for key in sorted(set(entry) & ENDPOINT_KEYS):
+        value = entry[key]
+        texts = value if isinstance(value, list) else [value]
+        if any(isinstance(t, str) and token_like(t) for t in texts):
+            fails.append(f"{key} holds a token-like string")
+    url = urlsplit(str(entry.get("url_pattern") or ""))
+    if not url.path and not url.netloc:
+        fails.append("url_pattern is missing")
+    if url.username or url.password:
+        fails.append("url_pattern carries a user or password before the host")
+    for pair in filter(None, url.query.split("&")):
+        name, sep, value = pair.partition("=")
+        if sep and not PLACEHOLDER.fullmatch(value):
+            fails.append(f"url_pattern query '{shown(name)}' has a literal value; "
+                         "write it as a {placeholder}")
+    if entry.get("method") not in HTTP_METHODS:
+        fails.append(f"method is not one of {sorted(HTTP_METHODS)}")
+    if entry.get("effect") not in EFFECTS:
+        fails.append(f"effect is not one of {sorted(EFFECTS)}")
+    for name in entry.get("inputs") or []:
+        if name not in elements:
+            fails.append(f"inputs names '{shown(name)}', which is not an element of "
+                         "this page")
+    return fails
+
+
+def check_endpoints():
+    """Page `endpoints` hold request shapes only: no header, cookie, token or query value.
+
+    /map-site proposes endpoints from a live network listing, which carries the
+    session's tokens; this is the guard that one never reaches a page file.
+    """
+    fails = []
+    for f in files(["sites/*/pages/*.yaml"]):
+        page = load(f).get("page") or {}
+        entries = page.get("endpoints")
+        if entries is None:
+            continue
+        if not isinstance(entries, list):
+            fails.append(f"{show(f)}: endpoints is not a list")
+            continue
+        elements = {e.get("name") for e in page.get("elements") or [] if isinstance(e, dict)}
+        for i, entry in enumerate(entries):
+            fails += [f"{show(f)}: endpoints[{i}].{msg} (the value is not shown)"
+                      for msg in endpoint_fails(entry, elements)]
     return fails
 
 
@@ -842,7 +917,8 @@ def check_bindings():
             fails.append(f"{f}: {len(body.splitlines())} lines — a skill or agent "
                          "carries its complete instructions, not a pointer")
         for host_tool in re.findall(r"\b(?:tabs_context_mcp|read_page|get_page_text|"
-                                    r"form_input|read_console_messages)\b", body):
+                                    r"form_input|read_console_messages|"
+                                    r"read_network_requests)\b", body):
             fails.append(f"{f}: names the host tool '{host_tool}' — tool names "
                          "belong in docs/host-bindings.md only")
     return fails
@@ -884,6 +960,7 @@ CHECKS = {
     "yaml": check_yaml,
     "schema": check_schema,
     "credentials": check_credentials,
+    "endpoints": check_endpoints,
     "listings": check_listings,
     "companions": check_companions,
     "apps": check_apps,
