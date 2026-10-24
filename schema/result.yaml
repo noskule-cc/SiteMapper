@@ -29,9 +29,12 @@ result:
                               #             expired saved state, a missing secret, a
                               #             rejected login
                               #   drift   - the page is not what the map says: an
-                              #             element that never appeared, a page or
-                              #             element the map lacks, a fingerprint
-                              #             mismatch
+                              #             element that never appeared or the browser
+                              #             could not act on, a page or element the
+                              #             map lacks, a table without the header or
+                              #             row, a field that reverts its value, a
+                              #             fingerprint mismatch. Also on the login
+                              #             page: its map is broken, not the login
                               #   assert  - the run completed and an assertion failed
                               #   error   - anything else the runner hit (a script that
                               #             exited non-zero, a navigation error)

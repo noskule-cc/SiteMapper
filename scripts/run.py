@@ -264,16 +264,18 @@ def state_path(root: Path, site_name: str, persona: dict) -> Path:
 
 
 def state_expired(state: Path) -> str:
-    """When every cookie of a saved state has an expiry and all lie in the past,
-    the UTC time the last one ran out; else "". A browser-session cookie
-    (expires -1) counts as live. An expired state would land on the login page
-    and read as drift, so it fails as auth before the browser opens."""
+    """When a saved state has cookies, every one has an expiry in the past, and no
+    origin keeps localStorage (where a token session lives), the UTC time the
+    last cookie ran out; else "". A browser-session cookie (expires -1) counts
+    as live. An expired state would land on the login page and read as drift,
+    so it fails as auth before the browser opens."""
     try:
-        cookies = (json.loads(state.read_text(encoding="utf-8")) or {}).get("cookies") or []
-        expiries = [float(c.get("expires", -1)) for c in cookies]
+        saved = json.loads(state.read_text(encoding="utf-8")) or {}
+        expiries = [float(c.get("expires", -1)) for c in saved.get("cookies") or []]
+        stored = any(o.get("localStorage") for o in saved.get("origins") or [])
     except (OSError, ValueError, TypeError, AttributeError):
         return ""
-    if not expiries or min(expiries) <= 0 or max(expiries) > time.time():
+    if stored or not expiries or min(expiries) <= 0 or max(expiries) > time.time():
         return ""
     return _dt.datetime.fromtimestamp(max(expiries), _dt.timezone.utc).isoformat(
         timespec="seconds").replace("+00:00", "Z")
@@ -458,6 +460,11 @@ def evaluate_capture(bindings: "Bindings", step: dict, expect):
 # ---------------------------------------------------------------------------
 # Browser execution
 
+def from_playwright(exc: BaseException) -> bool:
+    """Playwright's Error and TimeoutError, without importing Playwright."""
+    return type(exc).__module__.startswith("playwright.")
+
+
 def build_locator(pw_page, element: dict, scope_value: str | None = None):
     """Map a page-map locator onto Playwright. One strategy, one call."""
     strategy = (element.get("locator") or {}).get("strategy")
@@ -581,22 +588,26 @@ class Runner:
         self.pw_page = self.context.new_page()
         self.pw_page.set_default_timeout(self.DEFAULT_TIMEOUT_MS)
         if self.persona and "storage_state" not in context_args:
-            failed, hint = None, ""
-            try:
-                self._establish_session(primary_site, credentials)
-            except RunError as exc:
-                failed, hint = str(exc), exc.hint
-            except Exception as exc:
-                failed = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
-            if failed:
-                # Raised outside the except block: the Playwright exception's
-                # call log holds fill("<password>") and must not ride along as
-                # __context__. A login screen shows the username, so no screenshot.
-                self.login_failed = True
-                raise RunError(f"{failed} (no screenshot taken: the failure was in the login)",
-                               "auth", hint or f"check the login of persona "
-                               f"'{self.persona.get('name')}': its credentials and the "
-                               "login page's map")
+            self.log_in(primary_site, credentials)
+
+    def log_in(self, primary_site: str, credentials: tuple[str, str] | None):
+        """Establish the persona's session. A failure keeps the class its raise
+        site named: drift in the login page's map stays drift, a rejected login
+        is auth, anything else (a network error) is error."""
+        failed, cls, hint = None, "error", ""
+        try:
+            self._establish_session(primary_site, credentials)
+        except RunError as exc:
+            failed, cls, hint = str(exc), exc.cls, exc.hint
+        except Exception as exc:
+            failed = f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
+        if failed:
+            # Raised outside the except block: the Playwright exception's
+            # call log holds fill("<password>") and must not ride along as
+            # __context__. A login screen shows the username, so no screenshot.
+            self.login_failed = True
+            raise RunError(f"{failed} (no screenshot taken: the failure was in the login)",
+                           cls, hint)
 
     def _login_credentials(self, site_name: str) -> tuple[str, str]:
         site = Site(self.root, site_name)
@@ -637,7 +648,9 @@ class Runner:
             try:
                 input("Log in in the browser window, then press Enter here... ")
             except (EOFError, KeyboardInterrupt):
-                raise RunError("no interactive console to wait on — auth: human needs one")
+                raise RunError("no interactive console to wait on — auth: human needs one",
+                               "auth", "run {workflow} again --headed from a terminal and "
+                               "log in when the browser opens")
         elif method == "automated":
             login = persona["login"]
             user, pw = credentials
@@ -654,8 +667,8 @@ class Runner:
                         locator.fill(value)
                 except Exception as exc:
                     raise RunError(f"login.{key} '{login[key]}' on page '{login['page']}': "
-                                   f"{type(exc).__name__}: {str(exc).splitlines()[0]}"
-                                   ) from None
+                                   f"{type(exc).__name__}: {str(exc).splitlines()[0]}",
+                                   "drift") from None
             self.pw_page.wait_for_load_state()
             password = build_locator(self.pw_page,
                                      site.element(login["page"], login["password_element"]))
@@ -664,9 +677,11 @@ class Runner:
             except Exception:
                 raise RunError(f"login rejected on site '{site_name}': the password element "
                                f"'{login['password_element']}' still shows after submit. "
-                               "Not retried.") from None
+                               "Not retried.", "auth", f"check the credentials of persona "
+                               f"'{persona.get('name')}'; the runner did not retry") from None
         else:
-            raise RunError(f"persona auth method '{method}' is not session|human|automated")
+            raise RunError(f"persona auth method '{method}' is not session|human|automated",
+                           "auth", "set the persona's auth to session, human or automated")
         if persona.get("fresh_login"):
             return
         state.parent.mkdir(parents=True, exist_ok=True)
@@ -697,9 +712,10 @@ class Runner:
         try:
             getattr(self, f"do_{action}")(step)
         except Exception as exc:
-            # A mapped element that never appeared is the map's problem; any
-            # other exception stays the runner's (class error).
-            if step.get("element") and type(exc).__name__ == "TimeoutError":
+            # The browser failing on a mapped element (gone, timed out, no
+            # longer an input) is the map's problem; any other exception stays
+            # the runner's (class error).
+            if step.get("element") and from_playwright(exc):
                 raise RunError(f"{type(exc).__name__}: {str(exc).splitlines()[0]}",
                                "drift") from None
             raise
@@ -803,7 +819,7 @@ class Runner:
             if re.search(r"[{<]", pattern):
                 raise RunError(
                     f"page '{step['page']}' url_pattern '{pattern}' has unresolved "
-                    "placeholders — navigate with an explicit `value:` instead"
+                    "placeholders — navigate with an explicit `value:` instead", "drift"
                 )
             url = site.base_url + pattern
         else:
@@ -855,8 +871,8 @@ class Runner:
             if locator.input_value() != value:
                 raise RunError(
                     f"field did not accept '{value}' "
-                    f"(reads '{locator.input_value()}') - fill and typing were both reverted"
-                )
+                    f"(reads '{locator.input_value()}') - fill and typing were both reverted",
+                    "drift")
         except RunError:
             raise
         except Exception:
@@ -892,13 +908,13 @@ class Runner:
             or [i for i, h in enumerate(headers) if h.startswith(column)]
         if len(index) != 1:
             raise RunError(f"header '{column}' matches {len(index)} of the columns "
-                           f"{headers}, expected 1")
+                           f"{headers}, expected 1", "drift")
         if len(grid["rows"]) != 1:
-            raise RunError(f"{len(grid['rows'])} rows contain '{row}', expected 1")
+            raise RunError(f"{len(grid['rows'])} rows contain '{row}', expected 1", "drift")
         cells = grid["rows"][0]
         if index[0] >= len(cells):
             raise RunError(f"the row containing '{row}' has {len(cells)} cells, "
-                           f"no cell under header '{column}'")
+                           f"no cell under header '{column}'", "drift")
         return cells[index[0]]
 
     def do_wait(self, step):
