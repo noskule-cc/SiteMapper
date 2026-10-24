@@ -90,7 +90,9 @@ human-in-the-loop discovery. When the user:
 - **rejects or renames a proposed endpoint** → write only what they confirmed,
   under their name, and write the reason for a rejection as a gotcha on the page
   ("`views.json` loads saved views, not issues; do not propose it"), so
-  the next session does not propose it again;
+  the next session does not propose it again. Name the request by its path and
+  say why, never by a value: no header, cookie, token or query value goes into
+  the gotcha either;
 - **hands you a direct URL** instead of navigating → record it as the page's
   `url_pattern` — direct navigation is preferred by every executor;
 - **names a fact you almost put in memory** → it goes in the map
