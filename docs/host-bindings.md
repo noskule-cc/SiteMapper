@@ -21,6 +21,13 @@ follows the identical instructions and substitutes its own column here.
 | **press key** | Send a keyboard key (`Escape`, `Enter`) without changing field state | `computer` (`key`) |
 | **screenshot** | Capture the viewport as an image | `computer` (`screenshot`) |
 | **read console** | Read browser console output, for diagnosing a failed step | `read_console_messages` |
+| **read network** *(optional)* | List the requests the current page made: method, URL, status and resource type, with the response body where the host can read it. Used only by `/map-site` to propose `endpoints` | `read_network_requests` |
+
+**read network** is optional. A host whose browser tool reads only the DOM
+lacks it, and so does a host with no browser binding; there `/map-site` skips
+the network step with a note and maps the page without `endpoints`. The
+listing carries the session's headers and cookies, so nothing from it is
+written to a map but the request's shape (`schema/page.yaml`, `endpoints`).
 
 ## Session hygiene: one tab, and why
 
