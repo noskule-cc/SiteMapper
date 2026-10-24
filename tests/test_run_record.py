@@ -194,6 +194,319 @@ class RunRecordTest(unittest.TestCase):
 
 
 
+CRASH_PY = """\
+import sys
+print("first line", file=sys.stderr)
+print("upstream said 503", file=sys.stderr)
+sys.exit(1)
+"""
+
+VERIFIED = """\
+workflow:
+  name: {name}
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: {effect}
+{extra}  steps:
+{steps}
+"""
+
+CLASSED = {
+    "ok": ("read-only", "", QUICK),
+    "input": ("read-only", "  parameters:\n    - name: size\n      required: true\n", QUICK),
+    "refused": ("mutating", "", QUICK),
+    "error": ("read-only", "",
+              "    - action: script\n      script: crash.py"),
+    "assert": ("read-only", "", STEPS["wrong"]),
+    "auth": ("read-only", "", "    - action: navigate\n      value: /issues"),
+}
+
+SESSION = """\
+persona:
+  name: reader
+  auth: session
+  storage_state: {state}
+"""
+EXPIRED = {"cookies": [{"name": "s", "value": "x", "domain": "example.invalid", "path": "/",
+                        "expires": 1700000000}], "origins": []}
+
+
+class FailureClassTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        site = self.root / "sites" / "fixture"
+        (site / "site.yaml").write_text(SITE + "    - name: crash.py\n", encoding="utf-8")
+        (site / "scripts" / "crash.py").write_text(CRASH_PY, encoding="utf-8")
+        state = base / "reader.json"
+        state.write_text(json.dumps(EXPIRED), encoding="utf-8")
+        (site / "personas").mkdir()
+        (site / "personas" / "reader.yaml").write_text(SESSION.format(state=state.as_posix()),
+                                                       encoding="utf-8")
+        for name, (effect, extra, steps) in CLASSED.items():
+            (site / "workflows" / f"c-{name}.yaml").write_text(
+                VERIFIED.format(name=f"c-{name}", effect=effect, extra=extra, steps=steps),
+                encoding="utf-8")
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_json(self, cls: str) -> tuple[int, dict, str]:
+        proc = subprocess.run(runner(self.root, self.runs, f"c-{cls}", "--json"),
+                              env=self.env, stdin=subprocess.DEVNULL,
+                              capture_output=True, text=True, timeout=60)
+        workflow = self.root / "sites" / "fixture" / "workflows" / f"c-{cls}.yaml"
+        trust = yaml.safe_load(workflow.read_text(encoding="utf-8"))["workflow"]["trust"]
+        return proc.returncode, json.loads(proc.stdout), trust
+
+    def test_a_passing_run_is_ok_with_no_next_step(self):
+        code, result, trust = self.run_json("ok")
+        self.assertEqual((code, result["status"], result["class"], result["next"], trust),
+                         (0, "passed", "ok", "", "verified"))
+
+    def test_a_missing_parameter_is_input_and_names_it(self):
+        code, result, trust = self.run_json("input")
+        self.assertEqual((code, result["status"], result["class"], result["next"], trust),
+                         (2, "error", "input", "run c-input again with --param size=...",
+                          "verified"))
+        self.assertEqual(result["error"],
+                         "required parameter 'size' missing — pass --param size=...")
+        self.assertNotIn("trust_change", result)
+
+    def test_an_ask_without_consent_is_refused(self):
+        code, result, trust = self.run_json("refused")
+        self.assertEqual((code, result["status"], result["class"], result["next"], trust),
+                         (2, "error", "refused", "pass --yes-write to consent to this one run",
+                          "verified"))
+
+    def test_a_script_that_exits_non_zero_is_error_and_keeps_trust(self):
+        code, result, trust = self.run_json("error")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (2, "error", "error", "verified"))
+        self.assertEqual(result["next"], "fix script 'crash.py' (its stderr is in `error`), "
+                                         "then run c-error again")
+        self.assertEqual(result["error"],
+                         "[steps] script 'crash.py' failed:\nfirst line\nupstream said 503")
+        self.assertEqual((result["failure"]["class"], result["failure"]["next"]),
+                         ("error", result["next"]))
+        self.assertNotIn("trust_change", result)
+
+    def test_an_expired_session_is_auth_and_keeps_trust(self):
+        code, result, trust = self.run_json("auth")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (2, "error", "auth", "verified"))
+        self.assertEqual(result["next"], "refresh the session of persona 'reader': run c-auth "
+                                         "once --headed with a persona whose auth is human")
+        self.assertIn("every cookie in", result["error"])
+        self.assertIn("expired, the last at 2023-11-14T22:13:20Z", result["error"])
+
+    def test_a_failed_assertion_is_assert_and_breaks_trust(self):
+        code, result, trust = self.run_json("assert")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (1, "failed", "assert", "broken"))
+        self.assertEqual(result["next"], "compare assertion .out.equals with the live page "
+                                         "before you patch the map")
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the workflow has no parameters, so "
+                                                         "a replay would repeat the run"})
+        self.assertEqual(result["trust_change"], "verified -> broken")
+
+
+ROWS_PY = """\
+import json, pathlib, sys
+term = sys.argv[1]
+with open("calls.log", "a", encoding="utf-8") as log:
+    log.write(term + "\\n")
+if pathlib.Path("deny-after-first").exists():
+    pathlib.Path("config.yaml").write_text(
+        "settings:\\n  policy:\\n    permissions:\\n      read: deny\\n", encoding="utf-8")
+print(json.dumps([{"title": "known issue"}] if term == "known" else []))
+"""
+
+SEARCH = """\
+workflow:
+  name: {name}
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: {effect}
+  parameters:
+    - name: term
+      type: text
+      required: true
+{fixtures}  steps:
+    - action: script
+      script: rows.py
+      value: "$term"
+      capture: rows
+    - action: assert
+      element: rows
+      expect: visible
+{extra}"""
+
+REPLAYED = {
+    "read": ("read-only", "  fixtures:\n    term: known\n", ""),
+    "gone": ("read-only", "  fixtures:\n    term: gone\n", ""),
+    "write": ("mutating", "  fixtures:\n    term: known\n", ""),
+    "bare": ("read-only", "", ""),
+    "other": ("read-only", "  fixtures:\n    title: known issue\n", ""),
+    "person": ("read-only", "  fixtures:\n    term: known\n",
+               "    - action: human\n      description: a person approves\n"
+               "      reason: sign-off\n"),
+}
+
+EARLY = """\
+workflow:
+  name: r-early
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: read-only
+  parameters:
+    - {name: term, type: text, required: true}
+  fixtures:
+    term: known
+  steps:
+    - {action: script, script: rows.py, value: health, capture: health}
+    - {action: assert, element: health, expect: visible}
+    - {action: script, script: rows.py, value: $term, capture: rows}
+"""
+
+
+class FixtureReplayTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        site = self.root / "sites" / "fixture"
+        (site / "site.yaml").write_text(SITE + "    - name: rows.py\n", encoding="utf-8")
+        (site / "scripts" / "rows.py").write_text(ROWS_PY, encoding="utf-8")
+        for name, (effect, fixtures, extra) in REPLAYED.items():
+            (site / "workflows" / f"r-{name}.yaml").write_text(
+                SEARCH.format(name=f"r-{name}", effect=effect, fixtures=fixtures, extra=extra),
+                encoding="utf-8")
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_json(self, name: str, term: str, *flags: str) -> tuple[int, dict, str, list[str]]:
+        proc = subprocess.run(runner(self.root, self.runs, f"r-{name}", "--json",
+                                     "--param", f"term={term}", *flags),
+                              env=self.env, stdin=subprocess.DEVNULL,
+                              capture_output=True, text=True, timeout=60)
+        workflow = self.root / "sites" / "fixture" / "workflows" / f"r-{name}.yaml"
+        trust = yaml.safe_load(workflow.read_text(encoding="utf-8"))["workflow"]["trust"]
+        log = self.root / "calls.log"
+        calls = log.read_text(encoding="utf-8").split() if log.exists() else []
+        return proc.returncode, json.loads(proc.stdout), trust, calls
+
+    def test_no_data_for_the_arguments_is_input_when_the_fixtures_pass(self):
+        code, result, trust, calls = self.run_json("read", "nothing")
+        self.assertEqual((code, result["status"], result["class"], trust, calls),
+                         (1, "failed", "input", "verified", ["nothing", "known"]))
+        self.assertEqual(result["next"], "run r-read again with arguments the site has data "
+                                         "for: the fixture replay (term=known) passed, so there "
+                                         "is no data for these arguments (term=nothing)")
+        replay = result["failure"]["replay"]
+        self.assertEqual((replay["status"], replay["inputs"], replay["class"]),
+                         ("passed", {"term": "known"}, "ok"))
+        self.assertEqual((result["failure"]["class"], result["failure"]["next"]),
+                         ("input", result["next"]))
+        self.assertNotIn("trust_change", result)
+
+    def test_a_replay_that_fails_too_keeps_the_class_and_breaks_trust(self):
+        code, result, trust, calls = self.run_json("gone", "nothing")
+        self.assertEqual((code, result["class"], trust, calls),
+                         (1, "assert", "broken", ["nothing", "gone"]))
+        replay = result["failure"]["replay"]
+        self.assertEqual((replay["status"], replay["class"], replay["counts"]["failed"]),
+                         ("failed", "assert", 1))
+        self.assertEqual(result["trust_change"], "verified -> broken")
+
+    def test_a_run_that_already_used_the_fixtures_is_not_replayed(self):
+        code, result, trust, calls = self.run_json("gone", "gone")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["gone"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the run already used the fixtures, "
+                                                         "so a replay would repeat it"})
+
+    def test_a_mutating_workflow_is_never_replayed(self):
+        code, result, trust, calls = self.run_json("write", "nothing", "--yes-write")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped",
+                          "reason": "effect is mutating: a replay would repeat what the run did"})
+
+    def test_a_workflow_without_fixtures_is_skipped_and_told_to_add_them(self):
+        code, result, trust, calls = self.run_json("bare", "nothing")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the workflow has no fixtures"})
+        self.assertEqual(result["next"], "compare assertion .rows.visible with the live page "
+                                         "before you patch the map. To tell drift from missing "
+                                         "data next time, give r-bare a fixture named like "
+                                         "each parameter (schema/workflow.yaml)")
+
+    def test_fixtures_that_name_no_parameter_are_skipped_and_say_so(self):
+        code, result, trust, calls = self.run_json("other", "nothing")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "no parameter has a fixture of its name"})
+        self.assertTrue(result["next"].endswith("give r-other a fixture named like each "
+                                                "parameter (schema/workflow.yaml)"))
+
+    def test_a_failure_before_any_parameter_is_used_is_not_replayed(self):
+        (self.root / "sites" / "fixture" / "workflows" / "r-early.yaml").write_text(
+            EARLY, encoding="utf-8")
+        code, result, trust, calls = self.run_json("early", "nothing")
+        self.assertEqual((result["class"], trust, calls),
+                         ("assert", "broken", ["health", "nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the failing step used no parameter"})
+
+    def test_a_parameter_named_only_in_a_description_is_not_a_use(self):
+        (self.root / "sites" / "fixture" / "workflows" / "r-early.yaml").write_text(
+            EARLY.replace("expect: visible}",
+                          "expect: visible, description: checked before $term}"),
+            encoding="utf-8")
+        code, result, trust, calls = self.run_json("early", "nothing")
+        self.assertEqual((result["class"], trust, calls),
+                         ("assert", "broken", ["health", "nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the failing step used no parameter"})
+
+    def test_a_workflow_with_a_human_step_is_never_replayed(self):
+        code, result, trust, calls = self.run_json("person", "nothing")
+        self.assertEqual((result["status"], result["class"], trust, calls),
+                         ("failed", "assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped",
+                          "reason": "step 3 is a human step: a replay would stop there"})
+
+    def test_the_replay_goes_through_the_gate(self):
+        (self.root / "deny-after-first").write_text("", encoding="utf-8")
+        code, result, trust, calls = self.run_json("read", "nothing")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        replay = result["failure"]["replay"]
+        self.assertEqual(replay["status"], "refused")
+        self.assertIn("permission denied: effect 'read-only' needs class 'read'",
+                      replay["reason"])
+
+    def test_a_recorded_replay_is_part_of_the_one_run_record(self):
+        self.run_json("read", "nothing", "--record")
+        first, final = index_lines(self.runs)
+        self.assertEqual((first["run_id"], first["status"], final["status"]),
+                         (final["run_id"], "running", "failed"))
+        folder = self.runs / "SiteMapper" / "fixture" / final["run_id"]
+        recorded = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+        self.assertEqual((recorded["class"], recorded["failure"]["replay"]["status"]),
+                         ("input", "passed"))
+        self.assertEqual(run_yaml(self.runs, final["run_id"])["finished_at"],
+                         recorded["failure"]["replay"]["finished_at"])
+
+
 class FinishWaitingTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
@@ -331,6 +644,297 @@ class FinishRaceTest(unittest.TestCase):
                      if line["run_id"] == run_id and line["status"] != "waiting"]
             self.assertEqual([line["status"] for line in ended], won)
             self.assertEqual(run_yaml(self.runs, run_id)["status"], won[0])
+
+
+ISSUES_PY = """\
+import json, sys
+items = [{"title": "a", "number": 1, "closed_at": None},
+         {"title": "b", "number": 2, "closed_at": "2026-10-01"}]
+variant = sys.argv[1]
+if variant == "additive":
+    items = [dict(i, labels=["bug"]) for i in items]
+elif variant == "removed":
+    items = [{k: v for k, v in i.items() if k != "title"} for i in items]
+elif variant == "typed":
+    items = [dict(i, title=[i["title"]]) for i in items]
+elif variant == "empty":
+    items = []
+if variant == "text":
+    print("Service Unavailable")
+elif variant == "null":
+    print("null")
+elif variant == "nullitems":
+    print(json.dumps({"total_count": 0, "items": None}))
+else:
+    print(json.dumps({"total_count": len(items), "items": items}))
+"""
+
+SHAPE = """\
+      shape:
+        total_count: number
+        items:
+          - title: string
+            number: number
+            closed_at: "null"
+"""
+
+SHAPED = """\
+workflow:
+  name: {name}
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: read-only   # read only, the API is never written
+  parameters:
+    - name: variant
+      type: text
+      default: base
+  steps:
+    # the issue list through the API, not the page
+    - action: script
+      script: issues.py
+      value: "$variant"
+      capture: issues
+{shape}    - action: assert
+      element: issues
+      expect: visible
+"""
+
+
+class ScriptShapeTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        site = self.root / "sites" / "fixture"
+        (site / "site.yaml").write_text(SITE + "    - name: issues.py\n", encoding="utf-8")
+        (site / "scripts" / "issues.py").write_text(ISSUES_PY, encoding="utf-8")
+        self.shaped = site / "workflows" / "shaped.yaml"
+        self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE), encoding="utf-8")
+        self.bare = site / "workflows" / "bare.yaml"
+        self.bare.write_text(SHAPED.format(name="bare", shape=""), encoding="utf-8")
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_json(self, workflow: str, variant: str, *flags: str) -> tuple[int, dict, str]:
+        proc = subprocess.run(runner(self.root, self.runs, workflow, "--json",
+                                     "--param", f"variant={variant}", *flags),
+                              env=self.env, capture_output=True, text=True, timeout=60)
+        path = self.root / "sites" / "fixture" / "workflows" / f"{workflow}.yaml"
+        trust = yaml.safe_load(path.read_text(encoding="utf-8"))["workflow"]["trust"]
+        return proc.returncode, json.loads(proc.stdout), trust
+
+    def outcome(self, result: dict) -> tuple:
+        return result["status"], result["class"], result["scripts"]
+
+    def test_an_added_key_still_matches(self):
+        code, result, trust = self.run_json("shaped", "additive")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {"issues": "ok"}, "verified"))
+
+    def test_a_removed_key_is_drift_and_breaks_trust(self):
+        code, result, trust = self.run_json("shaped", "removed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual(result["error"], "[steps] script 'issues.py' output does not match "
+                                          "its shape: $.items[0].title: missing")
+        self.assertEqual((result["next"], result["failure"]["action"]),
+                         ("/repair shaped", "script"))
+        self.assertEqual(result["trust_change"], "verified -> broken")
+
+    def test_a_changed_type_is_drift(self):
+        code, result, trust = self.run_json("shaped", "typed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertTrue(result["error"].endswith(
+            "$.items[0].title: expected string, got list"), result["error"])
+
+    def test_an_empty_list_matches(self):
+        code, result, trust = self.run_json("shaped", "empty")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {"issues": "ok"}, "verified"))
+
+    def test_output_that_is_not_json_is_drift(self):
+        code, result, trust = self.run_json("shaped", "text")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertTrue(result["error"].endswith("does not match its shape: not JSON"))
+
+    def test_a_step_without_a_shape_is_not_checked(self):
+        code, result, trust = self.run_json("bare", "removed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {}, "verified"))
+
+    def test_learn_shape_writes_only_the_shape_and_the_next_run_matches_it(self):
+        code, result, _ = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual((code, result["class"]), (0, "ok"))
+        learned = ("      shape:\n"
+                   "        total_count: number\n"
+                   "        items:\n"
+                   "        - title: string\n"
+                   "          number: number\n"
+                   "          closed_at: string\n")
+        self.assertEqual(self.bare.read_text(encoding="utf-8"),
+                         SHAPED.format(name="bare", shape=learned))
+        code, result, trust = self.run_json("bare", "base")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (0, "passed", "ok", {"issues": "ok"}, "verified"))
+
+    def test_learn_shape_replaces_a_stored_shape_and_nothing_else(self):
+        code, result, _ = self.run_json("shaped", "additive", "--learn-shape")
+        self.assertEqual((code, result["learned_shapes"]), (0, {"steps[0]": "written"}))
+        learned = ("      shape:\n"
+                   "        total_count: number\n"
+                   "        items:\n"
+                   "        - title: string\n"
+                   "          number: number\n"
+                   "          closed_at: string\n"
+                   "          labels:\n"
+                   "          - string\n")
+        self.assertEqual(self.shaped.read_bytes(),
+                         SHAPED.format(name="shaped", shape=learned).encode("utf-8"))
+
+    def test_learn_shape_on_a_failing_run_writes_no_shape_and_breaks_trust(self):
+        failing = SHAPED.format(name="bare", shape="").replace("expect: visible",
+                                                               "expect: {equals: x}")
+        self.bare.write_text(failing, encoding="utf-8")
+        code, result, trust = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual((code, result["class"], trust, result["trust_change"]),
+                         (1, "assert", "broken", "verified -> broken"))
+        self.assertEqual(result["learned_shapes"],
+                         {"steps[0]": "not written: the run did not pass"})
+        self.assertEqual(self.bare.read_text(encoding="utf-8"),
+                         failing.replace("trust: verified", "trust: broken"))
+
+    def test_learn_shape_reports_output_that_is_not_json(self):
+        code, result, _ = self.run_json("bare", "text", "--learn-shape")
+        self.assertEqual((code, result["learned_shapes"]), (0, {"steps[0]": "not JSON"}))
+        self.assertEqual(self.bare.read_text(encoding="utf-8"),
+                         SHAPED.format(name="bare", shape=""))
+
+    def test_learn_shape_writes_nothing_when_one_output_is_not_json(self):
+        two = SHAPED.format(name="bare", shape="") + (
+            "    - action: script\n      script: issues.py\n      value: text\n")
+        self.bare.write_text(two, encoding="utf-8")
+        code, result, _ = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual((code, result["learned_shapes"]),
+                         (0, {"steps[0]": "not written: steps[2] blocks the write",
+                              "steps[2]": "not JSON"}))
+        self.assertEqual(self.bare.read_text(encoding="utf-8"), two)
+
+    def test_learn_shape_checks_a_stored_shape_first(self):
+        before = self.shaped.read_text(encoding="utf-8")
+        code, result, trust = self.run_json("shaped", "removed", "--learn-shape")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual(result["learned_shapes"], {})
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"),
+                         before.replace("trust: verified", "trust: broken"))
+
+    def test_learn_shape_keeps_crlf_line_endings(self):
+        crlf = SHAPED.format(name="bare", shape="").replace("\n", "\r\n").encode("utf-8")
+        self.bare.write_bytes(crlf)
+        self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual(self.bare.read_bytes(), crlf.replace(
+            b"      capture: issues\r\n",
+            b"      capture: issues\r\n      shape:\r\n        total_count: number\r\n"
+            b"        items:\r\n        - title: string\r\n          number: number\r\n"
+            b"          closed_at: string\r\n"))
+
+    def test_learn_shape_keeps_the_comment_on_a_one_line_shape(self):
+        self.shaped.write_text(SHAPED.format(name="shaped", shape="      shape: {}  # pinned\n"),
+                               encoding="utf-8")
+        self.run_json("shaped", "empty", "--learn-shape")
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"), SHAPED.format(
+            name="shaped", shape="      shape:  # pinned\n        total_count: number\n"
+                                 "        items: []\n"))
+
+    def test_learn_shape_writes_nothing_when_one_step_cannot_take_it(self):
+        flow = SHAPED.format(name="bare", shape="") + (
+            "    - {action: script, script: issues.py, value: base}\n")
+        self.bare.write_text(flow, encoding="utf-8")
+        code, result, _ = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual(result["learned_shapes"], {
+            "steps[0]": "not written: steps[2] blocks the write",
+            "steps[2]": "not written: steps[2] is written in flow style; write it as a "
+                        "block to learn its shape"})
+        self.assertEqual(self.bare.read_text(encoding="utf-8"), flow)
+
+    def test_a_null_where_an_object_or_list_belongs_is_drift(self):
+        for variant, why in (("null", "$: expected object, got null"),
+                             ("nullitems", "$.items: expected list, got null")):
+            self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE),
+                                   encoding="utf-8")
+            code, result, trust = self.run_json("shaped", variant)
+            self.assertEqual((code, *self.outcome(result), trust),
+                             (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+            self.assertTrue(result["error"].endswith(why), result["error"])
+
+    def replayable(self, shape: str) -> str:
+        """`shaped` with a fixture for its parameter, asserting the items are there."""
+        text = SHAPED.format(name="shaped", shape=shape).replace(
+            "  steps:\n", "  fixtures:\n    variant: base\n  steps:\n", 1).replace(
+            "      element: issues\n      expect: visible",
+            "      element: issues\n      value: \"$issues.items\"\n      expect: visible")
+        self.shaped.write_text(text, encoding="utf-8")
+        return text
+
+    def test_a_shape_mismatch_is_never_replayed(self):
+        self.replayable(SHAPE)
+        code, result, trust = self.run_json("shaped", "removed")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual((result["next"], result["failure"]["replay"]),
+                         ("/repair shaped", {"status": "skipped", "reason":
+                          "a script's output lost its shape: that is the API, whatever "
+                          "the inputs"}))
+
+    def test_an_empty_list_that_matches_its_shape_replays_to_input(self):
+        self.replayable(SHAPE)
+        code, result, trust = self.run_json("shaped", "empty")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (1, "failed", "input", {"issues": "ok"}, "verified"))
+        replay = result["failure"]["replay"]
+        self.assertEqual((replay["status"], replay["class"], replay["inputs"]),
+                         ("passed", "ok", {"variant": "base"}))
+        self.assertNotIn("trust_change", result)
+
+    def test_learn_shape_never_learns_from_a_replay(self):
+        before = self.replayable("")
+        code, result, trust = self.run_json("shaped", "empty", "--learn-shape")
+        self.assertEqual((code, result["class"], result["failure"]["replay"]["status"], trust),
+                         (1, "input", "passed", "verified"))
+        self.assertEqual(result["learned_shapes"],
+                         {"steps[0]": "not written: the run did not pass"})
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"), before)
+
+    def test_a_mismatch_in_teardown_is_an_error(self):
+        self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE) + (
+            "  teardown:\n    - action: script\n      script: issues.py\n"
+            "      value: removed\n" + SHAPE), encoding="utf-8")
+        code, result, trust = self.run_json("shaped", "base")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (2, "error", "drift", "broken"))
+        self.assertEqual(result["error"], "teardown incomplete: script 'issues.py' output does "
+                                          "not match its shape: $.items[0].title: missing")
+
+    def check_actions(self) -> subprocess.CompletedProcess:
+        return subprocess.run([sys.executable, str(RUN_PY.parent / "check.py"), "--root",
+                               str(self.root), "--only", "actions"],
+                              capture_output=True, text=True, timeout=60)
+
+    def test_check_accepts_a_valid_shape_and_names_a_malformed_one(self):
+        (self.root / "sites" / "fixture" / "workflows" / "person.yaml").unlink()
+        proc = self.check_actions()
+        self.assertEqual(proc.returncode, 0, proc.stdout)
+        self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE.replace(
+            "number: number", "number: integer")), encoding="utf-8")
+        proc = self.check_actions()
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("sites/fixture/workflows/shaped.yaml: steps[0]: shape.items[0].number: "
+                      "'integer' is not string | number | bool | null", proc.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

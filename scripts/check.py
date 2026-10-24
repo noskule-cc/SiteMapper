@@ -879,7 +879,9 @@ def check_actions():
     A `human` step without a reason pauses a run with nothing to tell the person
     who picks it up, and one in `teardown` would surface as a broken teardown
     instead of a waiting run. An unknown action failed only at run time. A
-    step without `action` is allowed only in an agentic workflow.
+    step without `action` is allowed only in an agentic workflow. A script
+    step's `shape` must parse as a shape: a misspelled type name (`strng`) would
+    otherwise fail mid-run and stop a workflow whose script was fine.
     """
     fails = []
     for f in all_workflows():
@@ -903,6 +905,11 @@ def check_actions():
                                      f"{' | '.join(tree.HUMAN_KINDS)}")
                     if phase == "teardown":
                         fails.append(f"{where}: a human step cannot be in teardown")
+                if s.get("shape") is not None:
+                    problem = (tree.shape_problem(s["shape"]) if action == "script"
+                               else "shape: only a script step has an output shape")
+                    if problem:
+                        fails.append(f"{where}: {problem}")
     return fails
 
 
