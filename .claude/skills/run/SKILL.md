@@ -71,7 +71,10 @@ Workflow argument: $workflow
        (`<project>/scripts/`), or by the app the site is a tier of
        (`apps/<app>/scripts/`) — look in that order. Prefer this whenever the
        data is reachable from the site's API — it is faster, headless, and does
-       not break when the UI changes
+       not break when the UI changes. A step with a `shape` checks the output
+       against it (`schema/workflow.yaml`): a missing key, a changed type or
+       output that is not JSON is drift, so record `scripts.<capture>: mismatch`
+       and stop the run there
      - `verify` → check that expected elements/text exist on the page
      - `wait` → pause briefly for page transitions
      - `human` → **hand to a person**: stop here. Tell the user the step's

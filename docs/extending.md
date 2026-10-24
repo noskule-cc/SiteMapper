@@ -90,6 +90,9 @@ weeks — that is the failure mode this list exists for.
    a template key no file uses yet is only a note.
 3. If an executor must act on the key (runner, skills), update it in the same
    change — a key nobody reads is documentation-shaped decoration.
+4. A key whose value has a grammar of its own (a step's `shape`, for one)
+   gets a value check in `check.py` too. The key-set diff sees only top-level
+   keys, so a malformed value would otherwise surface mid-run.
 
 ## Add a script
 
@@ -106,6 +109,8 @@ weeks — that is the failure mode this list exists for.
    home that does not cover them; a project calling another project's script
    is a note, the sign that the script may belong to an app or to the lib.
 3. Prefer `--json` output so step `capture` gets structured data.
+4. Once a step's script passes, run `python scripts/run.py <workflow>
+   --learn-shape` to store its output `shape`, so an API change reads as drift.
 
 ## Add a project, a group or an app
 
@@ -142,4 +147,4 @@ and the `placement` check fails them under a site.
 
 ---
 
-**Last Updated:** 2026-08-26
+**Last Updated:** 2026-10-24
