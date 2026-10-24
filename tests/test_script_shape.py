@@ -48,13 +48,20 @@ class ShapeTest(unittest.TestCase):
     def test_items_that_disagree_on_a_type_leave_the_key_unconstrained(self):
         self.assertEqual(run.infer_shape({"items": [{"v": 1, "k": "a"}, {"v": "one", "k": "b"},
                                                     {"v": True, "k": "c"}]}),
-                         {"items": [{"k": "string"}]})
+                         {"items": [{"v": "null", "k": "string"}]})
         self.assertEqual(run.infer_shape([[1], ["a"]]), [[]])
+        self.assertEqual(run.infer_shape([{"a": 1, "b": 2}, {"a": "x"}]), [{"a": "null"}])
+
+    def test_an_unconstrained_key_must_still_be_there(self):
+        shape = run.infer_shape([{"a": 1, "u": None}, {"a": 2, "u": {"id": 1}}])
+        self.assertEqual(shape, [{"a": "number", "u": "null"}])
+        self.assertEqual(run.shape_mismatch(shape, [{"a": 3}]), "$[0].u: missing")
+        self.assertIsNone(run.shape_mismatch(shape, [{"a": 3, "u": [1]}]))
 
     def test_a_null_item_takes_the_type_of_the_others(self):
         self.assertEqual(run.infer_shape([{"c": None}, {"c": "2026-10-01"}]),
                          [{"c": "string"}])
-        self.assertEqual(run.infer_shape([{"c": None}, {"c": {"id": 1}}]), [{}])
+        self.assertEqual(run.infer_shape([{"c": None}, {"c": {"id": 1}}]), [{"c": "null"}])
 
     def test_a_null_matches_a_scalar_but_not_an_object_or_a_list(self):
         shape = {"title": "string", "user": {"id": "number"}, "labels": ["string"]}

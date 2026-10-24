@@ -482,8 +482,9 @@ def _type_name(value) -> str:
 def _merge_shapes(a, b):
     """A shape every value behind a and behind b matches. A null value matches
     a scalar type, so null merges into one; beside an object or a list, and
-    wherever types disagree, the position is left unconstrained: the key is
-    dropped, the list item becomes []."""
+    wherever types disagree, the position is left unconstrained: a key is
+    written as "null" (any value, but present), a list item as []. A key some
+    item lacks is dropped."""
     if a is UNCONSTRAINED or b is UNCONSTRAINED:
         return UNCONSTRAINED
     if a == b:
@@ -492,13 +493,7 @@ def _merge_shapes(a, b):
         other = b if a == "null" else a
         return other if isinstance(other, str) else UNCONSTRAINED
     if isinstance(a, dict) and isinstance(b, dict):
-        merged = {}
-        for key in a:
-            if key in b:
-                sub = _merge_shapes(a[key], b[key])
-                if sub is not UNCONSTRAINED:
-                    merged[key] = sub
-        return merged
+        return {key: _merge_shapes(a[key], b[key]) for key in a if key in b}
     if isinstance(a, list) and isinstance(b, list):
         if not a or not b:
             return a or b
@@ -530,8 +525,8 @@ def _infer(value):
 
 
 def _written(shape):
-    if isinstance(shape, dict):
-        return {k: _written(v) for k, v in shape.items()}
+    if isinstance(shape, dict):  # an unconstrained key must still be there: "null"
+        return {k: "null" if v is UNCONSTRAINED else _written(v) for k, v in shape.items()}
     if isinstance(shape, list):
         return [] if not shape or shape[0] is UNCONSTRAINED else [_written(shape[0])]
     return shape
@@ -1212,11 +1207,11 @@ class Runner:
             parsed, is_json = out, False
         if step.get("capture"):
             self.bindings.captures[step["capture"]] = parsed
+        if step.get("shape") is not None:
+            self.check_shape(step, parsed if is_json else None, is_json)
         if self.learn_shape:
             self.learned.append(LearnedShape(self.current["phase"], self.current["index"],
                                              infer_shape(parsed) if is_json else None))
-        elif step.get("shape") is not None:
-            self.check_shape(step, parsed if is_json else None, is_json)
 
     def check_shape(self, step: dict, output, is_json: bool):
         problem = tree.shape_problem(step["shape"])
@@ -1664,16 +1659,22 @@ def _with_step_shape(text: str, phase: str, index: int, shape) -> str:
 
 def learn_shapes(wf_path: Path, learned: list[LearnedShape], passed: bool) -> dict[str, str]:
     """--learn-shape: on a passing run, store every script step's output shape in
-    the workflow YAML in one write, or none when any step cannot take it. Each
-    step's outcome: written, not JSON, or not written and why."""
+    the workflow YAML in one write, or none when any step cannot take it (its
+    output is not JSON, or the step cannot be edited). Each step's outcome:
+    written, not JSON, or not written and why."""
     raw = wf_path.read_bytes().decode("utf-8")
     text, failed = raw, None
-    for s in learned:
-        if passed and s.shape is not None and not failed:
-            try:
-                text = _with_step_shape(text, s.phase, s.index, s.shape)
-            except (ValueError, yaml.YAMLError) as exc:
-                failed, text = (s, exc), raw
+    for s in learned if passed else ():
+        if s.shape is None:
+            failed = (s, "not JSON")
+            break
+        try:
+            text = _with_step_shape(text, s.phase, s.index, s.shape)
+        except (ValueError, yaml.YAMLError) as exc:
+            failed = (s, f"not written: {exc}")
+            break
+    if failed:
+        text = raw
     outcome = {}
     for s in learned:
         label = f"{s.phase}[{s.index}]"
@@ -1682,8 +1683,9 @@ def learn_shapes(wf_path: Path, learned: list[LearnedShape], passed: bool) -> di
         elif not passed:
             outcome[label] = "not written: the run did not pass"
         elif failed:
-            outcome[label] = (f"not written: {failed[1]}" if s is failed[0] else
-                              "not written: another step's shape could not be written")
+            outcome[label] = (failed[1] if s is failed[0] else
+                              f"not written: {failed[0].phase}[{failed[0].index}] blocks "
+                              "the write")
         else:
             outcome[label] = "written"
         print(f"learn-shape: {label} {outcome[label]}", file=sys.stderr)

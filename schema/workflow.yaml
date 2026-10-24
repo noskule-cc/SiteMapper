@@ -239,10 +239,11 @@ workflow:
                               #   "null" matches any value: only nulls were seen there.
                               # Write it with `run.py <workflow> --learn-shape` on a
                               #   passing run (on a failing one it writes nothing and the
-                              #   run counts as usual). Learning keeps a key only where
-                              #   every list item has it with one type, else drops it (a
-                              #   list item becomes []), and learns a mapping keyed by
-                              #   ids (digits, hex, UUIDs) as {}.
+                              #   run counts as usual). A stored shape is checked first,
+                              #   so after an intended API change delete it, then learn.
+                              #   Learning keeps only the keys every list item has; where
+                              #   their types disagree the key is "null" (a list item,
+                              #   []). A mapping keyed by ids (digits, hex, UUIDs) is {}.
       row: ""                 # For action: read on a table — text the one row must contain
                               #   (a "$fixture" works). Needs `column`; see "action: read" below.
       column: ""              # For action: read on a table — the header text of the cell to read

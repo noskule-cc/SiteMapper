@@ -32,8 +32,8 @@ classes). Only `drift` is a map problem.
   `scripts`) → the script or its API changed, never a locator: make no edit
   to a page map. Report the script, the step and what `error` says differs,
   then fix the script, or, if the API changed on purpose and the new output is
-  right, re-learn the shape with `python scripts/run.py <workflow>
-  --learn-shape` and review its diff.
+  right, delete that step's `shape`, re-learn it with `python scripts/run.py
+  <workflow> --learn-shape` and review its diff.
 - **`drift`** → run the Sequence below. A `failure.replay` that failed
   too confirms it.
 - **`assert`** → follow `next` once: compare the failed assertion with the

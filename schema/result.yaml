@@ -88,8 +88,11 @@ result:
                               # script's or its API's, never a locator's.
   learned_shapes: {}          # Only with run.py --learn-shape: per script step,
                               # "<phase>[<index>]", what happened to its shape:
-                              # written | not JSON | not written: <why>. Either every
-                              # step's shape is written or the file is untouched.
+                              # written | not JSON | not written: <why>. Every step's
+                              # shape is written or none is: one output that is not
+                              # JSON, or one step that cannot be edited, blocks the
+                              # write. A stored shape is still checked first, so a
+                              # step that fails it ends the run as drift.
 
   trust_change: ""            # Set when this run downgraded the workflow's trust,
                               # e.g. "draft -> broken". Its run record then gets

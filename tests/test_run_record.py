@@ -813,6 +813,25 @@ class ScriptShapeTest(unittest.TestCase):
         self.assertEqual(self.bare.read_text(encoding="utf-8"),
                          SHAPED.format(name="bare", shape=""))
 
+    def test_learn_shape_writes_nothing_when_one_output_is_not_json(self):
+        two = SHAPED.format(name="bare", shape="") + (
+            "    - action: script\n      script: issues.py\n      value: text\n")
+        self.bare.write_text(two, encoding="utf-8")
+        code, result, _ = self.run_json("bare", "base", "--learn-shape")
+        self.assertEqual((code, result["learned_shapes"]),
+                         (0, {"steps[0]": "not written: steps[2] blocks the write",
+                              "steps[2]": "not JSON"}))
+        self.assertEqual(self.bare.read_text(encoding="utf-8"), two)
+
+    def test_learn_shape_checks_a_stored_shape_first(self):
+        before = self.shaped.read_text(encoding="utf-8")
+        code, result, trust = self.run_json("shaped", "removed", "--learn-shape")
+        self.assertEqual((code, *self.outcome(result), trust),
+                         (2, "error", "drift", {"issues": "mismatch"}, "broken"))
+        self.assertEqual(result["learned_shapes"], {})
+        self.assertEqual(self.shaped.read_text(encoding="utf-8"),
+                         before.replace("trust: verified", "trust: broken"))
+
     def test_learn_shape_keeps_crlf_line_endings(self):
         crlf = SHAPED.format(name="bare", shape="").replace("\n", "\r\n").encode("utf-8")
         self.bare.write_bytes(crlf)
@@ -837,7 +856,7 @@ class ScriptShapeTest(unittest.TestCase):
         self.bare.write_text(flow, encoding="utf-8")
         code, result, _ = self.run_json("bare", "base", "--learn-shape")
         self.assertEqual(result["learned_shapes"], {
-            "steps[0]": "not written: another step's shape could not be written",
+            "steps[0]": "not written: steps[2] blocks the write",
             "steps[2]": "not written: steps[2] is written in flow style; write it as a "
                         "block to learn its shape"})
         self.assertEqual(self.bare.read_text(encoding="utf-8"), flow)
