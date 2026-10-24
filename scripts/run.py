@@ -536,14 +536,6 @@ class Runner:
 
     # -- browser lifecycle -------------------------------------------------
     def start(self, primary_site: str):
-        try:
-            from playwright.sync_api import sync_playwright
-        except ImportError:
-            raise RunError(
-                "Playwright is not installed. The runner needs it (the rest of "
-                "SiteMapper does not): pip install playwright  — no browser "
-                "download required, the installed Chrome is used."
-            )
         context_args = {}
         credentials = None
         if self.persona:
@@ -555,24 +547,34 @@ class Runner:
                                    "and fresh_login: true — a session persona only reuses "
                                    "saved state (schema/persona.yaml)", "auth",
                                    "drop fresh_login from the session persona")
+                refresh = (f"refresh the session of persona '{self.persona.get('name')}': "
+                           "run {workflow} once --headed with a persona whose auth is human")
                 if not state.is_file():
                     raise RunError(
                         f"persona '{self.persona.get('name')}' is auth: session but "
                         f"{state} does not exist — run once with a persona whose auth "
                         "is `human` (headed) to create it. The runner never logs in "
-                        "silently.", "auth"
+                        "silently.", "auth", refresh
                     )
                 expired = state_expired(state)
                 if expired:
                     raise RunError(
                         f"persona '{self.persona.get('name')}' is auth: session but every "
                         f"cookie in {state} expired, the last at {expired}. The runner "
-                        "never logs in silently.", "auth")
+                        "never logs in silently.", "auth", refresh)
                 context_args["storage_state"] = str(state)
             elif state.is_file() and not fresh:
                 context_args["storage_state"] = str(state)
             elif self.persona.get("auth") == "automated":
                 credentials = self._login_credentials(primary_site)
+        try:  # after the persona checks, so an auth failure needs no browser to report
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            raise RunError(
+                "Playwright is not installed. The runner needs it (the rest of "
+                "SiteMapper does not): pip install playwright  — no browser "
+                "download required, the installed Chrome is used."
+            )
         self._pw = sync_playwright().start()
         self.browser = self._pw.chromium.launch(channel="chrome", headless=not self.headed)
         self.context = self.browser.new_context(**context_args)

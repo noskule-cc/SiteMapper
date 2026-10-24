@@ -219,7 +219,17 @@ CLASSED = {
     "error": ("read-only", "",
               "    - action: script\n      script: crash.py"),
     "assert": ("read-only", "", STEPS["wrong"]),
+    "auth": ("read-only", "", "    - action: navigate\n      value: /issues"),
 }
+
+SESSION = """\
+persona:
+  name: reader
+  auth: session
+  storage_state: {state}
+"""
+EXPIRED = {"cookies": [{"name": "s", "value": "x", "domain": "example.invalid", "path": "/",
+                        "expires": 1700000000}], "origins": []}
 
 
 class FailureClassTest(unittest.TestCase):
@@ -230,6 +240,11 @@ class FailureClassTest(unittest.TestCase):
         site = self.root / "sites" / "fixture"
         (site / "site.yaml").write_text(SITE + "    - name: crash.py\n", encoding="utf-8")
         (site / "scripts" / "crash.py").write_text(CRASH_PY, encoding="utf-8")
+        state = base / "reader.json"
+        state.write_text(json.dumps(EXPIRED), encoding="utf-8")
+        (site / "personas").mkdir()
+        (site / "personas" / "reader.yaml").write_text(SESSION.format(state=state.as_posix()),
+                                                       encoding="utf-8")
         for name, (effect, extra, steps) in CLASSED.items():
             (site / "workflows" / f"c-{name}.yaml").write_text(
                 VERIFIED.format(name=f"c-{name}", effect=effect, extra=extra, steps=steps),
@@ -277,6 +292,15 @@ class FailureClassTest(unittest.TestCase):
         self.assertEqual((result["failure"]["class"], result["failure"]["next"]),
                          ("error", result["next"]))
         self.assertNotIn("trust_change", result)
+
+    def test_an_expired_session_is_auth_and_keeps_trust(self):
+        code, result, trust = self.run_json("auth")
+        self.assertEqual((code, result["status"], result["class"], trust),
+                         (2, "error", "auth", "verified"))
+        self.assertEqual(result["next"], "refresh the session of persona 'reader': run c-auth "
+                                         "once --headed with a persona whose auth is human")
+        self.assertIn("every cookie in", result["error"])
+        self.assertIn("expired, the last at 2023-11-14T22:13:20Z", result["error"])
 
     def test_a_failed_assertion_is_assert_and_breaks_trust(self):
         code, result, trust = self.run_json("assert")
