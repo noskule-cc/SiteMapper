@@ -203,7 +203,7 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
         out = res.structured_content
         self.assertEqual((out["status"], out["needs_consent"], out["class"], out["next"]),
                          ("needs-consent", ["write"], "refused",
-                          "call again with consent ['write'] to run edit this once"))
+                          "call again with consent write to run edit this once"))
         self.assertFalse(self.runs.exists())
 
     async def test_one_run_consent_answers_the_ask(self):

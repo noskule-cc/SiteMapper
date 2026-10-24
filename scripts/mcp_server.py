@@ -190,7 +190,8 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
                 "preflight": dataclasses.asdict(pre)}
     if pre.needs_consent:
         return {"status": "needs-consent", "class": "refused",
-                "next": f"call again with consent {pre.needs_consent} to run {name} this once",
+                "next": f"call again with consent {', '.join(pre.needs_consent)} to run {name} "
+                        "this once",
                 "needs_consent": pre.needs_consent, "preflight": dataclasses.asdict(pre)}
 
     transport, child = await asyncio.get_running_loop().subprocess_exec(
