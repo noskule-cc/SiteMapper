@@ -881,8 +881,13 @@ class Runner:
         else:
             first = next(k for k, a in enumerate(result["assertions"]) if not a["pass"])
             end = [n for n, (_, _, s) in enumerate(ordered) if s.get("action") == "assert"][first]
-        steps = [step for _, _, step in ordered[:end + 1]]
-        return set(VAR_RE.findall(json.dumps([self.workflow.get("site"), steps])))
+        resolved = [self.workflow.get("site")]
+        for _, _, step in ordered[:end + 1]:
+            expect = step.get("expect") if isinstance(step.get("expect"), dict) else {}
+            resolved += [step.get(k) for k in ("site", "value", "row", "column")]
+            resolved += [expect.get(k) for k in ("contains", "equals", "url_matches", "value")]
+        return {name for text in resolved if isinstance(text, str)
+                for name in VAR_RE.findall(text)}
 
     def _replay(self, result: dict, primary: str, differs: dict) -> dict:
         inputs = {**{k: str(v) for k, v in self.bindings.params.items()}, **differs}

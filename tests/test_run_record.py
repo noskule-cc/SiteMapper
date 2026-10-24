@@ -466,6 +466,17 @@ class FixtureReplayTest(unittest.TestCase):
         self.assertEqual(result["failure"]["replay"],
                          {"status": "skipped", "reason": "the failing step used no parameter"})
 
+    def test_a_parameter_named_only_in_a_description_is_not_a_use(self):
+        (self.root / "sites" / "fixture" / "workflows" / "r-early.yaml").write_text(
+            EARLY.replace("expect: visible}",
+                          "expect: visible, description: checked before $term}"),
+            encoding="utf-8")
+        code, result, trust, calls = self.run_json("early", "nothing")
+        self.assertEqual((result["class"], trust, calls),
+                         ("assert", "broken", ["health", "nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the failing step used no parameter"})
+
     def test_a_workflow_with_a_human_step_is_never_replayed(self):
         code, result, trust, calls = self.run_json("person", "nothing")
         self.assertEqual((result["status"], result["class"], trust, calls),
