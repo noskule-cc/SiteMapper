@@ -293,6 +293,14 @@ class StartRunTest(unittest.IsolatedAsyncioTestCase):
             "'next': '/repair hold', 'error': '[steps] gone'}))")
         self.assertEqual((out["status"], out["class"], out["next"], out["error"]),
                          ("error", "drift", "/repair hold", "[steps] gone"))
+        self.assertIsNone(out["replay"])
+
+    async def test_the_fixture_replay_reaches_the_tool_result(self):
+        out = await self.start(
+            "import json; print(json.dumps({'status': 'failed', 'class': 'input', "
+            "'failure': {'replay': {'status': 'passed', 'inputs': {'term': 'known'}}}}))")
+        self.assertEqual((out["class"], out["replay"]),
+                         ("input", {"status": "passed", "inputs": {"term": "known"}}))
 
     async def test_output_that_is_not_json_is_a_named_error_with_the_last_lines(self):
         with self.assertRaises(self.server.ToolError) as caught:

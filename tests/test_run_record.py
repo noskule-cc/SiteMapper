@@ -307,8 +307,157 @@ class FailureClassTest(unittest.TestCase):
         self.assertEqual((code, result["status"], result["class"], trust),
                          (1, "failed", "assert", "broken"))
         self.assertEqual(result["next"], "compare assertion .out.equals with the live page "
-                                         "before you patch the map")
+                                         "before you patch the map. To tell drift from "
+                                         "missing data next time, give c-assert fixtures "
+                                         "(schema/workflow.yaml)")
         self.assertEqual(result["trust_change"], "verified -> broken")
+
+
+ROWS_PY = """\
+import json, pathlib, sys
+term = sys.argv[1]
+with open("calls.log", "a", encoding="utf-8") as log:
+    log.write(term + "\\n")
+if pathlib.Path("deny-after-first").exists():
+    pathlib.Path("config.yaml").write_text(
+        "settings:\\n  policy:\\n    permissions:\\n      read: deny\\n", encoding="utf-8")
+print(json.dumps([{"title": "known issue"}] if term == "known" else []))
+"""
+
+SEARCH = """\
+workflow:
+  name: {name}
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: {effect}
+  parameters:
+    - name: term
+      type: text
+      required: true
+{fixtures}  steps:
+    - action: script
+      script: rows.py
+      value: "$term"
+      capture: rows
+    - action: assert
+      element: rows
+      expect: visible
+{extra}"""
+
+REPLAYED = {
+    "read": ("read-only", "  fixtures:\n    term: known\n", ""),
+    "gone": ("read-only", "  fixtures:\n    term: gone\n", ""),
+    "write": ("mutating", "  fixtures:\n    term: known\n", ""),
+    "bare": ("read-only", "", ""),
+    "person": ("read-only", "  fixtures:\n    term: known\n",
+               "    - action: human\n      description: a person approves\n"
+               "      reason: sign-off\n"),
+}
+
+
+class FixtureReplayTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        base = Path(self.tmp.name)
+        self.root = make_tree(base)
+        site = self.root / "sites" / "fixture"
+        (site / "site.yaml").write_text(SITE + "    - name: rows.py\n", encoding="utf-8")
+        (site / "scripts" / "rows.py").write_text(ROWS_PY, encoding="utf-8")
+        for name, (effect, fixtures, extra) in REPLAYED.items():
+            (site / "workflows" / f"r-{name}.yaml").write_text(
+                SEARCH.format(name=f"r-{name}", effect=effect, fixtures=fixtures, extra=extra),
+                encoding="utf-8")
+        self.runs = base / "runs"
+        self.env = {**os.environ, "SITEMAPPER_INSTANCE": INSTANCE}
+        self.addCleanup(self.tmp.cleanup)
+
+    def run_json(self, name: str, term: str, *flags: str) -> tuple[int, dict, str, list[str]]:
+        proc = subprocess.run(runner(self.root, self.runs, f"r-{name}", "--json",
+                                     "--param", f"term={term}", *flags),
+                              env=self.env, stdin=subprocess.DEVNULL,
+                              capture_output=True, text=True, timeout=60)
+        workflow = self.root / "sites" / "fixture" / "workflows" / f"r-{name}.yaml"
+        trust = yaml.safe_load(workflow.read_text(encoding="utf-8"))["workflow"]["trust"]
+        log = self.root / "calls.log"
+        calls = log.read_text(encoding="utf-8").split() if log.exists() else []
+        return proc.returncode, json.loads(proc.stdout), trust, calls
+
+    def test_no_data_for_the_arguments_is_input_when_the_fixtures_pass(self):
+        code, result, trust, calls = self.run_json("read", "nothing")
+        self.assertEqual((code, result["status"], result["class"], trust, calls),
+                         (1, "failed", "input", "verified", ["nothing", "known"]))
+        self.assertEqual(result["next"], "run r-read again with arguments the site has data "
+                                         "for: the fixture replay (term=known) passed, so there "
+                                         "is no data for these arguments (term=nothing)")
+        replay = result["failure"]["replay"]
+        self.assertEqual((replay["status"], replay["inputs"], replay["class"]),
+                         ("passed", {"term": "known"}, "ok"))
+        self.assertEqual((result["failure"]["class"], result["failure"]["next"]),
+                         ("input", result["next"]))
+        self.assertNotIn("trust_change", result)
+
+    def test_a_replay_that_fails_too_keeps_the_class_and_breaks_trust(self):
+        code, result, trust, calls = self.run_json("gone", "nothing")
+        self.assertEqual((code, result["class"], trust, calls),
+                         (1, "assert", "broken", ["nothing", "gone"]))
+        replay = result["failure"]["replay"]
+        self.assertEqual((replay["status"], replay["class"], replay["counts"]["failed"]),
+                         ("failed", "assert", 1))
+        self.assertEqual(result["trust_change"], "verified -> broken")
+
+    def test_a_run_that_already_used_the_fixtures_is_not_replayed(self):
+        code, result, trust, calls = self.run_json("gone", "gone")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["gone"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the run already used the fixtures, "
+                                                         "so a replay would repeat it"})
+
+    def test_a_mutating_workflow_is_never_replayed(self):
+        code, result, trust, calls = self.run_json("write", "nothing", "--yes-write")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped",
+                          "reason": "effect is mutating: a replay would repeat what the run did"})
+
+    def test_a_workflow_without_fixtures_is_skipped_and_told_to_add_them(self):
+        code, result, trust, calls = self.run_json("bare", "nothing")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the workflow has no fixtures"})
+        self.assertEqual(result["next"], "compare assertion .rows.visible with the live page "
+                                         "before you patch the map. To tell drift from missing "
+                                         "data next time, give r-bare fixtures "
+                                         "(schema/workflow.yaml)")
+
+    def test_a_workflow_with_a_human_step_is_never_replayed(self):
+        code, result, trust, calls = self.run_json("person", "nothing")
+        self.assertEqual((result["status"], result["class"], trust, calls),
+                         ("failed", "assert", "broken", ["nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped",
+                          "reason": "step 3 is a human step: a replay would stop there"})
+
+    def test_the_replay_goes_through_the_gate(self):
+        (self.root / "deny-after-first").write_text("", encoding="utf-8")
+        code, result, trust, calls = self.run_json("read", "nothing")
+        self.assertEqual((result["class"], trust, calls), ("assert", "broken", ["nothing"]))
+        replay = result["failure"]["replay"]
+        self.assertEqual(replay["status"], "refused")
+        self.assertIn("permission denied: effect 'read-only' needs class 'read'",
+                      replay["reason"])
+
+    def test_a_recorded_replay_is_part_of_the_one_run_record(self):
+        self.run_json("read", "nothing", "--record")
+        first, final = index_lines(self.runs)
+        self.assertEqual((first["run_id"], first["status"], final["status"]),
+                         (final["run_id"], "running", "failed"))
+        folder = self.runs / "SiteMapper" / "fixture" / final["run_id"]
+        recorded = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+        self.assertEqual((recorded["class"], recorded["failure"]["replay"]["status"]),
+                         ("input", "passed"))
+        self.assertEqual(run_yaml(self.runs, final["run_id"])["finished_at"],
+                         recorded["failure"]["replay"]["finished_at"])
 
 
 class FinishWaitingTest(unittest.TestCase):

@@ -803,13 +803,83 @@ class Runner:
             try:
                 shots = self.root / ".runner"
                 shots.mkdir(exist_ok=True)
-                stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+                stamp = _dt.datetime.now().strftime("%Y%m%d-%H%M%S-%f")
                 shot = shots / f"{self.workflow.get('name', 'run')}-{stamp}.png"
                 self.pw_page.screenshot(path=str(shot), full_page=False)
                 failure["screenshot"] = str(shot)
             except Exception:
                 pass
         return failure
+
+    # -- drift check: replay the fixtures ------------------------------------
+    def confirm_drift(self, result: dict, primary: str):
+        """Tell drift from missing data before a read-only run breaks trust.
+
+        A drift or assert run is replayed once, through the same gate, with
+        each parameter that has a fixture of its name set to the fixture. A
+        replay that passes means the map is fine and these arguments found no
+        data, so the class becomes input. Any other replay outcome leaves the
+        class alone. The replay goes into failure.replay of the same result."""
+        cls = result["class"]
+        if cls not in ("drift", "assert"):
+            return
+        name = result["workflow"]
+        effect = self.workflow.get("effect")
+        human = next((n for n, s in enumerate(tree.steps_of(self.workflow), 1)
+                      if s.get("action") == "human"), None)
+        known = {p["name"]: str(self.bindings.fixtures[p["name"]])
+                 for p in self.workflow.get("parameters") or []
+                 if p.get("name") in self.bindings.fixtures}
+        differs = {k: v for k, v in known.items() if self.bindings.lookup(k) != v}
+        if effect != "read-only":
+            replay = {"status": "skipped",
+                      "reason": f"effect is {effect}: a replay would repeat what the run did"}
+        elif human:
+            replay = {"status": "skipped",
+                      "reason": f"step {human} is a human step: a replay would stop there"}
+        elif not self.workflow.get("fixtures"):
+            replay = {"status": "skipped", "reason": "the workflow has no fixtures"}
+            result["next"] += (f". To tell drift from missing data next time, give {name} "
+                               "fixtures (schema/workflow.yaml)")
+        elif not differs:
+            replay = {"status": "skipped",
+                      "reason": "the run already used the fixtures, so a replay would "
+                                "repeat it"}
+        else:
+            replay = self._replay(result, primary, differs)
+        if replay["status"] == "passed":
+            used = ", ".join(f"{k}={self.bindings.lookup(k)}" for k in differs)
+            fixed = ", ".join(f"{k}={v}" for k, v in differs.items())
+            result["class"] = "input"
+            result["next"] = next_step("input", name, f"arguments the site has data for: the "
+                                       f"fixture replay ({fixed}) passed, so there is no "
+                                       f"data for these arguments ({used})")
+        failure = result.setdefault("failure", {})
+        failure.update({"class": result["class"], "next": result["next"], "replay": replay})
+        print(f"replay: {replay['status']}"
+              + (f" ({replay['reason']})" if replay.get("reason") else ""), file=sys.stderr)
+
+    def _replay(self, result: dict, primary: str, differs: dict) -> dict:
+        inputs = {**{k: str(v) for k, v in self.bindings.params.items()}, **differs}
+        persona = (self.persona or {}).get("name")
+        try:
+            gate(preflight(self.root, self.workflow, self.owner, inputs, persona,
+                           frozenset(self.pre_authorized)))
+            bindings = Bindings(self.workflow, inputs)
+        except RunError as exc:
+            return {"status": "refused", "reason": str(exc), "inputs": differs}
+        bindings.context_values = self.bindings.context_values
+        again = {"workflow": result["workflow"], "status": "passed", "error": "",
+                 "started_at": utc_now()}
+        attempt(Runner(self.root, self.wf_path, self.workflow, bindings, self.owner,
+                       self.headed, self.persona, self.pre_authorized),
+                self.workflow, bindings, primary, again)
+        result["evidence"] += again["evidence"]
+        result["finished_at"] = again["finished_at"]
+        return {"status": "passed" if again["status"] == "passed" else "failed",
+                "inputs": differs, "class": again["class"], "error": error_of(again),
+                "counts": again["counts"], "started_at": again["started_at"],
+                "finished_at": again["finished_at"]}
 
     def _element(self, step, site: Site):
         return site.element(step["page"], step["element"])
@@ -1470,6 +1540,13 @@ def describe_workflow(root: Path, projects: Path, name: str) -> dict:
 
 def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, primary: str,
             result: dict):
+    attempt(runner, workflow, bindings, primary, result)
+    runner.confirm_drift(result, primary)
+    update_trust(wf_path, workflow, result)
+
+
+def attempt(runner: Runner, workflow: dict, bindings: Bindings, primary: str, result: dict):
+    """Run the steps once and classify the outcome on `result`."""
     phase = "setup"
     ordered = [(ph, index, step) for ph in tree.PHASES
                for index, step in enumerate(workflow.get(ph) or [])]
@@ -1535,7 +1612,6 @@ def execute(runner: Runner, workflow: dict, bindings: Bindings, wf_path: Path, p
     passed = sum(1 for a in runner.assertions if a["pass"])
     result["counts"] = {"total": total, "passed": passed, "failed": total - passed}
     result["finished_at"] = utc_now()
-    update_trust(wf_path, workflow, result)
 
 
 SUMMARY_ENTRIES = 30
@@ -1931,6 +2007,10 @@ def main(argv=None):
             print(f"  error: {result['error']}")
         if result["next"]:
             print(f"  {result['class']}, next: {result['next']}")
+        replay = (result.get("failure") or {}).get("replay")
+        if replay:
+            print(f"  replay: {replay['status']}"
+                  + (f" ({replay['reason']})" if replay.get("reason") else ""))
     return {"passed": 0, "waiting": 0, "failed": 1, "error": 2}[result["status"]]
 
 
