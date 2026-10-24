@@ -396,6 +396,38 @@ class TableRowReplayTest(unittest.TestCase):
                           result["failure"]["replay"]["class"]), ("drift", "failed", "drift"))
         self.assertIn("trust: broken", self.wf_path.read_text(encoding="utf-8"))
 
+    def moved(self):
+        page = self.root / "sites" / "tracker" / "pages" / "list.yaml"
+        page.write_text(ROWS_PAGE.replace("  elements:", "  fingerprint: {url: /moved}\n"
+                                          "  elements:"), encoding="utf-8")
+
+    def test_a_replay_whose_page_drifted_too_is_not_a_pass(self):
+        self.moved()
+        result = self.lookup("Issue 9")
+        replay = result["failure"]["replay"]
+        self.assertEqual((result["class"], replay["status"], replay["class"]),
+                         ("drift", "failed", "drift"))
+        self.assertIn("trust: broken", self.wf_path.read_text(encoding="utf-8"))
+
+    def test_a_passing_run_with_page_drift_is_never_replayed(self):
+        self.moved()
+        result = self.lookup("Issue 1")
+        self.assertEqual((result["status"], result["class"], self.starts),
+                         ("passed", "drift", ["tracker"]))
+        self.assertNotIn("failure", result)
+        self.assertIn("trust: broken", self.wf_path.read_text(encoding="utf-8"))
+
+    def test_consent_given_at_the_prompt_covers_the_replay(self):
+        (self.root / "config.yaml").write_text(
+            "settings:\n  policy:\n    permissions:\n      read: ask\n", encoding="utf-8")
+        answers = []
+        with unittest.mock.patch.object(sys.stdin, "isatty", return_value=True), \
+                unittest.mock.patch("builtins.input",
+                                    lambda prompt: answers.append(prompt) or "y"):
+            result = self.lookup("Issue 9")
+        self.assertEqual((result["class"], result["failure"]["replay"]["status"], len(answers)),
+                         ("input", "passed", 1))
+
 
 if __name__ == "__main__":
     unittest.main()

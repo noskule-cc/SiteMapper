@@ -309,7 +309,8 @@ class FailureClassTest(unittest.TestCase):
         self.assertEqual(result["next"], "compare assertion .out.equals with the live page "
                                          "before you patch the map")
         self.assertEqual(result["failure"]["replay"],
-                         {"status": "skipped", "reason": "the workflow has no fixtures"})
+                         {"status": "skipped", "reason": "the workflow has no parameters, so "
+                                                         "a replay would repeat the run"})
         self.assertEqual(result["trust_change"], "verified -> broken")
 
 
@@ -355,6 +356,23 @@ REPLAYED = {
                "    - action: human\n      description: a person approves\n"
                "      reason: sign-off\n"),
 }
+
+EARLY = """\
+workflow:
+  name: r-early
+  site: fixture
+  mode: deterministic
+  trust: verified
+  effect: read-only
+  parameters:
+    - {name: term, type: text, required: true}
+  fixtures:
+    term: known
+  steps:
+    - {action: script, script: rows.py, value: health, capture: health}
+    - {action: assert, element: health, expect: visible}
+    - {action: script, script: rows.py, value: $term, capture: rows}
+"""
 
 
 class FixtureReplayTest(unittest.TestCase):
@@ -438,6 +456,15 @@ class FixtureReplayTest(unittest.TestCase):
                          {"status": "skipped", "reason": "no parameter has a fixture of its name"})
         self.assertTrue(result["next"].endswith("give r-other a fixture named like each "
                                                 "parameter (schema/workflow.yaml)"))
+
+    def test_a_failure_before_any_parameter_is_used_is_not_replayed(self):
+        (self.root / "sites" / "fixture" / "workflows" / "r-early.yaml").write_text(
+            EARLY, encoding="utf-8")
+        code, result, trust, calls = self.run_json("early", "nothing")
+        self.assertEqual((result["class"], trust, calls),
+                         ("assert", "broken", ["health", "nothing"]))
+        self.assertEqual(result["failure"]["replay"],
+                         {"status": "skipped", "reason": "the failing step used no parameter"})
 
     def test_a_workflow_with_a_human_step_is_never_replayed(self):
         code, result, trust, calls = self.run_json("person", "nothing")

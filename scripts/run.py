@@ -819,9 +819,11 @@ class Runner:
         each parameter that has a fixture of its name set to the fixture. A
         replay that passes means the map is fine and these arguments found no
         data, so the class becomes input. Any other replay outcome leaves the
-        class alone. The replay goes into failure.replay of the same result."""
+        class alone. The replay goes into failure.replay of the same result.
+        A run whose steps passed drifted only in a fingerprint: that is the
+        page, never the data, so it is not replayed."""
         cls = result["class"]
-        if cls not in ("drift", "assert"):
+        if cls not in ("drift", "assert") or result["status"] == "passed":
             return
         name = result["workflow"]
         effect = self.workflow.get("effect")
@@ -837,18 +839,22 @@ class Runner:
         elif human:
             replay = {"status": "skipped",
                       "reason": f"step {human} is a human step: a replay would stop there"}
-        elif self.workflow.get("parameters") and not known:
+        elif not self.workflow.get("parameters"):
+            replay = {"status": "skipped",
+                      "reason": "the workflow has no parameters, so a replay would repeat "
+                                "the run"}
+        elif not known:
             replay = {"status": "skipped",
                       "reason": "no parameter has a fixture of its name"
                       if self.workflow.get("fixtures") else "the workflow has no fixtures"}
             result["next"] += (f". To tell drift from missing data next time, give {name} a "
                                "fixture named like each parameter (schema/workflow.yaml)")
-        elif not self.workflow.get("fixtures"):
-            replay = {"status": "skipped", "reason": "the workflow has no fixtures"}
         elif not differs:
             replay = {"status": "skipped",
                       "reason": "the run already used the fixtures, so a replay would "
                                 "repeat it"}
+        elif not differs.keys() & self._names_until_failure(result):
+            replay = {"status": "skipped", "reason": "the failing step used no parameter"}
         else:
             replay = self._replay(result, primary, differs)
         if replay["status"] == "passed":
@@ -862,6 +868,21 @@ class Runner:
         failure.update({"class": result["class"], "next": result["next"], "replay": replay})
         print(f"replay: {replay['status']}"
               + (f" ({replay['reason']})" if replay.get("reason") else ""), file=sys.stderr)
+
+    def _names_until_failure(self, result: dict) -> set[str]:
+        """Every $name the steps up to the failing one refer to: the step that
+        raised, or the assert step of the first failed assertion (assertions
+        are appended one per assert step, in run order)."""
+        ordered = [(phase, index, step) for phase in tree.PHASES + ("teardown",)
+                   for index, step in enumerate(self.workflow.get(phase) or [])]
+        if result["status"] == "error":
+            at = (result["failure"].get("phase"), result["failure"].get("step_index"))
+            end = next((n for n, (ph, i, _) in enumerate(ordered) if (ph, i) == at), -1)
+        else:
+            first = next(k for k, a in enumerate(result["assertions"]) if not a["pass"])
+            end = [n for n, (_, _, s) in enumerate(ordered) if s.get("action") == "assert"][first]
+        steps = [step for _, _, step in ordered[:end + 1]]
+        return set(VAR_RE.findall(json.dumps([self.workflow.get("site"), steps])))
 
     def _replay(self, result: dict, primary: str, differs: dict) -> dict:
         inputs = {**{k: str(v) for k, v in self.bindings.params.items()}, **differs}
@@ -880,7 +901,7 @@ class Runner:
                 self.workflow, bindings, primary, again)
         result["evidence"] += again["evidence"]
         result["finished_at"] = again["finished_at"]
-        return {"status": "passed" if again["status"] == "passed" else "failed",
+        return {"status": "passed" if again["class"] == "ok" else "failed",
                 "inputs": differs, "class": again["class"], "error": error_of(again),
                 "counts": again["counts"], "started_at": again["started_at"],
                 "finished_at": again["finished_at"]}
@@ -1353,7 +1374,8 @@ def gate(pre: Preflight):
     """Refuse or ask BEFORE the browser opens. `trust` grants nothing here.
 
     `ask` resolves via --yes-<class>, then a TTY prompt, and degrades to deny
-    when non-interactive (CI has no human to ask).
+    when non-interactive (CI has no human to ask). Returns the class a person
+    consented to at the prompt, so a replay in the same run does not ask again.
     """
     action_class = EFFECT_CLASS[pre.effect]
     decision = pre.classes[action_class]
@@ -1376,7 +1398,7 @@ def gate(pre: Preflight):
             except (EOFError, KeyboardInterrupt):
                 answer = ""  # a TTY that cannot actually answer is non-interactive
             if answer.strip().lower() == "y":
-                return
+                return frozenset({action_class})
             raise RunError(
                 f"not authorized: class '{action_class}' is 'ask' for {decision.where()} and "
                 f"no consent was given. Pass --yes-{action_class} to pre-authorize.",
@@ -1452,7 +1474,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     workflow = data.get("workflow", {})
 
     pre = preflight(root, workflow, owner, cli_params, persona_name, frozenset(pre_authorized))
-    gate(pre)
+    consented = gate(pre) or frozenset()
     require_params(workflow, cli_params)
     tier, primary = pre.tier, pre.sites[0]
     persona = load_persona(root, primary, persona_name)
@@ -1460,7 +1482,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
 
     bindings = Bindings(workflow, cli_params, context)
     runner = Runner(root, wf_path, workflow, bindings, owner, headed=headed,
-                    persona=persona, pre_authorized=pre_authorized)
+                    persona=persona, pre_authorized=set(pre_authorized) | consented)
 
     result = {
         "workflow": workflow.get("name", name),
