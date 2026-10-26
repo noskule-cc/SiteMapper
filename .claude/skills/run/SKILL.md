@@ -71,7 +71,10 @@ Workflow argument: $workflow
        (`<project>/scripts/`), or by the app the site is a tier of
        (`apps/<app>/scripts/`) — look in that order. Prefer this whenever the
        data is reachable from the site's API — it is faster, headless, and does
-       not break when the UI changes
+       not break when the UI changes. A step with a `shape` checks the output
+       against it (`schema/workflow.yaml`): a missing key, a changed type or
+       output that is not JSON is drift, so record `scripts.<capture>: mismatch`
+       and stop the run there
      - `verify` → check that expected elements/text exist on the page
      - `wait` → pause briefly for page transitions
      - `human` → **hand to a person**: stop here. Tell the user the step's
@@ -121,6 +124,9 @@ chains are for pages whose URL depends on runtime data.
 - If an element can't be found, take a screenshot and report the issue. Don't retry blindly.
 - If a page doesn't match expectations, run a quick drift check on that page's map.
 - Ask the user before continuing if a step fails.
-- A failed **headless** run (`scripts/run.py`) hands its `--json` failure
-  report to the repair skill (`.claude/skills/repair/SKILL.md`), which patches
-  the map and restores the workflow's `trust`.
+- A failed **headless** run (`scripts/run.py`) names its `class` and one
+  `next` step. A `drift` run hands its `--json` failure report to the repair
+  skill (`.claude/skills/repair/SKILL.md`), which patches the map and restores
+  the workflow's `trust`. Any other class: report `class` and `next` to the
+  user; an `input`, `refused`, `auth` or `error` run is not the map's fault and
+  leaves `trust` unchanged.

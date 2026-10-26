@@ -27,6 +27,7 @@ import glob
 import os
 import re
 import sys
+from urllib.parse import urlsplit
 
 try:
     import yaml
@@ -306,6 +307,193 @@ def check_credentials():
             if ref and not SECRET_REF.fullmatch(str(ref)):
                 fails.append(f"{show(f)}: credential_ref.{key} is not an env: or keyring: "
                              "reference (the value is not shown)")
+    return fails
+
+
+# An endpoint entry is closed and typed: no free-text field, so a captured value
+# has nowhere to sit but a URL piece, a key name or an identifier, and each of
+# those has a shape. The token tests are defence in depth; the skill's rule that
+# it never copies a value is the main guard. Percent-encoded values, short ids
+# and letters-only random strings are not caught: a run of letters cannot be told
+# apart from a word.
+ENDPOINT_FIELDS = {"name": str, "method": str, "url_pattern": str, "inputs": list,
+                   "returns": list, "effect": str}
+HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+EFFECTS = {"read-only", "mutating", "destructive"}
+ENDPOINT_NAME = re.compile(r"[a-z][a-z0-9_]{0,39}")
+PLACEHOLDER = re.compile(r"\{([^{}]*)\}")
+PLACEHOLDER_NAME = re.compile(r"[a-z][a-z0-9_]{0,31}")
+QUERY_KEY = re.compile(r"[A-Za-z_][A-Za-z0-9_.\[\]-]{0,39}")
+FIXED_QUERY_VALUE = re.compile(r"-?[A-Za-z][A-Za-z0-9_]*(?:[,.-][A-Za-z0-9_]+)*"
+                               r"|\d{1,6}(?:\.\d{1,6})?")
+RESPONSE_KEY = re.compile(r"[A-Za-z_$@][\w.$@-]{0,63}")
+TOKEN_SHAPES = [re.compile(p) for p in (
+    r"[0-9a-fA-F]{16,}",
+    r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+    r"eyJ[\w-]+\.[\w-]+",
+    r"(?<![A-Za-z0-9])(?:gh[pousr]_|github_pat_|glpat-|sk-|[spr]k_(?:live|test)_|ya29\."
+    r"|xox[abprs]-"
+    r"|AKIA[0-9A-Z]{8}|ASIA[0-9A-Z]{8}|AIza[\w-]{8})",
+)]
+BASE64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}=*")
+SECRET_HEADER = re.compile(
+    r"(?i)[\"']?\b(?:set-cookie|cookie|(?:proxy-)?authorization|"
+    r"x-[\w-]*(?:key|token|auth|session|csrf|xsrf|secret|signature|password)[\w-]*|"
+    r"api[-_]?key|access[-_]?token|refresh[-_]?token|client[-_]?secret|password|passwd|"
+    r"phpsessid|jsessionid|session[-_]?id|user_session|csrftoken)\b[\"']?\s*[:=]\s*\S")
+CREDENTIAL_SCHEME = re.compile(r"(?i)\b(?:bearer|basic|token)\s+([A-Za-z0-9._~+/=-]{8,})")
+
+
+def token_shaped(word):
+    """A URL piece, key or word that reads like a credential rather than a name."""
+    transitions = len(re.findall(r"[A-Za-z](?=\d)|\d(?=[A-Za-z])", word))
+    return ((len(word) >= 12 and transitions >= 3)
+            or any(p.search(word) for p in TOKEN_SHAPES)
+            or any(re.search(r"[a-z]", run) and re.search(r"[A-Z]", run)
+                   and re.search(r"\d[A-Za-z]", run) for run in BASE64_RUN.findall(word)))
+
+
+def secret_text(text):
+    """Prose that holds a secret header, a credential scheme, or a token-shaped word."""
+    if SECRET_HEADER.search(text):
+        return True
+    for credential in CREDENTIAL_SCHEME.findall(text):
+        if re.search(r"\d", credential) or (re.search(r"[a-z]", credential)
+                                            and re.search(r"[A-Z]", credential)):
+            return True
+    return any(token_shaped(w) for w in re.split(r"[\s\"'`,;:()<>=/?&#\[\]{}]+", text) if w)
+
+
+def shown(name):
+    """A name as a failure may print it: only when it is shaped like a name."""
+    ok = isinstance(name, str) and QUERY_KEY.fullmatch(name) and not token_shaped(name)
+    return name if ok else "<not shown>"
+
+
+def url_fails(text):
+    try:
+        url = urlsplit(text)
+        url.port
+    except ValueError:
+        return ["url_pattern has a host or port that does not parse; a port is a number"]
+    fails = []
+    if not url.path and not url.netloc:
+        fails.append("url_pattern is missing")
+    if url.username or url.password or "@" in url.netloc:
+        fails.append("url_pattern carries a user or password before the host")
+    if any(token_shaped(label) for label in (url.hostname or "").split(".")):
+        fails.append("url_pattern has a host label shaped like a token")
+    names = PLACEHOLDER.findall(text)
+    if any(not PLACEHOLDER_NAME.fullmatch(n) or re.search(r"\d{3}", n) or token_shaped(n)
+           for n in names):
+        fails.append("url_pattern has a {placeholder} that is not a short lower-case "
+                     "name")
+    for seg in filter(None, url.path.split("/")):
+        literal = PLACEHOLDER.sub("", seg)
+        if "{" in literal or "}" in literal or token_shaped(literal):
+            fails.append("url_pattern has a path segment shaped like a token; write it "
+                         "as a {placeholder}")
+            break
+    if url.fragment or "#" in text:
+        fails.append("url_pattern has a fragment")
+    if ";" in url.query:
+        fails.append("url_pattern query uses ';'")
+    for pair in filter(None, url.query.split("&")):
+        key, sep, value = pair.partition("=")
+        if not QUERY_KEY.fullmatch(key) or token_shaped(key):
+            fails.append("url_pattern has a query key that is not a plain name")
+        elif not sep or not (PLACEHOLDER.fullmatch(value)
+                             or (len(value) < 40 and FIXED_QUERY_VALUE.fullmatch(value)
+                                 and not token_shaped(value))):
+            fails.append(f"url_pattern query '{key}' needs a {{placeholder}} value, or a "
+                         "short word, list or number")
+    return fails
+
+
+def endpoint_fails(entry, elements):
+    """Why one `endpoints` entry could carry a captured request's values."""
+    if not isinstance(entry, dict):
+        return ["is not a mapping"]
+    fails = [f"{shown(key)} is not an endpoint key; headers, cookies, tokens and free "
+             "text are never stored" for key in sorted(set(entry) - set(ENDPOINT_FIELDS),
+                                                       key=str)]
+    for key, kind in ENDPOINT_FIELDS.items():
+        value = entry.get(key)
+        if key in entry and not (isinstance(value, str) if kind is str else
+                                 isinstance(value, list)
+                                 and all(isinstance(v, str) for v in value)):
+            fails.append(f"{key} is not {'a string' if kind is str else 'a list of strings'}")
+    if fails:
+        return fails
+    if not (ENDPOINT_NAME.fullmatch(entry.get("name", "")) and not token_shaped(entry["name"])):
+        fails.append("name is not a snake_case identifier of at most 40 characters")
+    fails += url_fails(entry.get("url_pattern", ""))
+    if entry.get("method") not in HTTP_METHODS:
+        fails.append(f"method is not one of {sorted(HTTP_METHODS)}")
+    if entry.get("effect") not in EFFECTS:
+        fails.append(f"effect is not one of {sorted(EFFECTS)}")
+    for name in entry.get("inputs", []):
+        if name not in elements:
+            fails.append(f"inputs names '{shown(name)}', which is not an element of "
+                         "this page")
+    if any(not RESPONSE_KEY.fullmatch(k) or token_shaped(k) for k in entry.get("returns", [])):
+        fails.append("returns holds something that is not a response key name")
+    return fails
+
+
+def strings_in(value):
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for k, v in value.items():
+            yield from strings_in(k)
+            yield from strings_in(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from strings_in(v)
+
+
+def page_text_fails(page):
+    """Free text on a page (purpose, gotchas, settings) that holds a secret."""
+    fails = []
+    gotchas = page.get("gotchas")
+    if gotchas is not None and not (isinstance(gotchas, list)
+                                    and all(isinstance(g, str) for g in gotchas)):
+        fails.append("gotchas is not a list of strings")
+    elif any(secret_text(g) for g in gotchas or []):
+        fails.append("gotchas holds a secret header, a credential or a token-shaped word")
+    for key in ("purpose", "settings"):
+        if any(secret_text(s) for s in strings_in(page.get(key))):
+            fails.append(f"{key} holds a secret header, a credential or a token-shaped word")
+    return fails
+
+
+def check_endpoints():
+    """Page `endpoints` hold request shapes only, and page text holds no secret.
+
+    /map-site proposes endpoints from a live network listing, which carries the
+    session's tokens; this is the guard that one never reaches a page file. A
+    rejected endpoint's reason lands in `gotchas`, so page text is scanned too.
+    """
+    fails = []
+    for f in files(["sites/*/pages/*.yaml"]):
+        try:
+            page = load(f).get("page")
+        except (yaml.YAMLError, AttributeError):
+            continue  # check_yaml and check_schema report it
+        if not isinstance(page, dict):
+            continue
+        fails += [f"{show(f)}: {msg} (the value is not shown)" for msg in page_text_fails(page)]
+        entries = page.get("endpoints")
+        if entries is None:
+            continue
+        if not isinstance(entries, list):
+            fails.append(f"{show(f)}: endpoints is not a list")
+            continue
+        elements = {e.get("name") for e in page.get("elements") or [] if isinstance(e, dict)}
+        for i, entry in enumerate(entries):
+            fails += [f"{show(f)}: endpoints[{i}].{msg} (the value is not shown)"
+                      for msg in endpoint_fails(entry, elements)]
     return fails
 
 
@@ -691,7 +879,9 @@ def check_actions():
     A `human` step without a reason pauses a run with nothing to tell the person
     who picks it up, and one in `teardown` would surface as a broken teardown
     instead of a waiting run. An unknown action failed only at run time. A
-    step without `action` is allowed only in an agentic workflow.
+    step without `action` is allowed only in an agentic workflow. A script
+    step's `shape` must parse as a shape: a misspelled type name (`strng`) would
+    otherwise fail mid-run and stop a workflow whose script was fine.
     """
     fails = []
     for f in all_workflows():
@@ -715,6 +905,11 @@ def check_actions():
                                      f"{' | '.join(tree.HUMAN_KINDS)}")
                     if phase == "teardown":
                         fails.append(f"{where}: a human step cannot be in teardown")
+                if s.get("shape") is not None:
+                    problem = (tree.shape_problem(s["shape"]) if action == "script"
+                               else "shape: only a script step has an output shape")
+                    if problem:
+                        fails.append(f"{where}: {problem}")
     return fails
 
 
@@ -842,7 +1037,8 @@ def check_bindings():
             fails.append(f"{f}: {len(body.splitlines())} lines — a skill or agent "
                          "carries its complete instructions, not a pointer")
         for host_tool in re.findall(r"\b(?:tabs_context_mcp|read_page|get_page_text|"
-                                    r"form_input|read_console_messages)\b", body):
+                                    r"form_input|read_console_messages|"
+                                    r"read_network_requests)\b", body):
             fails.append(f"{f}: names the host tool '{host_tool}' — tool names "
                          "belong in docs/host-bindings.md only")
     return fails
@@ -884,6 +1080,7 @@ CHECKS = {
     "yaml": check_yaml,
     "schema": check_schema,
     "credentials": check_credentials,
+    "endpoints": check_endpoints,
     "listings": check_listings,
     "companions": check_companions,
     "apps": check_apps,

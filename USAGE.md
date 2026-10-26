@@ -27,6 +27,7 @@ To begin, tell Claude to open a Chrome browser session (it creates its own tab v
 1. In Claude Code, run `/map-site <site-name>` (e.g., `/map-site sitemapper-demo`).
 2. Tell Claude to open a Chrome browser session and navigate to the target URL (Claude opens its own tab through the MCP extension — you don't open it by hand).
 3. The discovery agent reads the page, suggests elements, and asks you to confirm or correct.
+   Where the host can list the page's network requests, it also proposes the API endpoints behind the page: method, URL with placeholders, the inputs it uses and the keys it returns. You confirm, rename or reject each one and declare its effect. Only confirmed endpoints are written, and never a header, cookie or token value. A host without the capability skips this with a note.
 4. Walk through each page — the agent writes YAML maps as you go.
 5. When done, the agent updates `sites/<site>/site.yaml` with the full page list.
 

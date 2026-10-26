@@ -23,6 +23,31 @@ locator **as tried**, resolved variables, actual URL and title, the page's
 fingerprint state, and a failure screenshot path. Ask for the JSON (or re-run
 the workflow to produce it) if only a prose description is offered.
 
+## Branch on the class first
+
+Read `class` and `next` from the result (`docs/interface.md` → Failure
+classes). Only `drift` is a map problem.
+
+- **`drift` on a script step** (`failure.action` is `script`, a `mismatch` in
+  `scripts`) → the script or its API changed, never a locator: make no edit
+  to a page map. Report the script, the step and what `error` says differs,
+  then fix the script, or, if the API changed on purpose and the new output is
+  right, delete that step's `shape`, re-learn it with `python scripts/run.py
+  <workflow> --learn-shape` and review its diff.
+- **`drift`** → run the Sequence below. A `failure.replay` that failed
+  too confirms it.
+- **`assert`** → follow `next` once: compare the failed assertion with the
+  live page. A page that changed is drift, so run the Sequence. A site that
+  broke is a finding for the user, and the map stays as it is.
+- **`input` with `failure.replay.status: passed`** → stop. The fixture
+  replay passed, so the map works and the arguments found no data. Make no
+  map edit; report the arguments the run used, the fixture inputs that
+  passed (`failure.replay.inputs`) and `next`.
+- **`input`, `refused`, `auth`, `error`** → do not touch the map. Follow
+  `next` once if it is a step you can take without bending a permission rule
+  (re-run with the missing parameter, for example), then report the class,
+  `next` and what happened. Consent, credentials and policy are the user's.
+
 ## Sequence
 
 1. **Look before touching.** Open the failure screenshot; open the live page

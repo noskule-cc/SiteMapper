@@ -188,10 +188,13 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
     except run.RunError as exc:
         raise ToolError(str(exc)) from exc
     if pre.outcome == "deny":
-        return {"status": "denied", "preflight": dataclasses.asdict(pre)}
-    if pre.needs_consent:
-        return {"status": "needs-consent", "needs_consent": pre.needs_consent,
+        return {"status": "denied", "class": "refused", "next": run.next_step("refused", name),
                 "preflight": dataclasses.asdict(pre)}
+    if pre.needs_consent:
+        return {"status": "needs-consent", "class": "refused",
+                "next": f"call again with consent {', '.join(pre.needs_consent)} to run {name} "
+                        "this once",
+                "needs_consent": pre.needs_consent, "preflight": dataclasses.asdict(pre)}
 
     transport, child = await asyncio.get_running_loop().subprocess_exec(
         RunProtocol, *tree_.command(name, params, persona, pre, trigger),
@@ -247,7 +250,10 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
         raise ToolError(f"run.py exited {transport.get_returncode()} without a result{reason}; "
                         f"last output:\n{tail(messages)}") from None
     return {"run_id": record.name if record else None, "status": status,
+            "class": result.get("class"), "next": result.get("next") or "",
+            "scripts": result.get("scripts") or {},
             "waiting_for": result.get("waiting_for"), "error": result.get("error") or "",
+            "replay": (result.get("failure") or {}).get("replay"),
             "record": str(record) if record else None}
 
 
@@ -306,7 +312,8 @@ def build(tree_: Tree) -> MCPServer:
                            persona: str | None = None, consent: list[Consent] | None = None,
                            timeout_s: float | None = None,
                            trigger: Trigger = "ui") -> dict[str, Any]:
-        """Run a workflow and return its run_id, status and waiting_for.
+        """Run a workflow and return its run_id, status, class, next, scripts and waiting_for.
+
 
         `consent` answers an `ask` for this run only. Without it an ask returns
         status needs-consent and starts nothing; a deny returns status denied.
