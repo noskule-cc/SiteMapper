@@ -7,8 +7,9 @@
 Tools: list_workflows, describe_workflow, preflight, run_workflow and finish_run, plus one
 run-<workflow> tool per deterministic workflow whose sites are fixed, whose
 hints carry that workflow's effect and whose `_meta` carries its lock key. A
-run is `run.py <workflow> --json --record --trigger ui` in a child process, so
-the permission gate and the run record are the runner's own.
+run is `run.py <workflow> --json --record --trigger <trigger>` in a child process
+(`ui` unless the host names another), so the permission gate and the run record
+are the runner's own.
 """
 
 from __future__ import annotations
@@ -45,6 +46,7 @@ HINTS = {
 LOCK_KEY = "teamos/lock"
 
 Consent = Literal["write", "destructive", "auth"]
+Trigger = Literal["ui", "schedule", "manual"]
 
 
 if sys.platform == "win32":
@@ -126,8 +128,8 @@ class Tree:
         return run.preflight(self.root, workflow, owner, params, persona, frozenset(consent))
 
     def command(self, name: str, params: dict[str, str], persona: str | None,
-                pre: run.Preflight) -> list[str]:
-        cmd = [sys.executable, str(RUN_PY), name, "--json", "--record", "--trigger", "ui",
+                pre: run.Preflight, trigger: Trigger = "ui") -> list[str]:
+        cmd = [sys.executable, str(RUN_PY), name, "--json", "--record", "--trigger", trigger,
                "--root", str(self.root), "--projects", str(self.projects),
                "--runs", str(self.runs)]
         cmd += [arg for key, value in params.items() for arg in ("--param", f"{key}={value}")]
@@ -178,7 +180,7 @@ def tail(messages: list[str]) -> str:
 
 async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str | None,
                     consent: list[str], ctx: Context,
-                    timeout_s: float | None = None) -> dict[str, Any]:
+                    timeout_s: float | None = None, trigger: Trigger = "ui") -> dict[str, Any]:
     if timeout_s is not None and timeout_s <= 0:
         raise ToolError(f"timeout_s must be more than 0, got {timeout_s:g}")
     try:
@@ -195,7 +197,7 @@ async def start_run(tree_: Tree, name: str, params: dict[str, str], persona: str
                 "needs_consent": pre.needs_consent, "preflight": dataclasses.asdict(pre)}
 
     transport, child = await asyncio.get_running_loop().subprocess_exec(
-        RunProtocol, *tree_.command(name, params, persona, pre),
+        RunProtocol, *tree_.command(name, params, persona, pre, trigger),
         stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         env={**os.environ, "PYTHONIOENCODING": "utf-8"}, **SPAWN)
     pid = transport.get_pid()
@@ -308,15 +310,20 @@ def build(tree_: Tree) -> MCPServer:
     @server.tool(annotations=HINTS["destructive"], structured_output=True)
     async def run_workflow(name: str, ctx: Context, params: dict[str, str] | None = None,
                            persona: str | None = None, consent: list[Consent] | None = None,
-                           timeout_s: float | None = None) -> dict[str, Any]:
+                           timeout_s: float | None = None,
+                           trigger: Trigger = "ui") -> dict[str, Any]:
         """Run a workflow and return its run_id, status, class, next, scripts and waiting_for.
+
 
         `consent` answers an `ask` for this run only. Without it an ask returns
         status needs-consent and starts nothing; a deny returns status denied.
         Progress arrives per step. The lock key is the preflight's. A run
-        longer than `timeout_s` (default: the server's --run-timeout) is stopped."""
+        longer than `timeout_s` (default: the server's --run-timeout) is stopped.
+        `trigger` is recorded with the run: `ui` for a person's press, `schedule`
+        for a scheduled task the host started, `manual` for a person at the host's
+        command line."""
         return await start_run(tree_, name, params or {}, persona, consent or [], ctx,
-                               timeout_s)
+                               timeout_s, trigger)
 
     @server.tool(annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False,
                                              idempotentHint=True), structured_output=True)
