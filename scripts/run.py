@@ -784,7 +784,7 @@ class Runner:
             self.pw_page.goto(site.base_url + (site.page(login_page).get("url_pattern", "")
                                                if login_page else ""))
             try:
-                input("Log in in the browser window, then press Enter here... ")
+                ask("Log in in the browser window, then press Enter here... ")
             except (EOFError, KeyboardInterrupt):
                 raise RunError("no interactive console to wait on — auth: human needs one",
                                "auth", "run {workflow} again --headed from a terminal and "
@@ -1527,6 +1527,13 @@ def preflight(root: Path, workflow: dict, owner: Owner, cli_params: dict,
                      outcome=outcome)
 
 
+def ask(prompt: str) -> str:
+    """input(), but the prompt goes to stderr: stdout is the --json result, and a
+    prompt there corrupts it for the caller that parses it."""
+    print(prompt, end="", file=sys.stderr, flush=True)
+    return input("")
+
+
 def gate(pre: Preflight):
     """Refuse or ask BEFORE the browser opens. `trust` grants nothing here.
 
@@ -1548,7 +1555,7 @@ def gate(pre: Preflight):
             return
         if sys.stdin.isatty():
             try:
-                answer = input(
+                answer = ask(
                     f"'{pre.workflow}' is {pre.effect} and {decision.where()} says ask. "
                     "Proceed? [y/N] "
                 )

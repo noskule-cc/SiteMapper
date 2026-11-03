@@ -710,7 +710,7 @@ class ScriptShapeTest(unittest.TestCase):
         (site / "site.yaml").write_text(SITE + "    - name: issues.py\n", encoding="utf-8")
         (site / "scripts" / "issues.py").write_text(ISSUES_PY, encoding="utf-8")
         self.shaped = site / "workflows" / "shaped.yaml"
-        self.shaped.write_text(SHAPED.format(name="shaped", shape=SHAPE), encoding="utf-8")
+        self.shaped.write_bytes(SHAPED.format(name="shaped", shape=SHAPE).encode("utf-8"))
         self.bare = site / "workflows" / "bare.yaml"
         self.bare.write_text(SHAPED.format(name="bare", shape=""), encoding="utf-8")
         self.runs = base / "runs"
