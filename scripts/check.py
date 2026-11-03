@@ -328,13 +328,14 @@ FIXED_QUERY_VALUE = re.compile(r"-?[A-Za-z][A-Za-z0-9_]*(?:[,.-][A-Za-z0-9_]+)*"
                                r"|\d{1,6}(?:\.\d{1,6})?")
 RESPONSE_KEY = re.compile(r"[A-Za-z_$@][\w.$@-]{0,63}")
 TOKEN_SHAPES = [re.compile(p) for p in (
-    r"[0-9a-fA-F]{16,}",
+    r"(?=\d*[a-fA-F])[0-9a-fA-F]{16,}",  # all digits is a serial number, not a token
     r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
     r"eyJ[\w-]+\.[\w-]+",
     r"(?<![A-Za-z0-9])(?:gh[pousr]_|github_pat_|glpat-|sk-|[spr]k_(?:live|test)_|ya29\."
     r"|xox[abprs]-"
     r"|AKIA[0-9A-Z]{8}|ASIA[0-9A-Z]{8}|AIza[\w-]{8})",
 )]
+UUID = re.compile(r"(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 BASE64_RUN = re.compile(r"[A-Za-z0-9+/_-]{20,}=*")
 SECRET_HEADER = re.compile(
     r"(?i)[\"']?\b(?:set-cookie|cookie|(?:proxy-)?authorization|"
@@ -361,7 +362,10 @@ def secret_text(text):
         if re.search(r"\d", credential) or (re.search(r"[a-z]", credential)
                                             and re.search(r"[A-Z]", credential)):
             return True
-    return any(token_shaped(w) for w in re.split(r"[\s\"'`,;:()<>=/?&#\[\]{}]+", text) if w)
+    words = (w.rstrip(".") for w in re.split(r"[\s\"'`,;:()<>=/?&#\[\]{}]+", text))
+    # A bare UUID in prose names a record (a device, a role). Next to a header or a
+    # credential scheme it is still caught above.
+    return any(token_shaped(w) for w in words if w and not UUID.fullmatch(w))
 
 
 def shown(name):
