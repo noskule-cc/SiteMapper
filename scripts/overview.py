@@ -259,7 +259,7 @@ function apply() {
   for (const card of cards) {
     const cardHit = !term || card.dataset.search.includes(term);
     let any = false, anyHit = false;
-    for (const proc of card.querySelectorAll('.proc')) {
+    for (const proc of card.querySelectorAll('.proc[data-kind]')) {
       const passes = (filters.kind === 'all' || proc.dataset.kind === filters.kind)
                   && (filters.mode === 'all' || proc.dataset.mode === filters.mode);
       const hit = !term || cardHit || proc.dataset.search.includes(term);

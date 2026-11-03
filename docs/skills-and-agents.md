@@ -11,6 +11,12 @@ site or edits maps; that is operator-initiated work, and auto-triggering on a
 description match would sidestep the intent behind [permissions.md](permissions.md).
 See [extending.md](extending.md).
 
+**One exception: `verify`.** It drives SiteMapper's own dashboard on a scratch copy
+of the maps, and its only contact with a real site is the read-only demo workflow
+on the public demo repository. Its helper refuses run buttons on a copy of any
+other map repository and declines every ask. Agents must be able to call it to
+prove a dashboard change, so it is model-invocable.
+
 ## Skills
 
 **SiteMapper skills** (slash commands, never auto-triggered):
@@ -24,6 +30,7 @@ See [extending.md](extending.md).
 | [`verify-map`](../.claude/skills/verify-map/SKILL.md) | `/verify-map <site>` | On-demand drift check for a mapped site |
 | [`repair`](../.claude/skills/repair/SKILL.md) | `/repair <workflow>` | Fix the map after a headless runner failure, restore trust |
 | [`deploy-dashboard`](../.claude/skills/deploy-dashboard/SKILL.md) | `/deploy-dashboard` | Publish a dashboard to its artifact (framework page: automatic on push) |
+| [`verify`](../.claude/skills/verify/SKILL.md) | `/verify`, or by an agent | Drive the dashboard in a browser on a scratch copy and keep screenshots as proof; feature map in [`features/`](../.claude/skills/verify/features/README.md) |
 
 **aiDocs job skills** (slash commands for runnable tasks):
 

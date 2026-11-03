@@ -27,6 +27,7 @@ calendar date:
 | [Regenerate views](#regenerate-views) | `python scripts/inventory.py [--root <maps>]` | per-change | a site, page, workflow or project was added or removed |
 | [Headless workflow run](#headless-workflow-run) | `python scripts/run.py <workflow> --param k=v` | per-change | a deterministic workflow changed |
 | [Runner tests](#runner-tests) | `python -m unittest discover tests` | per-change | `scripts/run.py` changed (also runs in CI) |
+| [Dashboard verification](#dashboard-verification) | `/verify` | per-change | `scripts/serve.py` or `scripts/overview.py` changed |
 | [Live dashboard](#live-dashboard) | `python scripts/serve.py [--root <maps>]` | on demand | you want the dashboard with real run buttons |
 | [Deploy the dashboard](#deploy-the-dashboard) | automatic on push; fallback `/deploy-dashboard` | on demand | the shared page must show uncommitted or out-of-band state |
 | [Map drift check](#map-drift-check) | `/verify-map <site>` | on demand | a workflow step failed to find a mapped element |
@@ -103,6 +104,13 @@ recorded always).
 temporary folder, with no browser: script, human and capture steps only. It
 covers what a real run of the acceptance workflow cannot show, such as the
 record a killed run leaves behind.
+
+### Dashboard verification
+
+Drives the served dashboard in a browser on a scratch copy of the maps and keeps
+screenshots as proof. Run the recipes in `.claude/skills/verify/features/` that
+the change touches. `check.py` only proves `overview.html` is current, not that
+the page works.
 
 ### Live dashboard
 
