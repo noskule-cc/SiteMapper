@@ -22,6 +22,7 @@ in [AGENTS.md](AGENTS.md):
 | Writing the standing rules a deployment follows | [guardrails-template.md](guardrails-template.md) |
 | Asking what exists in the repo right now | [inventory.md](inventory.md) (generated) |
 | Showing a **human** what exists | [overview.html](overview.html) (generated) — open in a browser |
+| Proving a dashboard change (`serve.py`, `overview.py`) works | the `verify` skill: `.claude/skills/verify/SKILL.md` |
 | Writing a new workflow YAML | `schema/workflow.yaml` (+ a sibling `<workflow>.md` with a Mermaid flowchart) |
 | Finding drift a script could catch | add a check to `scripts/check.py` |
 
