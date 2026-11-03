@@ -91,6 +91,7 @@ GOTCHA_PROSE = [
     "Ids are integers; the cursor is an opaque string",
     "Typing does NOT filter; Enter navigates to ?q=<term>",
     "Open and Closed are <a href='#'> controls, re-read on 2026-10-09",
+    "Verified on device 550e8400-e29b-41d4-a716-446655440000, serial 8941120000123456789.",
 ]
 
 # probe: (page body after `endpoints:`, failure it must print, value it must not print)
@@ -174,6 +175,9 @@ MUST_FAIL = {
     "multi-line cookie in a gotcha": (entry(extra=(
         "  gotchas:\n    - |\n      works only with\n      Cookie:\n        sid=9f8e7d6c5b4a\n")),
         "gotchas holds a secret header", "9f8e7d"),
+    "uuid credential in a gotcha": (entry(extra=(
+        '  gotchas:\n    - "Authorization: Bearer 550e8400-e29b-41d4-a716-446655440000"\n')),
+        "gotchas holds a secret header", "550e8400"),
     "bearer in a gotcha": (entry(extra='  gotchas:\n    - "Authorization: Bearer abc1234"\n'),
                            "gotchas holds a secret header", "abc1234"),
     "basic credentials in a gotcha": (entry(extra=(
