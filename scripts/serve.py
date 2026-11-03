@@ -309,7 +309,8 @@ class Handler(BaseHTTPRequestHandler):
             cmd.append(f"--yes-{cls}")
         try:
             proc = subprocess.run(cmd, capture_output=True, text=True,
-                                  encoding="utf-8", timeout=RUN_TIMEOUT_S)
+                                  encoding="utf-8", timeout=RUN_TIMEOUT_S,
+                                  env={**os.environ, "PYTHONIOENCODING": "utf-8"})
         except subprocess.TimeoutExpired:
             return self.send_json(500, {"error": f"run exceeded {RUN_TIMEOUT_S}s"})
         try:
