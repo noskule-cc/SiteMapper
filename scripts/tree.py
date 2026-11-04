@@ -241,7 +241,9 @@ def sweep_runs(runs_root, now: _dt.datetime | None = None,
 
     A folder is a run only if its run.yaml reads as a record with a time
     (finished_at, else started_at). Anything else, such as a folder a
-    migration parked in the store, is never touched."""
+    migration parked in the store, is never touched. A run with status
+    `waiting` is never swept: a person may still approve it. Answering it sets
+    finished_at, so `keep` counts from the answer."""
     now = now or _dt.datetime.now(_dt.timezone.utc)
     removed = []
     if not os.path.isdir(runs_root):
@@ -253,6 +255,8 @@ def sweep_runs(runs_root, now: _dt.datetime | None = None,
         dirs[:] = []
         run = _run_record(cur)
         if run is None:
+            continue
+        if run.get("status") == "waiting":
             continue
         ended = _timestamp(run.get("finished_at") or run.get("started_at"))
         keep = parse_keep(run.get("keep"))
