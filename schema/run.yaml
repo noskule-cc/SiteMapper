@@ -61,6 +61,10 @@ run:
                               # the first two summary entries
   error: ""                   # status error or failed: the result's error, or
                               # the first failed assertion, one line
+  failure_class: ""          # status error or failed: the result's class (error,
+                              # auth, drift, assert, input, refused). "error" is a
+                              # network-type failure a host may retry; the others
+                              # are not. Absent after a person's rejection
   waiting_for: {}             # status waiting: {step, label, reason} from result.json
   trust_change: ""            # Set when this run changed the workflow's trust,
                               # e.g. "draft -> broken"
@@ -78,13 +82,13 @@ run:
 # Index: every write of the record also appends one JSON line to
 # <runs>/SiteMapper/index.<instance>.jsonl: run_id (the folder name) plus
 # owner, workflow, tier, instance, started_at, finished_at, status,
-# answered_by, answered_at, trigger, pid, headline and trust_change as above.
+# answered_by, answered_at, trigger, pid, headline, trust_change and failure_class as above.
 #
 # A waiting run ends when its host passes on a person's answer:
 # `run.py --finish <run_id> --status passed|failed --by <user>` (MCP:
 # finish_run) rewrites run.yaml with that status, drops waiting_for, sets
 # finished_at, answered_by, answered_at and, after a rejection, error
-# "rejected by <user>", then appends a third index line. Only a run whose last
+# "rejected by <user>" (no failure_class), then appends a third index line. Only a run whose last
 # line is `waiting` is finished; the same answer again changes nothing. A swept
 # run gets the index line alone. A run has a `running` line and a
 # final line with the same run_id; the later line supersedes the earlier. One file per instance, appended under
