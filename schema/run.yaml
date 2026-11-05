@@ -27,8 +27,10 @@
 #
 # A reader (a UI, a sweep) needs only this file. `sweep_runs` (scripts/tree.py)
 # deletes the folder once `keep` has passed since finished_at (else
-# started_at), for every lib's records in the store. A folder without a
-# readable run.yaml is not a record and is never swept.
+# started_at), for every lib's records in the store. A run with status
+# waiting is never swept, so a person can still answer it; answering sets
+# finished_at and `keep` counts from then. A folder without a readable
+# run.yaml is not a record and is never swept.
 
 run:
   lib: ""                     # Always "SiteMapper" here; the runs root is shared by libs

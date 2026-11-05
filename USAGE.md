@@ -261,7 +261,8 @@ nothing a run wrote is ever committed, and `check.py` fails a `results/` or
 project's `keep:` says longer; a run a report cites is kept by setting
 `keep: keep` in its `run.yaml`. Every recorded run sweeps the store of expired
 folders; `python scripts/run.py --sweep --dry-run` shows what a sweep would
-remove without removing it. A workflow that
+remove without removing it. A `waiting` run is never swept until a person answers
+it. A workflow that
 writes declares `rollback: snapshot | none` (`schema/workflow.yaml`), and a
 snapshot run is always recorded.
 
