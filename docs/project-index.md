@@ -110,7 +110,7 @@ Working on these: [development.md](development.md). What to run when:
 
 **[extending.md](extending.md)** — how to add a skill, agent, workflow action, schema key, site script or host
 
-- Fan-out safety; why every SiteMapper skill is slash-only
+- Fan-out safety
 
 **[guardrails-template.md](guardrails-template.md)** — how to write the standing rules a
 deployment follows. The rules themselves are deployment-specific and live with
@@ -138,8 +138,8 @@ live by `scripts/serve.py`.
 **[../config.yaml](../config.yaml)** — global settings: environment + permission defaults
 
 **[../data/](../data/)** — copyable skeleton for your own private map repository
-(README, `config.yaml` to fill in, a guardrails starter, a `.gitignore` that
-excludes run outputs as a class, and its own `/deploy-dashboard` wrapper)
+(README, `config.yaml` to fill in, a guardrails starter, a `gitignore.template`
+that excludes run outputs as a class, and its own `/deploy-dashboard` wrapper)
 
 ## Standard docs this project declined
 
@@ -151,7 +151,7 @@ Not stubs, decisions. `check-docs.py` reports links to them as warnings, and
 | `installation.md` | Setup is two `pip install` lines; it lives in [../USAGE.md](../USAGE.md) with the rest of getting started. A separate page would duplicate it. |
 | `testing.md` | The repo's test surface is `scripts/check.py`, `docs/tools/check-docs.py`, the runner tests in `tests/` (standard-library `unittest`) and the CI runner smoke test — all registered as jobs in [tools/jobs.md](tools/jobs.md). `/test` runs UI test workflows against mapped sites and is documented in its own skill. |
 | `release.md` | Nothing is released. There are no tags, no packages and no GitHub releases; the dashboard artifact deploys itself on push (see [tools/jobs.md](tools/jobs.md)). |
-| `changelog.md` | No release history to keep. Closed issues plus `git log` are the record. |
+| `changelog.md` | No release history to keep. Closed issues plus `git log` are the record, so the `changelog.md` part of the pre-PR "Docs updated" line in [AGENTS.md](AGENTS.md#before-opening-a-pr) does not apply. |
 | `design-sync.md` | No design files. The one rendered surface, `overview.html`, is generated from code. |
 
 **Maintain this index:** list project docs here as they are added — never edit

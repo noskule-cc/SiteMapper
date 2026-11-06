@@ -49,8 +49,10 @@ difference between "no rule" and "nobody thought about it".
 
 ## Integrating
 
-1. Link it from `AGENTS.md` under Mandatory Reading — guardrails are not
-   situational.
+1. Make it mandatory reading in every root entry file (`AGENTS.md`,
+   `CLAUDE.md`, `.cursorrules`, …), next to the pointer to `docs/AGENTS.md` —
+   guardrails are not situational. `docs/AGENTS.md` itself is a fixed aiDocs
+   file and is never edited.
 2. Add a row to the `knowledge-placement.md` table: *a standing rule every
    session must follow → `docs/guardrails.md`*.
 3. Move any rule currently sitting in a host-specific instruction file

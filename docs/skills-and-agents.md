@@ -9,7 +9,9 @@ natively; other tools read the linked files directly).
 deliberate decision, not a default. Each one drives a browser against a real
 site or edits maps; that is operator-initiated work, and auto-triggering on a
 description match would sidestep the intent behind [permissions.md](permissions.md).
-See [extending.md](extending.md).
+A future skill that is pure knowledge injection may opt in to auto-triggering;
+say so in its file when it does. The aiDocs standard skills below follow their
+own upstream trigger settings.
 
 **One exception: `verify`.** It drives SiteMapper's own dashboard on a scratch copy
 of the maps, and its only contact with a real site is the read-only demo workflow
@@ -19,7 +21,7 @@ prove a dashboard change, so it is model-invocable.
 
 ## Skills
 
-**SiteMapper skills** (slash commands, never auto-triggered):
+**SiteMapper skills** (slash commands; only `verify` is also model-invocable):
 
 | Skill | Trigger | Purpose |
 |-------|---------|---------|
@@ -50,8 +52,8 @@ prove a dashboard change, so it is model-invocable.
 ## Agents
 
 Full instructions in `.claude/agents/<name>.md`. Claude Code runs them forked;
-other tools read and follow the file inline. An agent is an **execution
-strategy, never part of the contract** — see [interface.md](interface.md).
+other tools read and follow the file inline. An agent never changes a
+workflow's `result` ([interface.md](interface.md#agents-are-an-execution-strategy-never-part-of-the-contract)).
 
 | Agent | Purpose | Skill |
 |-------|---------|-------|
@@ -73,4 +75,4 @@ aiDocs documents the project; it prescribes no development workflow. How work is
 |-------|--------------|-------------|
 | pstack | Claude Code plugin, user-level | `/poteto-mode` |
 
-**Last Updated:** 2026-09-19
+**Last Updated:** 2026-11-06

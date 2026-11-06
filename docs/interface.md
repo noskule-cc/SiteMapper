@@ -49,7 +49,7 @@ The table is `CLASSES` in `scripts/run.py`. A run refused before its first step 
 The same three verbs and the same `result` shape serve both kinds of host:
 
 - **LLM host** — the verbs are tools/skills. Today: `/list-workflows`, `/run`, `/test`. The agent introspects via `describe`, runs, gets the `result`, then routes it using its own tools (e.g. an Azure DevOps tool).
-- **Python host** — the verbs are a JSON-emitting CLI / importable function, e.g. `sitemapper run <ref> --params '{...}' --json` → the same `result` object, routed with the host's own Azure DevOps SDK.
+- **Python host** — the verbs are the runner's JSON-emitting CLI, `python scripts/run.py <workflow> --param k=v --json` → the same `result` object, routed with the host's own Azure DevOps SDK.
 
 Both meet in the **MCP server**, `scripts/mcp_server.py`: LLM hosts consume MCP natively, and for a Python host it is one process to start.
 

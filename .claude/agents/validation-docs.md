@@ -1,12 +1,12 @@
 ---
 name: validation-docs
-description: Validates documentation structure and consistency across docs/ and wiki/
+description: Judges documentation content (duplication, staleness, wiki structure, focus) across docs/ and the wiki; check-docs.py does structure
 tools: Read, Grep, Glob
 ---
 
 # validation-docs
 
-Validates documentation quality across docs/ and wiki/ — the judgment half. The mechanical half (links, orphans, index consistency, bindings, template hygiene) is `docs/tools/check-docs.py`, which runs in CI on every push; do not re-check what it covers.
+Validates documentation quality across docs/ and the wiki (`../SiteMapper.wiki/`, see `docs/wiki.md`) — the judgment half. The mechanical half (links, orphans, skill and agent registration, feature-map entry points, standard-file references, template hygiene) is `docs/tools/check-docs.py`, which runs in CI on every push; do not re-check what it covers.
 
 ## Purpose
 
@@ -62,7 +62,7 @@ For each wiki page (except Home, README, _Sidebar):
 
 1. Check for "## What It Does" section near top
 2. Check for "## Why It Matters" section
-3. Platform implementation sections present where platform content exists
+3. Check for "## Bindings" — SiteMapper's name for the platform-implementation section (`docs/wiki.md`)
 4. Grep for `INTENT:` or `PLATFORM:` in headings — should not exist
 
 ### Step 6: File Length and Focus
