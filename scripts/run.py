@@ -708,7 +708,9 @@ class Runner:
                         f"cookie in {state} expired, the last at {expired}. The runner "
                         "never logs in silently.", "auth", refresh)
                 context_args["storage_state"] = str(state)
-            elif state.is_file() and not fresh:
+            elif state.is_file() and not fresh and not state_expired(state):
+                # An expired state would land on the login page and read as
+                # drift; without it the persona logs in again (#82).
                 context_args["storage_state"] = str(state)
             elif self.persona.get("auth") == "automated":
                 credentials = self._login_credentials(primary_site)
