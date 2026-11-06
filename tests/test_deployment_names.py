@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import uuid
 from pathlib import Path
 
 CHECK = Path(__file__).resolve().parent.parent / "scripts" / "check.py"
