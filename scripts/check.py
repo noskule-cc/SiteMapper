@@ -261,6 +261,24 @@ def schema_map():
     ]
 
 
+def retired_policy_keys():
+    """settings.policy.safe_to_submit_forms is gone (#66): writes ask on every tier."""
+    fails = []
+    for f in files(["config.yaml", "sites/*/site.yaml", "sites/*/pages/*.yaml"]):
+        try:
+            data = load(f)
+        except yaml.YAMLError:
+            continue  # check_yaml reports it
+        # config.yaml holds settings at the top, site/page files under site:/page:
+        for holder in [data, *data.values()]:
+            policy = ((holder.get("settings") or {}).get("policy")
+                      if isinstance(holder, dict) else None)
+            if isinstance(policy, dict) and "safe_to_submit_forms" in policy:
+                fails.append(f"{show(f)}: settings.policy.safe_to_submit_forms is retired - "
+                             "delete it; writes ask on every tier (docs/permissions.md)")
+    return fails
+
+
 def check_schema():
     """Files use no top-level key the schema does not define, and vice versa.
 
@@ -288,7 +306,7 @@ def check_schema():
             # legitimately absent until that tooling has run. Worth surfacing so a
             # schema documenting something that never existed still gets noticed.
             NOTES.append(f"{schema}: defines key(s) no file currently uses: {sorted(unused)}")
-    return fails
+    return fails + retired_policy_keys()
 
 
 SECRET_REF = re.compile(r"env:\w+|keyring:[^/]+/.+")
