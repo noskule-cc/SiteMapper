@@ -80,17 +80,12 @@ shipped without two of them once and went undocumented for weeks.
 `python scripts/run.py search-issues --json`. CI's `runner-smoke` job runs the
 same command.
 
-**Change what a run record holds.** `RunRecord` in `run.py` writes `run.yaml`
-twice, `running` before the first step and final at the end, and appends a
-line to `RUNS/SiteMapper/index.<instance>.jsonl` each time. Their keys
-belong to the deployment's run-record contract (connectOS
+**Change what a run record holds.** `RunRecord` in `run.py` writes the record
+and its index lines; the lifecycle is in `schema/run.yaml`. Their keys belong
+to the deployment's run-record contract (connectOS
 `contracts/run-record.yaml`), which changes first; then `schema/run.yaml`, then
-the code. The index is appended under an exclusive file lock and is never
-swept. `--trigger schedule` is what a scheduled task passes; the default is
-`manual`. `run.py --finish <run_id> --status passed|failed --by <user>` ends a
-`waiting` run at a person's answer with a third line. `python -m unittest
-discover tests` proves the lines, a killed run's leftover `running` record and
-the finish.
+the code. `python -m unittest discover tests` proves the lines, a killed run's
+leftover `running` record and the finish.
 
 **Change a generated view.** Edit the renderer, then re-run
 `python scripts/inventory.py`. Never edit `docs/inventory.md`,
@@ -109,4 +104,4 @@ the finish.
   shell's cwd captured *before* the chdir; if you added code that resolves paths
   after it, that is the bug.
 
-**Last Updated:** 2026-10-20
+**Last Updated:** 2026-11-06

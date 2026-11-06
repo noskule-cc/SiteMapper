@@ -60,11 +60,9 @@ everything needed to implement the behaviour on any host.
 
 ## Issue Tracker Alignment
 
-Feature-area labels map to wiki page prefixes — when closing an issue that
-adds significant functionality, update the wiki page its label maps to. See
-the **Wiki Mapping** table in
-[issue-tracker.md](issue-tracker.md#wiki-mapping) for the authoritative
-label → page mapping.
+When closing an issue that adds significant functionality, update the wiki
+page its label or type maps to: the **Wiki Mapping** table in
+[issue-tracker.md](issue-tracker.md#wiki-mapping).
 
 ## Usage
 

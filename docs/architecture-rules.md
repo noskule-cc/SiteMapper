@@ -40,8 +40,9 @@ repo, its wiki, or the generated dashboard.
 - **Patch the map, never the workflow.** Drift is a map problem. Editing a
   workflow step or weakening an assert to make a run green destroys the only
   signal the system has.
-- **Generated files are never hand-edited.** `docs/inventory.md` and
-  `docs/overview.html` are rendered; a staleness check fails the build.
+- **Generated files are never hand-edited.** `docs/inventory.md`,
+  `docs/overview.html` and `lib-tree.json` are rendered; a staleness check
+  fails the build.
 - **A credential never enters the repository.** Not in a map, not in a persona,
   not in a saved browser state (`.runner/state/` is gitignored). Identity values
   are referenced by key from layered `settings:` and resolved from private

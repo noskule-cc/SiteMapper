@@ -57,16 +57,16 @@ gh api graphql -f query='{repository(owner:"noskule-cc",name:"SiteMapper"){
 
 ## Wiki Mapping
 
-Feature-area labels map to wiki page prefixes (see [wiki.md](wiki.md) for the
-wiki's structure). When closing an issue that adds significant functionality,
-update the wiki page its label maps to.
+The feature-area label, else the issue type, maps to wiki page prefixes (see
+[wiki.md](wiki.md) for the wiki's structure). When closing an issue that adds
+significant functionality, update the wiki page it maps to.
 
-| Label | Wiki target |
-|-------|-------------|
-| `runner` | `architecture-runner`, plus `features-` pages for run behavior |
-| `enhancement` touching maps or workflows | `concepts-site-map` / `concepts-workflow`, or a `features-` page |
-| `documentation` | usually `docs/` itself, not the wiki |
-| `bug` | no wiki page — unless the fix changes documented behavior |
+| Label or type | Wiki target |
+|---------------|-------------|
+| label `runner` | `architecture-runner`, plus `features-` pages for run behavior |
+| type `Feature` touching maps or workflows | `concepts-site-map` / `concepts-workflow`, or a `features-` page |
+| type `Documentation` | usually `docs/` itself, not the wiki |
+| type `Bug` | no wiki page — unless the fix changes documented behavior |
 
 ## Epics are the unit of work
 
@@ -80,6 +80,8 @@ dashboard). An epic closing is this project's cycle-end event — it is what
 - **No Projects v2 board.** The aiDocs rules "add every issue to the project" and
   "set sprint status to Backlog" do not apply until one exists. Estimates go in
   the issue body instead of a project field.
-- **Labels are the GitHub defaults plus `runner`.** Do not invent a label in an
-  issue body; check `gh label list` first and add the label to the repo
-  deliberately if one is genuinely missing.
+- **The one feature-area label is `runner`.** The GitHub default labels that
+  name a kind (`bug`, `enhancement`, `documentation`) duplicate the issue types;
+  set the type instead. Do not invent a label in an issue body; check
+  `gh label list` first and add a feature-area label to the repo deliberately
+  if one is genuinely missing.

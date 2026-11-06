@@ -49,7 +49,8 @@ The retired key `safe_to_submit_forms` fails `check.py`.
   listing a site only to reach a script is no longer needed and no longer
   widens or narrows anything.
 - **`ask` needs a human.** LLM host: ask in the conversation. Headless runner:
-  TTY prompt, or an explicit `--yes-write` / `--yes-destructive` flag.
+  TTY prompt, or an explicit `--yes-write` / `--yes-destructive` flag; an
+  automated login only with `--yes-auth`, never a prompt.
   Non-interactive (CI): **`ask` degrades to `deny`.**
 - **In the live dashboard, the button is the ask channel.** `scripts/serve.py`
   keeps the gate server-side (the browser is untrusted UI): a `read-only` run

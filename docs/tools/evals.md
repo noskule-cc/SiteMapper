@@ -20,10 +20,15 @@ One row per case. Expected entry points use the same grep-able identifiers as
 | 5 | "`/repair` re-explores the page instead of patching the locator from the report." | `Runner.build_failure` | feature-map.md (Structured failure report) |
 | 6 | "The runner exits immediately for one tenant and runs fine for another, with no step output." | `load_context` | feature-map.md (Tenant contexts) |
 | 7 | "A step value shows up on the page as the literal `$order_id` instead of a number." | `Bindings.resolve` | feature-map.md (Variable resolution) |
-| 8 | "A captured value is a raw string where the workflow expects an object." | `do_script` | feature-map.md (Site scripts) |
-| 9 | "The share-link chip is always gray even right after a deploy." | `content_hash` | feature-map.md (Staleness badge) |
-| 10 | "CI fails with 'inventory.md is stale' but the file looks correct." | `stale` | feature-map.md (Staleness of generated views) |
+| 8 | "A captured value is a raw string where the workflow expects an object." | `Runner.do_script` | feature-map.md (Scripts) |
+| 9 | "On my map repository's dashboard the artifact chip says `artifact: published` and never `current`, even right after a deploy." | `Handler.map_dashboard` | feature-map.md (Staleness chip and share link) |
+| 10 | "CI fails with 'inventory.md is stale' but the file looks correct." | `generated_is_stale` | feature-map.md (Staleness of generated views) |
 | 11 | "`check.py --root ../my-maps` reports success but clearly checked nothing about bindings." | `check_bindings` | feature-map.md (Doc/registration consistency) |
-| 12 | "A saved session expired and the runner should have logged in again but didn't." | `load_persona` | feature-map.md (Personas) |
+| 12 | "A saved session expired and the runner should have logged in again but didn't." | `Runner.start` | feature-map.md (Personas) |
+| 13 | "A project workflow ran on the dev site although I passed `--param environment=prod`." | `resolve_scope` | feature-map.md (Tier resolution) |
+| 14 | "A run failed, the page map is fine, and the workflow was still set to `broken`." | `CLASSES` | feature-map.md (Failure classes) |
+| 15 | "A run folder in the runs store still says `status: running` hours after the run ended." | `RunRecord` | feature-map.md (Run records) |
+| 16 | "Yesterday's run folder is gone from the runs store, and nobody deleted it." | `sweep_runs` | feature-map.md (Runs retention) |
+| 17 | "On the shared data tree, `run.py` says a project workflow is not found, but it is there under `projects/`." | `projects_root` | feature-map.md (Where the roots are) |
 
-**Last Updated:** 2026-08-26
+**Last Updated:** 2026-11-06

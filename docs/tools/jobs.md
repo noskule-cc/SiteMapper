@@ -53,13 +53,14 @@ repository never carries a forked copy.
 
 ### Repo consistency checks
 
-Twenty mechanical checks over the YAML tree and the docs, non-zero exit on
-failure. What each one catches, and what to do when it fires:
+Mechanical checks over the YAML tree and the docs, non-zero exit on failure
+(`--list` names them). What each one catches, and what to do when it fires:
 
 | Check | Catches | On failure |
 |---|---|---|
 | `yaml` | a file that does not parse | fix the YAML |
 | `schema` | keys used by files but absent from `schema/*.yaml` (and vice versa, as notes) | add the key to the template, with its comment |
+| `credentials` | a persona `credential_ref` that is not an `env:` or `keyring:` reference | replace the value with a reference; the message never shows the value |
 | `listings` | `site.yaml`/`project.yaml`/`app.yaml` naming files that are not on disk, or files nobody lists; a project without a `kind`, a producer without a `dataset`, a `state` file inside the project folder; a workflow without `mode` or with an `effect` other than `read-only`, `mutating`, `destructive` | fix the listing, add the file, or declare the key |
 | `companions` | a workflow without its sibling `.md` | invoke the `workflow-companion` agent |
 | `apps` | a tier naming a missing site, a site whose `environment` disagrees with its tier key, a site in two apps, an app script also declared by a site | fix `app.yaml` or the site's settings |
@@ -68,12 +69,13 @@ failure. What each one catches, and what to do when it fires:
 | `scripts` | a script declared nowhere, or declared in a home that does not cover every caller | move it to the narrowest home that does |
 | `parity` | a page map on one tier of an app and not on another, unless declared under `parity.gaps`; a stale gap | map the page, or declare the gap with a reason |
 | `rollback` | a mutating workflow without `rollback`, `none` without a reason, `snapshot` without a capturing phase | declare it |
+| `actions` | a step action the runner does not know, a `human` step without a `reason` or in `teardown`, a `shape` that does not parse or sits on a non-script step | fix the step |
 | `produced` | a `results/` or `state/` folder under a site or a project | move it to the runs or state store |
 | `deployment_names` | a framework file naming a term of the map repository's `framework-denylist.txt` (runs only with `--root` on a map repository that has one) | replace the name with a `sitemapper-demo` value |
 | `links` | markdown links, path refs and `screenshot:` targets that do not resolve (case-sensitively — Linux CI is the honest judge) | fix the reference, not the check |
 | `endpoints` | a page `endpoints` entry with a key outside the schema (a header, a cookie, a description), a field of the wrong type, a name that is not snake_case, a token-shaped path segment, host label, query key or placeholder, a literal query value, a fragment, an undeclared `effect` or an input that names no element; `gotchas` that are not a list of strings; a secret header, credential or token in `purpose`, `gotchas` or `settings` | replace the value with a `{placeholder}` or delete it; the message never shows the value |
 | `bindings` | a skill or agent in `.claude/` that is unregistered in `docs/skills-and-agents.md`, or a project doc unreachable from `docs/project-index.md` | finish the registration (framework repo only) |
-| `inventory` / `overview` | generated views out of date | `python scripts/inventory.py` |
+| `inventory` / `overview` / `lib_tree` | generated views out of date | `python scripts/inventory.py` |
 
 CI runs the same checks on every push, plus the headless runner smoke test.
 
@@ -88,9 +90,9 @@ feature-map entry-point resolution.
 
 ### Regenerate views
 
-`scripts/inventory.py` regenerates `docs/inventory.md` and
-`docs/overview.html` from the YAML tree. `--check` exits non-zero when either
-is stale; never hand-edit the generated files.
+`scripts/inventory.py` regenerates `docs/inventory.md`, `docs/overview.html`
+and `lib-tree.json` from the YAML tree. `--check` exits non-zero when any is
+stale; never hand-edit the generated files.
 
 ### Headless workflow run
 
@@ -177,7 +179,8 @@ Nothing a run wrote is ever committed. A recorded run is a folder in the runs
 store (`schema/run.yaml`), outside every repository; `check.py`'s `produced`
 check fails a `results/` or `state/` folder under a site or a project, and
 `.gitignore` (`data/gitignore.template` for a map repository) excludes the
-stores as a class. The rules, stated once here for every project:
+stores as a class. The policy, stated once here for every project (what the
+sweep touches and when `keep` counts from: `schema/run.yaml`):
 
 - **A run folder lives one day** unless the project's `keep:` says longer. A
   run that is **evidence someone will come back to** — the record behind a
@@ -186,10 +189,7 @@ stores as a class. The rules, stated once here for every project:
   that page cites the run id, and the run's `run.yaml` says `keep: keep`.
 - **Who sweeps, when:** `run.py` sweeps the runs store after every recorded
   run, and `python scripts/run.py --sweep [--runs PATH] [--dry-run]` sweeps
-  on demand (a scheduler may call it). The sweep covers every lib's records,
-  since all libs write the same `run.yaml`; a folder without a readable
-  `run.yaml` (a migration's `legacy-results/`) is never touched. Rules for
-  `keep`: `schema/run.yaml`.
+  on demand (a scheduler may call it).
 - **A snapshot run is always recorded**, so the pre-state of a mutating
   workflow outlives the session and the machine.
 - **Log size:** a device that is offline all window repeats one failure with a
@@ -201,5 +201,3 @@ stores as a class. The rules, stated once here for every project:
 - Prune remote branches whose work landed (`git branch -r --merged`).
 - `__pycache__/`, `.runner/`, `.$*.bkp` (draw.io backups) are gitignored — if one
   shows up in `git status`, the gitignore of that repo regressed.
-- The pre-2026-08-17 history is preserved on `backup/old-main-cb46c2b`
-  locally; it is not on the remote and should not return there.

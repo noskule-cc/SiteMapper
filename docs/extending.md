@@ -22,22 +22,13 @@ additions.
    [host-bindings.md](host-bindings.md). Other AI tools read this same file
    inline — that is what keeps the instructions host-neutral even though the
    directory is named after one host.
-2. Keep `disable-model-invocation: true` unless the skill was deliberately
-   chosen to auto-trigger (see "All skills are slash-only" below).
+2. Keep `disable-model-invocation: true` — the slash-only rule and its one
+   exception are in [skills-and-agents.md](skills-and-agents.md).
 3. Register: a row in [skills-and-agents.md](skills-and-agents.md), and a
    [tools/jobs.md](tools/jobs.md) row if it is a runnable job.
 
 A skill is the right unit for *interactive* work an operator initiates. A
 repeatable step sequence against a mapped site is a **workflow**, not a skill.
-
-### All skills are slash-only
-
-Every SiteMapper skill drives a browser against a real site or edits maps; that
-is operator-initiated work, and auto-triggering on a description match would
-sidestep the intent behind [permissions.md](permissions.md). A future skill that
-is pure knowledge injection may opt in to auto-triggering; say so in its file
-when it does. (The aiDocs standard skills shipped in `.claude/skills/` follow
-their own upstream trigger settings.)
 
 ## Add an agent
 
@@ -49,9 +40,8 @@ their own upstream trigger settings.)
    host-specific syntax — the standing rule itself belongs in the deployment's
    `docs/guardrails.md`.
 
-An agent is an **execution strategy, never part of the contract** — every
-workflow must produce an identical `result` on a host with no sub-agent concept
-at all. See [interface.md](interface.md) → Bindings.
+An agent never changes a workflow's `result` — see
+[interface.md](interface.md#agents-are-an-execution-strategy-never-part-of-the-contract).
 
 ### Fan-out safety
 
