@@ -1398,8 +1398,6 @@ def deciding_rule(policy: dict, action_class: str) -> tuple[str, tuple[str, ...]
     verdict = (policy.get("permissions") or {}).get(action_class)
     if verdict:
         return verdict, ("permissions", action_class)
-    if action_class == "write" and policy.get("safe_to_submit_forms"):
-        return "allow", ("safe_to_submit_forms",)  # legacy alias
     return None
 
 

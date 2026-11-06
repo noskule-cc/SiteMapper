@@ -26,4 +26,3 @@ settings:
       write: ask                # never create/edit (incl. form submits) without asking
       auth: ask                 # automated login is an opt-in, per environment
       destructive: deny         # deleting what a run did not create: never by default
-    safe_to_submit_forms: false # legacy alias of permissions.write — kept for old maps

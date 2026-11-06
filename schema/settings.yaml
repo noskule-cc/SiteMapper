@@ -67,12 +67,6 @@ settings:
       destructive: ""         #   deleting/overwriting data the run did not create.
                               #   Default: deny
 
-    safe_to_submit_forms: false
-                              #   LEGACY alias, subsumed by permissions.write:
-                              #   `true` acts as `write: allow` on that scope when
-                              #   permissions.write is unset. Kept so existing maps
-                              #   keep working; prefer permissions.write.
-
   form_defaults: {}           # Per-page field prefills, keyed by the element `name`
                               # from the page map. Example (on a page YAML):
                               #   form_defaults:
