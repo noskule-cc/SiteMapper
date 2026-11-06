@@ -178,7 +178,7 @@ A page that overrides `settings.contact.email` still inherits `contact.name` and
 - **`contact`** — form-fill / identity values (`name`, `salutation`, `email`, `phone`). Usually defined globally; any field may be overridden per-site or per-page.
 - **`policy`** — executor behavior:
   - `environment`: `dev | staging | production`
-  - `permissions`: `allow | ask | deny` per action class (`read`, `write`, `auth`, `destructive`) — the machine-readable authorization model, checked up front against a workflow's declared `effect`. See `docs/permissions.md`. (`safe_to_submit_forms` survives as a legacy alias of `permissions.write`.)
+  - `permissions`: `allow | ask | deny` per action class (`read`, `write`, `auth`, `destructive`) — the machine-readable authorization model, checked up front against a workflow's declared `effect`. See `docs/permissions.md`.
 - **`form_defaults`** — per-page field prefills, keyed by the element `name` from the page map (e.g. `geraetestatus-select: "Ausser Betrieb"`). Typically page-level.
 
 ### Example

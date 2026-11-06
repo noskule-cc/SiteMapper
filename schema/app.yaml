@@ -37,8 +37,8 @@ app:
                               #   exists on one side and not the other ...
     gaps: []                  #   ... unless the difference is declared here:
                               #   - tier: dev
-                              #     page: brita-kartusche-wechseln.yaml
-                              #     why: "integration not deployed on dev"
+                              #     page: new-issue.yaml
+                              #     why: "issue form not deployed on dev"
                               #   A gap names the page that differs between
                               #   `reference` and `tier`, in either direction.
                               #   An undeclared difference is a defect; a gap
