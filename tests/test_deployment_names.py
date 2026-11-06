@@ -30,7 +30,8 @@ class DeploymentNamesTest(unittest.TestCase):
         self.assertNotIn(IN_THE_FRAMEWORK, proc.stdout.lower())
 
     def test_terms_the_framework_lacks_pass(self):
-        proc = check("# a comment-only line\nzz-no-such-deployment\n")
+        absent = uuid.uuid4().hex  # a literal here would put the term in a tracked file
+        proc = check(f"# a comment-only line\n{absent}\n")
         self.assertEqual(proc.returncode, 0, proc.stdout)
         self.assertIn("[deployment_names] ok", proc.stdout)
 
