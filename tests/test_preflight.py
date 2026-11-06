@@ -166,6 +166,20 @@ class PreflightTest(unittest.TestCase):
                           "(docs/permissions.md)", {"total": 0, "passed": 0, "failed": 0}))
         self.assertTrue(result["error"].startswith("permission denied: effect 'destructive'"))
 
+    def test_the_result_is_utf8_on_a_pipe_without_pythonioencoding(self):
+        """A Windows pipe defaults to the ANSI code page; a name outside it
+        once crashed the print of the result (#61)."""
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("PYTHONIOENCODING", "PYTHONUTF8")}
+        name = "wf-工→"
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPTS / "run.py"), name, "--json", "--root", str(self.root)],
+            input=b"", capture_output=True, timeout=60, env=env)
+        result = json.loads(proc.stdout.decode("utf-8"))
+        self.assertEqual((proc.returncode, result["workflow"], result["class"]),
+                         (2, name, "input"))
+        self.assertIn(name, proc.stderr.decode("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
