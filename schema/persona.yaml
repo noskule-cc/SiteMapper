@@ -27,6 +27,8 @@ persona:
                               #               Gated by the `auth` permission class
                               #               (docs/permissions.md): allow it on
                               #               dev/staging scopes; production stays ask.
+                              #   human and automated reuse a live saved state and
+                              #   log in again when every cookie in it expired.
 
   credential_ref:             # For auth: automated — RUNTIME references, never values.
                               # Each is one of:

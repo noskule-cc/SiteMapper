@@ -94,7 +94,7 @@ class RunRecordTest(unittest.TestCase):
 
     def run_to_end(self, workflow: str, *flags: str) -> subprocess.CompletedProcess:
         return subprocess.run(runner(self.root, self.runs, workflow, *flags),
-                              env=self.env, capture_output=True, text=True, timeout=60)
+                              env=self.env, capture_output=True, encoding="utf-8", timeout=60)
 
     def test_recorded_run_writes_running_then_final_line_with_one_run_id(self):
         proc = self.run_to_end("quick", "--record")
@@ -256,7 +256,7 @@ class FailureClassTest(unittest.TestCase):
     def run_json(self, cls: str) -> tuple[int, dict, str]:
         proc = subprocess.run(runner(self.root, self.runs, f"c-{cls}", "--json"),
                               env=self.env, stdin=subprocess.DEVNULL,
-                              capture_output=True, text=True, timeout=60)
+                              capture_output=True, encoding="utf-8", timeout=60)
         workflow = self.root / "sites" / "fixture" / "workflows" / f"c-{cls}.yaml"
         trust = yaml.safe_load(workflow.read_text(encoding="utf-8"))["workflow"]["trust"]
         return proc.returncode, json.loads(proc.stdout), trust
@@ -395,7 +395,7 @@ class FixtureReplayTest(unittest.TestCase):
         proc = subprocess.run(runner(self.root, self.runs, f"r-{name}", "--json",
                                      "--param", f"term={term}", *flags),
                               env=self.env, stdin=subprocess.DEVNULL,
-                              capture_output=True, text=True, timeout=60)
+                              capture_output=True, encoding="utf-8", timeout=60)
         workflow = self.root / "sites" / "fixture" / "workflows" / f"r-{name}.yaml"
         trust = yaml.safe_load(workflow.read_text(encoding="utf-8"))["workflow"]["trust"]
         log = self.root / "calls.log"
@@ -519,7 +519,7 @@ class FinishWaitingTest(unittest.TestCase):
     def run_py(self, *args: str) -> subprocess.CompletedProcess:
         return subprocess.run([sys.executable, str(RUN_PY), *args, "--root", str(self.root),
                                "--runs", str(self.runs)],
-                              env=self.env, capture_output=True, text=True, timeout=60)
+                              env=self.env, capture_output=True, encoding="utf-8", timeout=60)
 
     def waiting(self) -> str:
         proc = self.run_py("person", "--record")
@@ -720,7 +720,7 @@ class ScriptShapeTest(unittest.TestCase):
     def run_json(self, workflow: str, variant: str, *flags: str) -> tuple[int, dict, str]:
         proc = subprocess.run(runner(self.root, self.runs, workflow, "--json",
                                      "--param", f"variant={variant}", *flags),
-                              env=self.env, capture_output=True, text=True, timeout=60)
+                              env=self.env, capture_output=True, encoding="utf-8", timeout=60)
         path = self.root / "sites" / "fixture" / "workflows" / f"{workflow}.yaml"
         trust = yaml.safe_load(path.read_text(encoding="utf-8"))["workflow"]["trust"]
         return proc.returncode, json.loads(proc.stdout), trust

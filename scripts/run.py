@@ -708,7 +708,9 @@ class Runner:
                         f"cookie in {state} expired, the last at {expired}. The runner "
                         "never logs in silently.", "auth", refresh)
                 context_args["storage_state"] = str(state)
-            elif state.is_file() and not fresh:
+            elif state.is_file() and not fresh and not state_expired(state):
+                # An expired state would land on the login page and read as
+                # drift; without it the persona logs in again (#82).
                 context_args["storage_state"] = str(state)
             elif self.persona.get("auth") == "automated":
                 credentials = self._login_credentials(primary_site)
@@ -1398,8 +1400,6 @@ def deciding_rule(policy: dict, action_class: str) -> tuple[str, tuple[str, ...]
     verdict = (policy.get("permissions") or {}).get(action_class)
     if verdict:
         return verdict, ("permissions", action_class)
-    if action_class == "write" and policy.get("safe_to_submit_forms"):
-        return "allow", ("safe_to_submit_forms",)  # legacy alias
     return None
 
 
@@ -2311,4 +2311,8 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    # A Windows pipe defaults to the ANSI code page, which cannot print every
+    # name or message; callers decode the result as UTF-8 (#61).
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
     sys.exit(main())
