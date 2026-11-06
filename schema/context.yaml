@@ -27,8 +27,8 @@ context:
   roles: {}                   # Data values filling the roles workflow steps
                               # reference as $role_name, e.g.:
                               #   roles:
-                              #     device_filter_term: "Brita"
-                              #     matching_device: "Brita PURITY C iQ Filterkopf"
+                              #     issue_search_term: "login"
+                              #     matching_issue: "Login button does nothing"
                               # A role answers "which entity plays this part for
                               # THIS tenant" — the workflow never names entities.
 
