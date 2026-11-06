@@ -433,3 +433,59 @@ class TableRowReplayTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FakePlaywright:
+    """Stands in for `sync_playwright().start()`: records the context args."""
+
+    def __init__(self):
+        self.chromium, self.context_args = self, None
+
+    def launch(self, **kwargs):
+        return self
+
+    def new_context(self, **kwargs):
+        self.context_args = kwargs
+        return self
+
+    def new_page(self):
+        return self
+
+    def set_default_timeout(self, ms):
+        pass
+
+
+class SavedStateReuseTest(unittest.TestCase):
+    """An automated persona whose saved state expired logs in again (#82);
+    a live state is reused without a login."""
+
+    def start(self, expires: float) -> tuple[unittest.mock.Mock, FakePlaywright]:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root = Path(tmp.name)
+        persona = {"name": "bot", "auth": "automated", "login": {"page": "login"}}
+        state = run.state_path(root, "tracker", persona)
+        state.parent.mkdir(parents=True)
+        state.write_text(json.dumps({"cookies": [{"name": "sid", "expires": expires}]}),
+                         encoding="utf-8")
+        runner = run.Runner.__new__(run.Runner)
+        runner.root, runner.persona, runner.headed = root, persona, False
+        runner._login_credentials = lambda site: ("user", "secret")
+        runner.log_in = unittest.mock.Mock()
+        pw = FakePlaywright()
+        sync_api = unittest.mock.Mock(sync_playwright=lambda: unittest.mock.Mock(
+            start=lambda: pw))
+        with unittest.mock.patch.dict(sys.modules, {"playwright": unittest.mock.Mock(),
+                                                    "playwright.sync_api": sync_api}):
+            runner.start("tracker")
+        return runner.log_in, pw
+
+    def test_an_expired_state_logs_in_again(self):
+        log_in, pw = self.start(StateExpiredTest.PAST)
+        log_in.assert_called_once_with("tracker", ("user", "secret"))
+        self.assertNotIn("storage_state", pw.context_args)
+
+    def test_a_live_state_is_reused_without_a_login(self):
+        log_in, pw = self.start(StateExpiredTest.FUTURE)
+        log_in.assert_not_called()
+        self.assertIn("storage_state", pw.context_args)

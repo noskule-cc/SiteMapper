@@ -40,6 +40,7 @@ format reference for everything you write.
 ```
 my-maps/                       (private)
   config.yaml                  settings.contact, settings.mailboxes
+  framework-denylist.txt       optional: your names the public framework must never contain
   docs/guardrails.md           your standing rules
   sites/<site>/                site.yaml, pages/, workflows/ (building blocks), scripts/
   apps/<app>/                  app.yaml: which site is which tier, page-map parity; tier scripts
@@ -52,9 +53,9 @@ deployment keeps every tool's data in one tree (`data/SiteMapper`,
 `data/projects`, `data/runs`); the framework's tools find both layouts
 (`scripts/tree.py`), and `--projects` / `--runs` name them explicitly.
 
-## The two rules that make the split hold
+## The three rules that make the split hold
 
-Both are mechanical, because a rule that depends on remembering is a rule that
+All three are mechanical, because a rule that depends on remembering is a rule that
 fails on a Friday afternoon.
 
 **Identity is referenced, never written.** A map says `mailboxes.customer_a` and
@@ -66,3 +67,8 @@ does is visibly wrong. See `schema/settings.yaml`.
 `results/` directory outright, not one path at a time. A new project's runs are
 private by default rather than committed and reviewed afterwards — which is
 exactly the failure this layout exists to prevent.
+
+**The framework never names a deployment.** List your customer, app and
+persona names in `framework-denylist.txt` (one per line, `#` comments);
+`check.py --root .` then fails on any framework file that contains one. The
+framework cannot keep that list itself without publishing it.

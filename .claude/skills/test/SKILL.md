@@ -119,6 +119,6 @@ Workflow argument: $workflow
 ## Safety
 
 - A test run may submit forms only where the scope's policy allows the `write`
-  class (`settings.policy.permissions.write: allow` — or the legacy
-  `safe_to_submit_forms: true`; see `docs/permissions.md`). Otherwise treat
+  class (`settings.policy.permissions.write: allow`, or the run's one-time
+  consent; see `docs/permissions.md`). Otherwise treat
   submit controls as read-only and assert on them without clicking.

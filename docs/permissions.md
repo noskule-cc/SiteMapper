@@ -29,12 +29,14 @@ keyed by environment at the site scope:
 settings:
   policy:
     environment: staging
-    permissions: { write: allow, auth: allow, destructive: ask }
+    permissions: { auth: allow, destructive: ask }
 # production stays at the global defaults: write ask, auth ask, destructive deny
 ```
 
-`safe_to_submit_forms` is the legacy alias: `true` acts as `write: allow` on
-that scope when `permissions.write` is unset.
+`write` stays `ask` on every tier, dev and staging included, on purpose: the
+question is a breakpoint where a person checks the data before a form is
+submitted. Skip it for one run only (`--yes-write`, or confirming in TeamOS).
+The retired key `safe_to_submit_forms` fails `check.py`.
 
 ## Enforcement rules
 
@@ -63,7 +65,7 @@ that scope when `permissions.write` is unset.
   a run without starting it: each action class the run needs, its verdict and
   the file whose rule decided it, the classes that still need consent, the
   outcome after one-run consent, and the lock key (the sites in scope, sorted,
-  then the persona: `iq-brita-net/brita-automated`).
+  then the persona: `sitemapper-demo/demo-automated`).
   It opens no browser and writes nothing. `auth` is listed only when the run
   logs in by itself, and is decided by the run's lead site. The runner's gate,
   `serve.py`, `mcp_server.py` and `run.py <workflow> --preflight [--json]` all read it; the

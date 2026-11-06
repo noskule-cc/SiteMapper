@@ -261,6 +261,24 @@ def schema_map():
     ]
 
 
+def retired_policy_keys():
+    """settings.policy.safe_to_submit_forms is gone (#66): writes ask on every tier."""
+    fails = []
+    for f in files(["config.yaml", "sites/*/site.yaml", "sites/*/pages/*.yaml"]):
+        try:
+            data = load(f)
+        except yaml.YAMLError:
+            continue  # check_yaml reports it
+        # config.yaml holds settings at the top, site/page files under site:/page:
+        for holder in [data, *data.values()]:
+            policy = ((holder.get("settings") or {}).get("policy")
+                      if isinstance(holder, dict) else None)
+            if isinstance(policy, dict) and "safe_to_submit_forms" in policy:
+                fails.append(f"{show(f)}: settings.policy.safe_to_submit_forms is retired - "
+                             "delete it; writes ask on every tier (docs/permissions.md)")
+    return fails
+
+
 def check_schema():
     """Files use no top-level key the schema does not define, and vice versa.
 
@@ -288,7 +306,7 @@ def check_schema():
             # legitimately absent until that tooling has run. Worth surfacing so a
             # schema documenting something that never existed still gets noticed.
             NOTES.append(f"{schema}: defines key(s) no file currently uses: {sorted(unused)}")
-    return fails
+    return fails + retired_policy_keys()
 
 
 SECRET_REF = re.compile(r"env:\w+|keyring:[^/]+/.+")
@@ -598,7 +616,7 @@ def check_companions():
 def check_apps():
     """An app's tiers are real sites whose environment agrees with the tier key.
 
-    Three GG+connect tiers were three unrelated sites for a year; nothing could
+    An app's three tiers were three unrelated sites for a year; nothing could
     say they were one application. The app is that fact's one home, so it has
     to be right: every tier names an existing site, the site's own
     settings.policy.environment says the same tier, no site is a tier of two
@@ -726,7 +744,7 @@ def check_scripts():
     """A script is declared in exactly one home, and every caller is covered by it.
 
     `read_signup_mail.py` served three mail providers from one provider's
-    folder; `ggplus_auth.py` served three tiers from the prod site, so a dev
+    folder; an app's login script served three tiers from the prod site, so a dev
     workflow listed prod just to reach it. The home is derived from the
     callers: a site's script is only called by steps on that site; a
     project's script only by that project's workflows (another project's call
@@ -956,6 +974,55 @@ def check_produced():
     return fails
 
 
+DENYLIST = "framework-denylist.txt"
+
+
+def check_deployment_names():
+    """No framework file names a deployment listed in the map repository's denylist.
+
+    A customer, an app and its personas sat in the public framework's schema
+    comments, docs and check docstrings (#81). The framework cannot list those
+    names without publishing them, so the list lives in the private map
+    repository (`<root>/framework-denylist.txt`, one term per line, `#` starts a
+    comment) and this check scans the framework's tracked files for every term,
+    case-insensitively. It runs only with `--root` on a map repository that has
+    the file; a map repository's CI (data/github-workflow-check.template.yml)
+    runs exactly that. The message names the file and line, never the term.
+    """
+    import subprocess
+    denylist = os.path.join(ROOT, DENYLIST)
+    terms = []
+    if external() and os.path.isfile(denylist):
+        with open(denylist, encoding="utf-8") as fh:
+            terms = [t.strip().lower() for t in (line.split("#", 1)[0] for line in fh)
+                     if t.strip()]
+    if not terms:
+        SKIPPED.add("deployment_names")
+        NOTES.append(f"deployment_names: no terms in a {DENYLIST} of the checked tree — "
+                     "it runs with --root on a map repository that lists its names")
+        return []
+    try:
+        tracked = subprocess.run(["git", "-C", HOME, "ls-files", "-z"], capture_output=True,
+                                 timeout=30, check=True).stdout.decode("utf-8").split("\0")
+    except (OSError, subprocess.SubprocessError):
+        SKIPPED.add("deployment_names")
+        NOTES.append(f"deployment_names: {norm(HOME)} is not a git checkout")
+        return []
+    fails = []
+    for rel in filter(None, tracked):
+        try:
+            with open(os.path.join(HOME, rel), encoding="utf-8") as fh:
+                lines = fh.read().lower().splitlines()
+        except (OSError, UnicodeDecodeError):
+            continue  # a binary file
+        for no, line in enumerate(lines, 1):
+            hits = sum(term in line for term in terms)
+            if hits:
+                fails.append(f"framework {rel}:{no}: names {hits} term(s) of {DENYLIST} "
+                             "— replace it with a sitemapper-demo value")
+    return fails
+
+
 def check_links():
     """Markdown links and page `screenshot:` paths resolve."""
     fails = []
@@ -1095,6 +1162,7 @@ CHECKS = {
     "rollback": check_rollback,
     "actions": check_actions,
     "produced": check_produced,
+    "deployment_names": check_deployment_names,
     "links": check_links,
     "bindings": check_bindings,
     "inventory": check_inventory,

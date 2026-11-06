@@ -36,8 +36,7 @@ references a run-time secret (`credential_ref: env:…`), never the value.
 
 The machine-readable authorization model (allow/ask/deny per action class —
 see the framework's `docs/permissions.md`), resolved through the layered
-`settings:` block; form submission is a `write`-class action (the old
-`safe_to_submit_forms: true` still acts as `write: allow`). Do not flip a
+`settings:` block; form submission is a `write`-class action. Do not flip a
 permission to unblock a workflow — it is set per scope for a reason, and
 flipping it at site level silently authorizes every page of that site for
 every future run.
