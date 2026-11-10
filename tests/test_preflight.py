@@ -180,6 +180,17 @@ class PreflightTest(unittest.TestCase):
                          (2, name, "input"))
         self.assertIn(name, proc.stderr.decode("utf-8"))
 
+    def test_the_runner_starts_without_stdout_and_stderr(self):
+        """pythonw under the Task Scheduler has no console: sys.stdout and
+        sys.stderr are None, and every scheduled run crashed at the UTF-8
+        switch before it started."""
+        code = ("import runpy, sys; sys.stdout = sys.stderr = None; "
+                f"sys.argv = ['run.py', '--sweep', '--dry-run', '--root', {str(self.root)!r}]; "
+                f"runpy.run_path({str(SCRIPTS / 'run.py')!r}, run_name='__main__')")
+        proc = subprocess.run([sys.executable, "-c", code], input=b"",
+                              capture_output=True, timeout=60)
+        self.assertEqual(proc.returncode, 0, proc.stderr.decode("utf-8", "replace"))
+
 
 if __name__ == "__main__":
     unittest.main()
