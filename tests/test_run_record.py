@@ -148,11 +148,28 @@ class RunRecordTest(unittest.TestCase):
         statuses = [line["status"] for line in index_lines(self.runs)]
         self.assertEqual(statuses, ["running", "error"])
 
+    def test_a_run_failing_with_an_error_carries_failure_class_error_in_run_and_index(self):
+        self.run_to_end("broken", "--record")
+        first, final = index_lines(self.runs)
+        self.assertNotIn("failure_class", first)
+        self.assertEqual(final["failure_class"], "error")
+        self.assertEqual(run_yaml(self.runs, final["run_id"])["failure_class"], "error")
+
     def test_run_failing_an_assertion_ends_failed(self):
         proc = self.run_to_end("wrong", "--record")
         self.assertEqual(proc.returncode, 1, proc.stderr)
         statuses = [line["status"] for line in index_lines(self.runs)]
         self.assertEqual(statuses, ["running", "failed"])
+        final = index_lines(self.runs)[-1]
+        self.assertEqual(final["failure_class"], "assert")
+        self.assertEqual(run_yaml(self.runs, final["run_id"])["failure_class"], "assert")
+
+    def test_a_passed_or_waiting_run_has_no_failure_class(self):
+        self.run_to_end("quick", "--record")
+        self.run_to_end("person", "--record")
+        for line in index_lines(self.runs):
+            self.assertNotIn("failure_class", line)
+            self.assertNotIn("failure_class", run_yaml(self.runs, line["run_id"]))
 
     def wait_for_running(self, proc: subprocess.Popen) -> dict:
         deadline = time.monotonic() + 30
@@ -554,6 +571,8 @@ class FinishWaitingTest(unittest.TestCase):
         run = run_yaml(self.runs, run_id)
         self.assertEqual((run["status"], run["error"], run["headline"]),
                          ("failed", "rejected by BEB", "failed · rejected by BEB"))
+        self.assertNotIn("failure_class", run)
+        self.assertNotIn("failure_class", index_lines(self.runs)[-1])
 
     def test_finishing_again_with_the_same_answer_changes_nothing(self):
         run_id = self.waiting()
