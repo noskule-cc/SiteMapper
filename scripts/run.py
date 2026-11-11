@@ -2312,7 +2312,9 @@ def main(argv=None):
 
 if __name__ == "__main__":
     # A Windows pipe defaults to the ANSI code page, which cannot print every
-    # name or message; callers decode the result as UTF-8 (#61).
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.stderr.reconfigure(encoding="utf-8")
+    # name or message; callers decode the result as UTF-8 (#61). Under pythonw
+    # (the scheduled tasks) both streams are None.
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None:
+            stream.reconfigure(encoding="utf-8")
     sys.exit(main())
