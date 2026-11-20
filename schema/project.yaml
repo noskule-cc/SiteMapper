@@ -27,6 +27,38 @@ project:
   workflows: []               # Workflow YAML filenames in workflows/, in
                               # display order
 
+  environments:               # Per tier of `app`, what a run there needs besides
+                              # the site: who it runs as, the test data it
+                              # consumes, the mailboxes it reads, the side
+                              # effects allowed there. One entry per tier a
+                              # workflow allows (check.py `environments`). A run
+                              # sees the entry of its `environment` parameter as
+                              # $env (schema/workflow.yaml), plus $env.tier,
+                              # $env.site and $env.base_url, which come from the
+                              # app and the tier's site.yaml, never from here.
+    dev:                      #   A tier key of the app
+      user: ""                #   Who the run is logged in as: a persona or a
+                              #   person's display name, never a credential
+      pools: {}               #   Test data used up by runs, by name:
+                              #     serials:
+                              #       free: ["123", "456"]   # the next run takes free[0]
+                              #       used:                  # entry -> what used it
+                              #         "789": { by: P1, date: "2026-11-20" }
+                              #   $env.pools.serials.next is free[0]. A workflow
+                              #   that uses one entry per run lists the pool
+                              #   under `consumes`, and the runner refuses it
+                              #   while the pool has no free entry. The headless
+                              #   runner never writes this file: the agent or a
+                              #   person moves the entry a run used to `used`.
+      mailboxes: {}           #   role -> key of settings.mailboxes (config.yaml),
+                              #   e.g. new_contact: sunrise. Never an address.
+      allows: {}              #   side effect -> true | false | the condition
+                              #   under which it is allowed, e.g.
+                              #     signing: "partner 10000 only"
+                              #     customer_mail: false
+                              #   Read by the agent; write permission itself
+                              #   stays the site policy's (docs/permissions.md).
+
   schedule:                   # Present: a scheduler runs it; absent: a person
                               # starts it. One file says how often and where
                               # (connectOS#15).

@@ -40,6 +40,13 @@ workflow:
                               #   none of the three, so a missing counterpart is
                               #   a recorded decision, never an accident.
 
+  consumes: []                # Pools of the project's environments (schema/
+                              # project.yaml) this workflow uses one entry of
+                              # per run, e.g. [serials]. Each allowed tier's
+                              # environment must have the pool (check.py), and
+                              # a run is refused before its first step while
+                              # the pool has no free entry.
+
   mode: ""                    # deterministic | agentic
                               #   deterministic - every step is mechanical (navigate/
                               #     click/input/read/assert/wait) and checkable, so the
@@ -120,7 +127,9 @@ workflow:
       description: ""         # What this parameter controls
       required: true
       options: []             # For type: select — predefined choices (rendered as dropdown)
-      default: ""             # Optional default value
+      default: ""             # Optional default value. May be a $env.<path>
+                              # (e.g. $env.pools.serials.next), resolved once
+                              # at the start of the run; a caller's value wins.
 
   fixtures: {}                # Pinned, deterministic test data (NOT prompted). Use for
                               # tests that must target known entities. Referenced as
@@ -320,4 +329,9 @@ workflow:
 #   $param_name     — references a workflow parameter
 #   $fixture_name   — references a pinned fixture value
 #   $captured_var   — references a value captured by a previous step
+#   $env.<path>     — references the run's environment: the project's
+#                     environments.<tier> entry for the `environment` parameter
+#                     (schema/project.yaml), e.g. $env.user, $env.base_url,
+#                     $env.mailboxes.new_contact, $env.pools.serials.next.
+#                     check.py fails a path that names nothing on an allowed tier.
 #   Captured variables are available to all subsequent steps, even across sites.

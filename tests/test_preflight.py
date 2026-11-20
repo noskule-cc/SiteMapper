@@ -83,21 +83,21 @@ class PreflightTest(unittest.TestCase):
 
     def test_read_only_on_production_is_allowed(self):
         self.assertEqual(self.preflight("read-prod"), run.Preflight(
-            workflow="read-prod", effect="read-only", tier="-", sites=["prod"],
+            workflow="read-prod", effect="read-only", tier="-", sites=["prod"], environment=None,
             persona=None, lock_key="prod/-",
             classes={"read": run.Decision("allow", "prod", "production", FRAMEWORK_CONFIG)},
             consent=[], needs_consent=[], outcome="allow"))
 
     def test_write_on_production_asks(self):
         self.assertEqual(self.preflight("write-prod"), run.Preflight(
-            workflow="write-prod", effect="mutating", tier="-", sites=["prod"],
+            workflow="write-prod", effect="mutating", tier="-", sites=["prod"], environment=None,
             persona=None, lock_key="prod/-",
             classes={"write": run.Decision("ask", "prod", "production", FRAMEWORK_CONFIG)},
             consent=[], needs_consent=["write"], outcome="ask"))
 
     def test_destructive_on_production_is_denied(self):
         self.assertEqual(self.preflight("wipe-prod"), run.Preflight(
-            workflow="wipe-prod", effect="destructive", tier="-", sites=["prod"],
+            workflow="wipe-prod", effect="destructive", tier="-", sites=["prod"], environment=None,
             persona=None, lock_key="prod/-",
             classes={"destructive": run.Decision("deny", "prod", "production",
                                                  FRAMEWORK_CONFIG)},
@@ -106,13 +106,14 @@ class PreflightTest(unittest.TestCase):
     def test_strictest_site_decides_a_run_over_two_sites(self):
         self.assertEqual(self.preflight("write-both"), run.Preflight(
             workflow="write-both", effect="mutating", tier="-", sites=["stage", "prod"],
+            environment=None,
             persona="bot", lock_key="prod+stage/bot",
             classes={"write": run.Decision("ask", "prod", "production", FRAMEWORK_CONFIG)},
             consent=[], needs_consent=["write"], outcome="ask"))
 
     def test_one_run_consent_answers_the_ask_without_changing_the_verdict(self):
         self.assertEqual(self.preflight("write-prod", frozenset({"write"})), run.Preflight(
-            workflow="write-prod", effect="mutating", tier="-", sites=["prod"],
+            workflow="write-prod", effect="mutating", tier="-", sites=["prod"], environment=None,
             persona=None, lock_key="prod/-",
             classes={"write": run.Decision("ask", "prod", "production", FRAMEWORK_CONFIG)},
             consent=["write"], needs_consent=[], outcome="allow"))
@@ -120,6 +121,7 @@ class PreflightTest(unittest.TestCase):
     def test_automated_login_adds_the_auth_class_from_the_lead_site(self):
         self.assertEqual(self.preflight("read-stage-browser"), run.Preflight(
             workflow="read-stage-browser", effect="read-only", tier="-", sites=["stage"],
+            environment=None,
             persona="bot", lock_key="stage/bot",
             classes={"read": run.Decision("allow", "stage", "staging", FRAMEWORK_CONFIG),
                      "auth": run.Decision("allow", "stage", "staging", self.stage_yaml)},
@@ -130,6 +132,7 @@ class PreflightTest(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(json.loads(proc.stdout), {
             "workflow": "write-prod", "effect": "mutating", "tier": "-", "sites": ["prod"],
+            "environment": None,
             "persona": None, "lock_key": "prod/-",
             "classes": {"write": {"verdict": "ask", "site": "prod",
                                   "environment": "production", "source": FRAMEWORK_CONFIG}},

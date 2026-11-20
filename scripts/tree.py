@@ -123,6 +123,33 @@ def step_sites(w):
     return sites, unresolved
 
 
+ENVIRONMENT_KEYS = ("user", "pools", "mailboxes", "allows")
+ENV_REF = re.compile(r"\$env((?:\.[A-Za-z0-9_-]+)+)")
+
+
+def run_environment(entry: dict, tier: str, site: str, base_url: str) -> dict:
+    """What a run sees as `$env`: the project's environments.<tier> entry plus the
+    tier, the app's site for it and that site's base_url. A pool shows its `free`
+    entries and `next`, the first of them (None when the pool is empty); `used`
+    is history for people and stays out."""
+    pools = {}
+    for name, pool in (entry.get("pools") or {}).items():
+        free = list((pool or {}).get("free") or [])
+        pools[name] = {"free": free, "next": free[0] if free else None}
+    return {**entry, "tier": tier, "site": site, "base_url": base_url, "pools": pools}
+
+
+def env_lookup(env: dict, path: str):
+    """The value `$env<path>` names, path like `.pools.serials.next`. KeyError
+    when a part names nothing."""
+    node = env
+    for part in path.strip(".").split("."):
+        if not isinstance(node, dict) or part not in node:
+            raise KeyError(path)
+        node = node[part]
+    return node
+
+
 def tier_name(environment: str | None) -> str:
     """The tier key a settings.policy.environment value stands for."""
     env = str(environment or "").strip().lower()
