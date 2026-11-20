@@ -167,6 +167,51 @@ workflow:
 so a missing counterpart is always a recorded decision. The worked example:
 `projects/demo-checks/` with `apps/sitemapper-demo/`.
 
+### Environments: user, test data and mailboxes per tier
+
+A tier needs more than its site: who the run is logged in as, the test data it
+uses up, the mailboxes it reads, and which side effects are allowed there. The
+project declares these once per tier, and a step refers to them as `$env`:
+
+```yaml
+project:
+  app: sitemapper-demo
+  environments:
+    dev:
+      user: Test User                    # a name, never a credential
+      pools:
+        serials:                         # one entry per run, used once
+          free: ["123", "456"]
+          used: { "789": { by: P1, date: "2026-11-20" } }
+      mailboxes: { new_contact: customer_a }   # keys of settings.mailboxes
+      allows: { signing: true, customer_mail: false }
+```
+
+```yaml
+workflow:
+  consumes: [serials]                    # refused while serials.free is empty
+  parameters:
+    - name: serial                       # free[0] of the run's tier, unless the caller
+      type: text                         # names one; resolved once, at the start, and
+      required: false                    # recorded in the result's parameters
+      default: "$env.pools.serials.next"
+  steps:
+    - action: input
+      page: device-form
+      element: serial-input
+      value: "$serial"
+    - action: verify
+      description: "Signing only if $env.allows.signing"
+```
+
+`$env.tier`, `$env.site` and `$env.base_url` come from the app and the tier's
+`site.yaml`, so the base URL is never written twice. The runner refuses a run
+before its first step when the tier has no entry or a consumed pool has no free
+entry. It never writes `project.yaml`: the agent or a person moves the used entry
+to `used`. `check.py` fails an allowed tier without an entry, a consumed pool
+missing on a tier, an entry both free and used, an unknown mailbox key and a
+`$env` path that names nothing.
+
 **Workflow with capture variables:**
 
 ```yaml

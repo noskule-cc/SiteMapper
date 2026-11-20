@@ -64,8 +64,8 @@ A stdio server (the `mcp` package, 2.x). It reads the tree at start, so a host s
 | Tool | Does | `readOnlyHint` / `destructiveHint` | `_meta` |
 |---|---|---|---|
 | `list_workflows` | every workflow: name, owner, sites, mode, effect, summary, its run tool | true / false | none |
-| `describe_workflow(name)` | parameters as a JSON schema, mode, effect, and each step's number, phase, action and label | true / false | none |
-| `preflight(name, params?, persona?, consent?)` | the [preflight](permissions.md#enforcement-rules): each class's decision and rule file, `needs_consent`, outcome, lock key. Starts nothing | true / false | none |
+| `describe_workflow(name)` | parameters as a JSON schema, mode, effect, the pools it `consumes`, per allowed tier the `environments` entry a run there sees as `$env`, and each step's number, phase, action and label | true / false | none |
+| `preflight(name, params?, persona?, consent?)` | the [preflight](permissions.md#enforcement-rules): each class's decision and rule file, `needs_consent`, outcome, lock key, and the run's `environment`. Starts nothing | true / false | none |
 | `run_workflow(name, params?, persona?, consent?, timeout_s?, trigger?)` | runs any workflow | false / true, the strictest, since it can run anything | none: its lock key is the preflight's |
 | `finish_run(run_id, status, by)` | ends a `waiting` run at a person's answer: `passed` after an approval, `failed` after a rejection, with who answered. The same answer again changes nothing; a run that is not waiting is refused | false / false, `idempotentHint` true | none |
 | `run-<workflow>(params?, persona?, consent?, timeout_s?)` | runs that workflow; one per `mode: deterministic` workflow with a declared effect and fixed sites | from its `effect`: `read-only` true / false, `mutating` false / false, `destructive` false / true | `teamos/lock`: its lock key at default parameters |

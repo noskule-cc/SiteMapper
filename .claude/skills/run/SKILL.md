@@ -38,6 +38,19 @@ Workflow argument: $workflow
      by an environment (`fixtures.common` plus one block per environment), a
      `$name` resolves against `fixtures.<selected value>` first, then falls back
      to `fixtures.common`.
+   - **The environment** — when the workflow has `tiers` and its project an
+     `environments:` block (`schema/project.yaml`), take the entry named by the
+     `environment` parameter, once, at the start. `$env.<path>` in a step
+     resolves against it: `$env.user`, `$env.mailboxes.<role>`,
+     `$env.allows.<effect>`, `$env.pools.<pool>.next` (the pool's first free
+     entry), plus `$env.tier`, `$env.site` and `$env.base_url` from the app and
+     the tier's `site.yaml`. A parameter default such as
+     `$env.pools.serials.next` resolves then too, and a value the user gives
+     wins. Stop before the first step when the tier has no
+     entry, or when a pool the workflow lists under `consumes` has no free
+     entry. Do nothing an `allows` entry forbids on that tier. When the run
+     uses a pool entry, move it from `free` to `used` in the project.yaml, as
+     the workflow's step says.
 
 4b. **Run `setup` first** if the workflow has one — navigate, reset sticky UI
    state (grouping, sort), clear filters. Setup steps are not assertions; if one
