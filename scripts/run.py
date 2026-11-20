@@ -2015,7 +2015,7 @@ def write_atomic(path: Path, text: str):
 
 INDEX_KEYS = ("owner", "workflow", "tier", "instance", "started_at", "finished_at",
               "status", "answered_by", "answered_at", "trigger", "pid", "headline",
-              "trust_change")
+              "trust_change", "failure_class")
 ANSWERED = ("passed", "failed")
 
 
@@ -2079,6 +2079,7 @@ def _finish_locked(runs: Path, instance: str, index, run_id: str, status: str, b
         run, folder = dict(last), None
         run.pop("run_id", None)
     run.pop("waiting_for", None)
+    run.pop("failure_class", None)
     summary = run.get("summary") or []
     answer = error or f"approved by {by}"
     run.update(status=status, finished_at=now, answered_by=by, answered_at=now, error=error,
@@ -2145,6 +2146,8 @@ class RunRecord:
             **self._base(result),
             "headline": headline_of(result, counts, summary, error),
             "error": error,
+            "failure_class": (result["class"]
+                              if result["status"] in ("error", "failed") else None),
             "waiting_for": result.get("waiting_for"),
             "trust_change": result.get("trust_change"),
             "assertions": counts,
