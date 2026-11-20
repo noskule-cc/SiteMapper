@@ -352,13 +352,17 @@ def resolve_settings(root: Path, site: Site, page_name: str | None):
 # Variables
 
 VAR_RE = re.compile(r"\$([A-Za-z_][A-Za-z0-9_]*)")
+REF_RE = re.compile(tree.ENV_REF.pattern + "|" + VAR_RE.pattern)
 
 
 class Bindings:
     """Resolves $name from parameters, context roles/ids, fixtures and
-    captured variables — in that order (most caller-specific wins)."""
+    captured variables — in that order (most caller-specific wins) — and
+    $env.<path> from the run's environment (tree.run_environment)."""
 
-    def __init__(self, workflow: dict, cli_params: dict, context: dict | None = None):
+    def __init__(self, workflow: dict, cli_params: dict, context: dict | None = None,
+                 environment: dict | None = None):
+        self.environment = environment
         self.context_values = {}
         if context:
             self.context_values = {**(context.get("ids") or {}),
@@ -375,7 +379,7 @@ class Bindings:
                         "input", f"--param {name}=<one of {options}>")
                 self.params[name] = value
             elif p.get("default") not in (None, ""):
-                self.params[name] = p["default"]
+                self.params[name] = self._default(p["default"])
         self.fixtures = self._flatten_fixtures(workflow.get("fixtures") or {})
         self.captures: dict = {}
 
@@ -400,10 +404,31 @@ class Bindings:
                        "role/id, fixture or capture)", "input",
                        f"a parameter, context or fixture that defines ${name}")
 
+    def _default(self, value):
+        """A default may name the environment, as in $env.pools.serials.next. It
+        resolves once, here, so the run keeps its value when the pool changes
+        and the result's parameters record it. Without an environment (the
+        scope is still being resolved) it stays as written."""
+        if self.environment is None or not isinstance(value, str):
+            return value
+        return tree.ENV_REF.sub(lambda m: self.env_value(m.group(1)), value)
+
+    def env_value(self, path: str) -> str:
+        if self.environment is None:
+            raise RunError(f"'$env{path}': this run has no environment (the workflow "
+                           "declares no tiers, or its project no environments)")
+        try:
+            value = tree.env_lookup(self.environment, path)
+        except KeyError:
+            raise RunError(f"'$env{path}' names nothing in environments."
+                           f"{self.environment['tier']} (schema/project.yaml)")
+        return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+
     def resolve(self, text):
         if not isinstance(text, str):
             return text
-        return VAR_RE.sub(lambda m: self.lookup(m.group(1)), text)
+        return REF_RE.sub(lambda m: self.env_value(m.group(1)) if m.group(1)
+                          else self.lookup(m.group(2)), text)
 
 
 # ---------------------------------------------------------------------------
@@ -1030,7 +1055,7 @@ class Runner:
         try:
             gate(preflight(self.root, self.workflow, self.owner, inputs, persona,
                            frozenset(self.pre_authorized)))
-            bindings = Bindings(self.workflow, inputs)
+            bindings = Bindings(self.workflow, inputs, None, self.bindings.environment)
         except RunError as exc:
             return {"status": "refused", "reason": str(exc), "inputs": differs}
         bindings.context_values = self.bindings.context_values
@@ -1330,6 +1355,39 @@ class Runner:
 # ---------------------------------------------------------------------------
 # Scope: which tier, which sites
 
+def environments_of(root: Path, workflow: dict, owner: Owner) -> dict[str, dict]:
+    """tier -> what a run on that tier sees as `$env` (tree.run_environment), for
+    every allowed tier the project's `environments` block has an entry for."""
+    tiers = workflow.get("tiers") or {}
+    if owner.kind != "project" or not tiers:
+        return {}
+    declared = owner.project.get("environments") or {}
+    sites = (load_apps(root).get(owner.project.get("app")) or {}).get("tiers") or {}
+    return {t: tree.run_environment(declared[t], t, sites[t], Site(root, sites[t]).base_url)
+            for t in tiers.get("allowed") or tiers.get("required") or []
+            if isinstance(declared.get(t), dict) and t in sites}
+
+
+def resolve_environment(root: Path, workflow: dict, owner: Owner, tier: str) -> dict | None:
+    """The run's `$env`, or None when neither the project declares environments
+    nor the workflow consumes a pool. Refuses before anything starts when the
+    tier has no entry, or a pool the workflow consumes has no free entry."""
+    consumes = workflow.get("consumes") or []
+    if not ((owner.project or {}).get("environments") or consumes):
+        return None
+    env = environments_of(root, workflow, owner).get(tier)
+    if env is None:
+        raise RunError(f"project '{owner.name}' has no environments.{tier} entry: a run on "
+                       f"'{tier}' would have no user, pools or mailboxes", "error",
+                       f"add environments.{tier} to the project.yaml (schema/project.yaml)")
+    for pool in consumes:
+        if (env["pools"].get(pool) or {}).get("next") is None:
+            raise RunError(f"pool '{pool}' of environment '{tier}' has no free entry, and "
+                           "this workflow consumes one per run", "error",
+                           f"add a free entry to environments.{tier}.pools.{pool}.free")
+    return env
+
+
 def require_params(workflow: dict, cli_params: dict):
     for p in workflow.get("parameters") or []:
         if p.get("required") and p["name"] not in cli_params and p.get("default") in (None, ""):
@@ -1451,6 +1509,7 @@ class Preflight:
     effect: str
     tier: str
     sites: list[str]
+    environment: dict | None
     persona: str | None
     lock_key: str
     classes: dict[str, Decision]
@@ -1502,6 +1561,7 @@ def preflight(root: Path, workflow: dict, owner: Owner, cli_params: dict,
                        "— there would be no pre-state to keep (schema/workflow.yaml)")
 
     tier, primary, sites = resolve_scope(root, workflow, owner, cli_params)
+    environment = resolve_environment(root, workflow, owner, tier)
     effect = workflow.get("effect")
     if effect not in EFFECT_CLASS:
         raise RunError(
@@ -1519,7 +1579,7 @@ def preflight(root: Path, workflow: dict, owner: Owner, cli_params: dict,
     outcome = max(("allow" if d.verdict == "ask" and c in consent else d.verdict
                    for c, d in classes.items()), key=STRICTNESS.get)
     return Preflight(workflow=name, effect=effect, tier=tier, sites=sites,
-                     persona=persona.get("name"),
+                     environment=environment, persona=persona.get("name"),
                      lock_key=f"{'+'.join(sorted(sites))}/{persona.get('name') or '-'}",
                      classes=classes, consent=sorted(consent),
                      needs_consent=[c for c, d in classes.items()
@@ -1738,7 +1798,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
     persona = load_persona(root, primary, persona_name)
     context = load_context(root, primary, context_name, workflow)
 
-    bindings = Bindings(workflow, cli_params, context)
+    bindings = Bindings(workflow, cli_params, context, pre.environment)
     runner = Runner(root, wf_path, workflow, bindings, owner, headed=headed,
                     persona=persona, pre_authorized=set(pre_authorized) | consented,
                     learn_shape=learn_shape)
@@ -1807,6 +1867,8 @@ def parameters_schema(workflow: dict) -> dict:
 
 
 def describe_workflow(root: Path, projects: Path, name: str) -> dict:
+    """What a caller needs before a run: the parameters as a JSON schema, the
+    steps, and per allowed tier the `$env` a run there would see."""
     _, data, owner = find_workflow(root, projects, name)
     workflow = data.get("workflow", {})
     return {
@@ -1816,6 +1878,8 @@ def describe_workflow(root: Path, projects: Path, name: str) -> dict:
         "mode": workflow.get("mode"),
         "effect": workflow.get("effect"),
         "parameters": parameters_schema(workflow),
+        "consumes": list(workflow.get("consumes") or []),
+        "environments": environments_of(root, workflow, owner),
         "steps": [{"number": number, "phase": phase, "action": step.get("action"),
                    "label": step_label(step)}
                   for number, (phase, step) in enumerate(

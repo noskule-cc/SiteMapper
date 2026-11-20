@@ -142,6 +142,7 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
             "name": "nap", "owner": "lab",
             "description": "nap for the server test\nsecond line",
             "mode": "deterministic", "effect": "read-only",
+            "consumes": [], "environments": {},
             "parameters": {"type": "object", "required": ["size"], "properties": {
                 "size": {"type": "string", "description": "How long",
                          "enum": ["small", "big"]},

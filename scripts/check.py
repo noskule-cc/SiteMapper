@@ -740,6 +740,111 @@ def check_tiers():
     return fails
 
 
+def mailbox_keys():
+    """settings.mailboxes keys of the framework's and the tree's config.yaml."""
+    keys = set()
+    for cfg in (home("config.yaml"), "config.yaml"):
+        if os.path.exists(cfg):
+            keys |= set(((load(cfg).get("settings") or {}).get("mailboxes") or {}).keys())
+    return keys
+
+
+def environment_fails(where, entry, mailboxes):
+    if not isinstance(entry, dict):
+        return [f"{where} must be a mapping of {', '.join(tree.ENVIRONMENT_KEYS)}"]
+    fails = [f"{where}.{k} is not an environment key ({', '.join(tree.ENVIRONMENT_KEYS)})"
+             + ("; the base URL is the tier site's, from the app" if k == "base_url" else "")
+             for k in entry if k not in tree.ENVIRONMENT_KEYS]
+    if not isinstance(entry.get("user"), str) or not entry["user"].strip():
+        fails.append(f"{where}.user is missing: the name of who the run is logged in as")
+    for name, pool in (entry.get("pools") or {}).items():
+        if not isinstance(pool, dict) or not isinstance(pool.get("free"), list) \
+                or not isinstance(pool.get("used") or {}, dict):
+            fails.append(f"{where}.pools.{name} needs free: [entries] and used: "
+                         "{entry: note}")
+            continue
+        free = [str(x) for x in pool["free"]]
+        for x in sorted({x for x in free if free.count(x) > 1}):
+            fails.append(f"{where}.pools.{name}: '{x}' is free twice")
+        for x in sorted(set(free) & {str(k) for k in (pool.get("used") or {})}):
+            fails.append(f"{where}.pools.{name}: '{x}' is both free and used")
+    for name, key in (entry.get("mailboxes") or {}).items():
+        if key not in mailboxes:
+            fails.append(f"{where}.mailboxes.{name}: '{key}' is not a key of "
+                         "settings.mailboxes in config.yaml")
+    if not isinstance(entry.get("allows") or {}, dict):
+        fails.append(f"{where}.allows must map a side effect to true, false or a condition")
+    return fails
+
+
+def check_environments():
+    """A project's environments are its app's tiers, well formed, and cover its workflows.
+
+    Per-tier facts (user, test-data pools, mailboxes, allowed side effects) sat
+    in prose in workflow descriptions and test-case files, where nothing could
+    refuse a run on a tier without them. Now each allowed tier of a tiered
+    workflow has an entry, every pool the workflow consumes exists there, and
+    every `$env.<path>` a workflow names resolves on every allowed tier.
+    """
+    fails = []
+    app_sites = {n: a.get("tiers") or {} for n, _, a in apps()}
+    mailboxes = mailbox_keys()
+    resolved = {}
+    for rel, d, p in projects():
+        envs = p.get("environments")
+        if envs is None:
+            continue
+        py = show(os.path.join(d, "project.yaml"))
+        sites = app_sites.get(p.get("app"))
+        if not isinstance(envs, dict) or sites is None:
+            fails.append(f"{py}: environments needs a mapping of tier to entry and an "
+                         "existing `app` whose tiers they are")
+            continue
+        for tier, entry in envs.items():
+            where = f"{py}: environments.{tier}"
+            if tier not in sites:
+                fails.append(f"{where} is not a tier of app '{p['app']}' "
+                             f"({', '.join(sorted(sites))})")
+                continue
+            entry_fails = environment_fails(where, entry, mailboxes)
+            fails += entry_fails
+            if not entry_fails:
+                site = (load(f"sites/{sites[tier]}/site.yaml").get("site") or {}) \
+                    if os.path.exists(f"sites/{sites[tier]}/site.yaml") else {}
+                resolved[(rel, tier)] = tree.run_environment(
+                    entry, tier, sites[tier], str(site.get("base_url") or ""))
+    for f, rel, p in project_workflows():
+        w = load(f).get("workflow") or {}
+        consumes = w.get("consumes") or []
+        refs = sorted({m for s in strings_in(w) for m in tree.ENV_REF.findall(s)})
+        tiers = w.get("tiers") if isinstance(w.get("tiers"), dict) else {}
+        if not tiers:
+            if consumes or refs:
+                fails.append(f"{show(f)}: consumes pools or names $env but declares no tiers")
+            continue
+        if p.get("environments") is None:
+            if consumes or refs:
+                fails.append(f"{show(f)}: consumes pools or names $env but project '{rel}' "
+                             "declares no environments")
+            continue
+        for tier in tiers.get("allowed") or tiers.get("required") or []:
+            env = resolved.get((rel, tier))
+            if env is None:
+                fails.append(f"{show(f)}: tier '{tier}' is allowed but project '{rel}' has "
+                             f"no valid environments.{tier} entry")
+                continue
+            for pool in consumes:
+                if pool not in env["pools"]:
+                    fails.append(f"{show(f)}: consumes pool '{pool}', which "
+                                 f"environments.{tier}.pools does not have")
+            for ref in refs:
+                try:
+                    tree.env_lookup(env, ref)
+                except KeyError:
+                    fails.append(f"{show(f)}: $env{ref} names nothing in environments.{tier}")
+    return fails
+
+
 def check_scripts():
     """A script is declared in exactly one home, and every caller is covered by it.
 
@@ -1157,6 +1262,7 @@ CHECKS = {
     "apps": check_apps,
     "placement": check_placement,
     "tiers": check_tiers,
+    "environments": check_environments,
     "scripts": check_scripts,
     "parity": check_parity,
     "rollback": check_rollback,
