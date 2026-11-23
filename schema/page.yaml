@@ -41,8 +41,66 @@
 page:
   name: ""                    # Human-readable page name
   url_pattern: ""             # URL pattern; use {placeholders} for dynamic ids (e.g. "/issues/{id}")
-  purpose: ""                 # What this page is for
+  purpose: ""                 # What this page is for and who works on it
   screenshot: ""              # Relative path to reference screenshot
+
+  # MEANING (#93). A map has three layers: `elements` say WHAT is on the page,
+  # `concepts` and `sections` say what it is FOR, `recipes` say HOW to do one task
+  # on it. All keys below are optional. Every element name they use must be an
+  # element of this page (`elements`, children included); check.py's `meaning`
+  # check fails a name it cannot find and any key a block does not define.
+  # The lib-tree export renders them as the page node's `markdown`.
+
+  sources: []                 # The human documentation this meaning came from, so a
+                              # change there can be traced. Each entry:
+                              #   - title: ""         what the reader sees
+                              #     url: ""           http:// or https:// link
+
+  concepts: []                # Domain ideas a reader needs before the elements make
+                              # sense (what one record is, its states, a repeat round).
+                              #   - name: ""          short identifier (round)
+                              #     meaning: ""       what it is
+
+  sections: []                # The meaning of one part of the page. A part that
+                              # repeats on several steps or tabs is described ONCE.
+                              #   - name: ""          short identifier (defects)
+                              #     applies_to: []    optional: element names (step
+                              #                       headers, tabs) where it appears
+                              #     elements: []      optional: element names in it
+                              #     meaning: ""       what it is for
+                              #     rules: []         optional: business rules
+                              #     examples: []      optional: when it is used
+
+  recipes: []                 # How to do one task, as ordered steps. A workflow step
+                              # can name a recipe instead of describing it again; a
+                              # run that learns something writes it here as a gotcha.
+                              #   - name: ""          short identifier (sign-step)
+                              #     goal: ""          the task, as a sentence
+                              #     when: ""          optional: when to use it
+                              #     steps:            one or more, in order:
+                              #       - do: click     click | fill | select | check |
+                              #                       uncheck | upload | draw |
+                              #                       confirm | read: needs `element`.
+                              #                       wait | navigate: `element` optional.
+                              #                       recipe: needs `recipe` (another
+                              #                       recipe on this page, no cycles)
+                              #                       instead of `element`
+                              #         element: ""   an element name
+                              #         recipe: ""    only on a `do: recipe` step
+                              #         value: ""     optional: what to type, pick, or
+                              #                       navigate to
+                              #         note: ""      optional: how, and why
+                              #     after: ""         optional: what the page shows then
+                              #     gotchas: []       optional: traps in this task
+                              #     uses: []          optional: recipes this builds on
+
+  open_questions: []          # Where the human documentation and the observed app
+                              # disagree, until a person decides. Never resolved
+                              # silently in either direction.
+                              #   - question: ""      what is undecided
+                              #     docs: ""          optional: what the documentation says
+                              #     observed: ""      what the app does
+                              #     owner: ""         who decides (operator)
 
   elements:
     - name: ""                # Semantic name for the element
