@@ -20,12 +20,14 @@
         {
          "id": "sites/sitemapper-demo/pages/issues-list",
          "label": "issues-list",
-         "kind": "page"
+         "kind": "page",
+         "markdown": "**Purpose.** Lists all open/closed issues for the repository\n"
         },
         {
          "id": "sites/sitemapper-demo/pages/new-issue",
          "label": "new-issue",
-         "kind": "page"
+         "kind": "page",
+         "markdown": "**Purpose.** Create a new issue with title, description, and labels\n"
         }
        ]
       },
@@ -272,12 +274,14 @@
         {
          "id": "sites/sitemapper-demo-dev/pages/issues-list",
          "label": "issues-list",
-         "kind": "page"
+         "kind": "page",
+         "markdown": "**Purpose.** Lists all open/closed issues for the repository\n"
         },
         {
          "id": "sites/sitemapper-demo-dev/pages/new-issue",
          "label": "new-issue",
-         "kind": "page"
+         "kind": "page",
+         "markdown": "**Purpose.** Create a new issue with title, description, and labels\n"
         }
        ]
       }

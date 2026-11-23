@@ -16,6 +16,10 @@ at the lib root, not in docs/, because the host finds it at
     Node = {"id", "label", "kind", "description"?, "status"?, "project"?,
             "target"?, "owner"?, "facts"?, "flow"?, "permissions"?, "children"?}
 
+A page node carries `markdown`: the page's purpose, sources, concepts, sections,
+recipes (each also as a Mermaid flowchart) and open questions (#93), which the
+host draws on the node's How it works tab.
+
 A workflow node carries what its page shows, each key omitted when empty:
 
     owner        the runs owner: the project's path under projects/, or the site
@@ -32,6 +36,7 @@ import argparse
 import functools
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -183,6 +188,104 @@ def workflow_details(row, apps, policy):
     return {"owner": row["owner"], "facts": facts, "flow": flow, "permissions": permissions}
 
 
+def text(value):
+    return re.sub(r"\s+", " ", str(value or "")).strip()
+
+
+def entries(page, block):
+    value = page.get(block)
+    return [e for e in value if isinstance(e, dict)] if isinstance(value, list) else []
+
+
+def codes(names):
+    return ", ".join(f"`{text(n)}`" for n in names or [])
+
+
+def step_target(step):
+    return text(step.get("recipe") if step.get("do") == "recipe"
+                else step.get("element") or step.get("value"))
+
+
+def recipe_flowchart(steps):
+    """Steps in order; a step that runs another recipe is a subroutine box."""
+    lines = ["```mermaid", "flowchart TD"]
+    for i, step in enumerate(steps, 1):
+        label = text(f"{text(step.get('do'))} {step_target(step)}").replace('"', "#quot;")
+        shape = f'[["{label}"]]' if step.get("do") == "recipe" else f'["{label}"]'
+        lines.append(f"  s{i}{shape}" + (f" --> s{i + 1}" if i < len(steps) else ""))
+    return lines + ["```"]
+
+
+def recipe_markdown(r):
+    steps = [s for s in r.get("steps") or [] if isinstance(s, dict)]
+    out = [f"#### {text(r.get('name'))}", "", text(r.get("goal")), ""]
+    out += [f"When: {text(r['when'])}", ""] if r.get("when") else []
+    out += recipe_flowchart(steps) + [""] if steps else []
+    for i, step in enumerate(steps, 1):
+        target = step_target(step)
+        value = f" = `{text(step['value'])}`" if step.get("value") and step.get("element") else ""
+        note = f" · {text(step['note'])}" if step.get("note") else ""
+        out.append(f"{i}. {text(step.get('do'))}{f' `{target}`' if target else ''}{value}{note}")
+    if r.get("after"):
+        out += ["", f"After: {text(r['after'])}"]
+    if r.get("uses"):
+        out += ["", f"Builds on: {codes(r['uses'])}"]
+    if r.get("gotchas"):
+        out += ["", "Gotchas:"] + [f"- {text(g)}" for g in r["gotchas"]]
+    return out + [""]
+
+
+def page_markdown(page):
+    """The page's meaning layers as compact Markdown, or "" when it has none."""
+    out = []
+    if page.get("purpose"):
+        out += [f"**Purpose.** {text(page['purpose'])}", ""]
+    sources = entries(page, "sources")
+    if sources:
+        out += ["Sources: " + ", ".join(f"[{text(s.get('title'))}]({text(s.get('url'))})"
+                                        for s in sources), ""]
+    concepts = entries(page, "concepts")
+    if concepts:
+        out += ["### Concepts", ""]
+        out += [f"- **{text(c.get('name'))}**: {text(c.get('meaning'))}" for c in concepts]
+        out += [""]
+    sections = entries(page, "sections")
+    if sections:
+        out += ["### Sections", ""]
+        for s in sections:
+            on = f" (on {codes(s['applies_to'])})" if s.get("applies_to") else ""
+            out.append(f"- **{text(s.get('name'))}**{on}: {text(s.get('meaning'))}")
+            if s.get("elements"):
+                out.append(f"  - Elements: {codes(s['elements'])}")
+            out += [f"  - Rule: {text(x)}" for x in s.get("rules") or []]
+            out += [f"  - Example: {text(x)}" for x in s.get("examples") or []]
+        out += [""]
+    recipes = entries(page, "recipes")
+    if recipes:
+        out += ["### Recipes", ""]
+        for r in recipes:
+            out += recipe_markdown(r)
+    questions = entries(page, "open_questions")
+    if questions:
+        out += ["### Open questions", ""]
+        for q in questions:
+            parts = [f"Docs: {text(q['docs'])}" if q.get("docs") else "",
+                     f"Observed: {text(q.get('observed'))}", f"Owner: {text(q.get('owner'))}"]
+            out.append(f"- **{text(q.get('question'))}** " + " ".join(p for p in parts if p))
+        out += [""]
+    return "\n".join(out).strip() + "\n" if out else ""
+
+
+def page_node(d, p):
+    try:
+        page = inventory.load(os.path.join(ROOT, "sites", d, "pages", f"{p['name']}.yaml"))
+        page = page.get("page") if isinstance(page, dict) else None
+    except inventory.yaml.YAMLError:  # check.py reports a broken page file
+        page = None
+    md = page_markdown(page) if isinstance(page, dict) else ""
+    return node(f"sites/{d}/pages/{p['name']}", p["name"], "page", markdown=md)
+
+
 def workflow_node(id_, w, details, project=None):
     return node(id_, w["name"], "workflow", description=w["purpose"],
                 status=STATUS.get(w["trust"]), project=project, **details[w["path"]])
@@ -197,8 +300,7 @@ def site_node(s, workflows, project_sites, details):
     used = sorted((w for w in workflows if w["kind"] == "project"
                    and d in set(w["sites"]) | project_sites.get(w["owner"], set())),
                   key=lambda w: (w["owner"], w["name"]))
-    pages = [node(f"sites/{d}/pages/{p['name']}", p["name"], "page")
-             for p in s["page_files"]]
+    pages = [page_node(d, p) for p in s["page_files"]]
     flows = ([workflow_node(f"sites/{d}/workflows/{w['name']}", w, details) for w in own]
              + [workflow_node(f"sites/{d}/workflows/{w['owner']}/{w['name']}", w, details,
                               w["owner"])

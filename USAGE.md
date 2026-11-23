@@ -337,3 +337,13 @@ Maps use semantic locators in order of preference:
 5. `css` — last resort
 
 Each page YAML also captures **gotchas** — non-obvious behavior that would trip up automation (e.g., "sidebar collapses after navigation", "two clicks needed to reach machine list").
+
+A page map has three layers, each optional beyond the first:
+
+| Layer | Keys | Answers |
+|---|---|---|
+| Elements | `elements`, `gotchas` | **what** is on the page and how to find it |
+| Meaning | `purpose`, `concepts`, `sections`, `sources` | what it is **for**: the domain ideas, what each part of the page means, its business rules |
+| Recipes | `recipes` | **how** to do one task: ordered steps that name elements, plus what the page shows after and the traps |
+
+Without the middle layer an agent knows what to click but not why, and picks the wrong optional step. Record a place where the human documentation and the app disagree as an `open_questions` entry with an owner; do not resolve it in either direction. Format: `schema/page.yaml`. `check.py` fails a section or recipe that names an element or recipe the page does not have. TeamOS shows all three on the page's "How it works" tab, each recipe also as a flowchart.
