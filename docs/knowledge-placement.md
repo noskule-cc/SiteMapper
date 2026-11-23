@@ -25,6 +25,9 @@ cloning this repo tomorrow?*
 |---|---|
 | How one page behaves; a trap that breaks automation | `sites/<site>/pages/<page>.yaml` → `gotchas` |
 | An element that exists, and when it doesn't | that page's `elements` (+ `states: [capability-dependent]`) |
+| What a page or one part of it is for, a business rule, a domain idea | that page's `concepts` and `sections`, with the human documentation under `sources` |
+| How to do one task on a page, step by step | that page's `recipes`; a trap found in a run goes to the recipe's `gotchas` |
+| The documentation says one thing, the app does another | that page's `open_questions`, with an `owner`, until a person decides |
 | An API, its auth, why a path is blocked or parked | the `scripts/README.md` beside the script: under the site, the project, or the app when the script takes a tier argument ([extending.md](extending.md) → Add a script) |
 | Base URL, auth model, which scripts a site has | `sites/<site>/site.yaml` |
 | Which sites are tiers of one application; an expected difference between their page maps | `apps/<app>/app.yaml` (`tiers`, `parity.gaps` with a reason) |

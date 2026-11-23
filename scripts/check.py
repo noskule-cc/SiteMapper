@@ -521,7 +521,7 @@ def check_endpoints():
 
 # The meaning blocks of a page (#93): block -> {key: (kind, required)}. A kind is
 # str or list (of strings); `steps` is the one list of mappings, checked by
-# step_fails. The table is the format: check, schema comment and export follow it.
+# step_fails. Keep it in step with the comments in schema/page.yaml.
 MEANING = {
     "sources": {"title": (str, True), "url": (str, True)},
     "concepts": {"name": (str, True), "meaning": (str, True)},

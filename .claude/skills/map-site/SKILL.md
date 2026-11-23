@@ -73,6 +73,14 @@ For each page the user wants to map:
    saved filter): it survives across sessions, so a later run inherits whatever the last
    one left, and elements that only exist in one state will simply be missing. Record the
    state *and* which elements depend on it.
+4b. **Ask what the page is for and how it is used** — the meaning and recipe
+   layers (`schema/page.yaml`). Ask for the human documentation (training page,
+   manual) and record it under `sources`. Write the domain ideas as `concepts`, the
+   meaning and business rules of each part as `sections` (once, with `applies_to`
+   for a part that repeats on several tabs or steps), and each task the user walks
+   you through as a `recipe` whose steps name mapped elements only. Where the
+   documentation and the app disagree, write an `open_questions` entry with an
+   owner; never decide it yourself.
 5. **Write the page YAML** to `sites/<site>/pages/<page-name>.yaml` following the schema.
    Write only the endpoints the user confirmed, under the names they gave.
 5b. **Capture a reference screenshot** to `sites/<site>/screenshots/<page-name>.png`
