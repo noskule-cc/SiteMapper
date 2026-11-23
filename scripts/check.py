@@ -476,7 +476,7 @@ def strings_in(value):
 
 
 def page_text_fails(page):
-    """Free text on a page (purpose, gotchas, settings) that holds a secret."""
+    """Free text on a page (purpose, gotchas, settings, meaning) that holds a secret."""
     fails = []
     gotchas = page.get("gotchas")
     if gotchas is not None and not (isinstance(gotchas, list)
@@ -484,7 +484,7 @@ def page_text_fails(page):
         fails.append("gotchas is not a list of strings")
     elif any(secret_text(g) for g in gotchas or []):
         fails.append("gotchas holds a secret header, a credential or a token-shaped word")
-    for key in ("purpose", "settings"):
+    for key in ("purpose", "settings", *MEANING):
         if any(secret_text(s) for s in strings_in(page.get(key))):
             fails.append(f"{key} holds a secret header, a credential or a token-shaped word")
     return fails
@@ -516,6 +516,164 @@ def check_endpoints():
         for i, entry in enumerate(entries):
             fails += [f"{show(f)}: endpoints[{i}].{msg} (the value is not shown)"
                       for msg in endpoint_fails(entry, elements)]
+    return fails
+
+
+# The meaning blocks of a page (#93): block -> {key: (kind, required)}. A kind is
+# str or list (of strings); `steps` is the one list of mappings, checked by
+# step_fails. The table is the format: check, schema comment and export follow it.
+MEANING = {
+    "sources": {"title": (str, True), "url": (str, True)},
+    "concepts": {"name": (str, True), "meaning": (str, True)},
+    "sections": {"name": (str, True), "applies_to": (list, False),
+                 "elements": (list, False), "meaning": (str, True),
+                 "rules": (list, False), "examples": (list, False)},
+    "recipes": {"name": (str, True), "goal": (str, True), "when": (str, False),
+                "steps": ("steps", True), "after": (str, False),
+                "gotchas": (list, False), "uses": (list, False)},
+    "open_questions": {"question": (str, True), "docs": (str, False),
+                       "observed": (str, True), "owner": (str, True)},
+}
+STEP_KEYS = {"do", "element", "recipe", "value", "note"}
+# do -> what the step must name: an element, another recipe, or nothing required.
+STEP_TARGET = {**dict.fromkeys(("click", "fill", "select", "check", "uncheck", "upload",
+                                "draw", "confirm", "read"), "element"),
+               "wait": None, "navigate": None, "recipe": "recipe"}
+
+
+def element_names(page):
+    """Every element name a page maps, children included (as Site.element finds them)."""
+    names = set()
+    for el in page.get("elements") or []:
+        if isinstance(el, dict):
+            names.add(el.get("name"))
+            names |= {c.get("name") for c in el.get("children") or [] if isinstance(c, dict)}
+    return names
+
+
+def entry_fails(fields, entry):
+    if not isinstance(entry, dict):
+        return ["is not a mapping"]
+    fails = [f"'{shown(k)}' is not a key here; allowed: {', '.join(fields)}"
+             for k in entry if k not in fields]
+    for key, (kind, required) in fields.items():
+        value = entry.get(key)
+        if value is None:
+            if required:
+                fails.append(f"{key} is missing")
+        elif kind is str and not isinstance(value, str):
+            fails.append(f"{key} is not a string")
+        elif kind is list and not (isinstance(value, list)
+                                   and all(isinstance(v, str) for v in value)):
+            fails.append(f"{key} is not a list of strings")
+        elif kind == "steps" and not (isinstance(value, list) and value):
+            fails.append("steps is not a non-empty list")
+    return fails
+
+
+def step_fails(step, elements, recipes):
+    if not isinstance(step, dict):
+        return ["is not a mapping"]
+    fails = [f"'{shown(k)}' is not a key here; allowed: {', '.join(sorted(STEP_KEYS))}"
+             for k in step if k not in STEP_KEYS]
+    do = step.get("do")
+    if do not in STEP_TARGET:
+        return fails + [f"do is not one of: {', '.join(STEP_TARGET)}"]
+    target = STEP_TARGET[do]
+    if target == "recipe":
+        if "element" in step:
+            fails.append("a recipe step names `recipe`, not `element`")
+        if "recipe" not in step:
+            fails.append("a `do: recipe` step needs `recipe`")
+        elif step["recipe"] not in recipes:
+            fails.append(f"recipe '{shown(step['recipe'])}' is not a recipe of this page")
+    else:
+        if "recipe" in step:
+            fails.append("only a `do: recipe` step names `recipe`")
+        if target == "element" and "element" not in step:
+            fails.append(f"a `do: {do}` step needs `element`")
+    if "element" in step and step["element"] not in elements:
+        fails.append(f"element '{shown(step['element'])}' is not an element of this page")
+    return fails
+
+
+def recipe_cycles(recipes):
+    """Recipe names that reach themselves through `recipe` steps or `uses`."""
+    edges = {name: {s.get("recipe") for s in r.get("steps") or [] if isinstance(s, dict)
+                    and s.get("do") == "recipe"} | set(r.get("uses") or [])
+             for name, r in recipes.items()}
+    cyclic = []
+    for start in edges:
+        seen, todo = set(), list(edges[start])
+        while todo:
+            n = todo.pop()
+            if n == start:
+                cyclic.append(start)
+                break
+            if n in edges and n not in seen:
+                seen.add(n)
+                todo += edges[n]
+    return cyclic
+
+
+def meaning_fails(page):
+    """Why a page's meaning blocks do not hold (#93)."""
+    fails = []
+    elements = element_names(page)
+    blocks = {}
+    for block, fields in MEANING.items():
+        entries = page.get(block)
+        if entries is None:
+            continue
+        if not isinstance(entries, list):
+            fails.append(f"{block} is not a list")
+            continue
+        blocks[block] = entries
+        for i, entry in enumerate(entries):
+            fails += [f"{block}[{i}]: {m}" for m in entry_fails(fields, entry)]
+        named = [e.get("name") for e in entries if isinstance(e, dict) and "name" in fields]
+        fails += [f"{block}: name '{shown(n)}' is used twice"
+                  for n in sorted({n for n in named if named.count(n) > 1}, key=str)]
+    for i, s in enumerate(blocks.get("sources", [])):
+        if isinstance(s, dict) and isinstance(s.get("url"), str) and not (
+                urlsplit(s["url"]).scheme in ("http", "https") and urlsplit(s["url"]).netloc):
+            fails.append(f"sources[{i}]: url is not an http(s) link")
+    for i, s in enumerate(blocks.get("sections", [])):
+        for key in ("applies_to", "elements"):
+            value = s.get(key) if isinstance(s, dict) else None
+            for name in value if isinstance(value, list) else []:
+                if name not in elements:
+                    fails.append(f"sections[{i}].{key}: '{shown(name)}' is not an element "
+                                 "of this page")
+    recipes = {r["name"]: r for r in blocks.get("recipes", [])
+               if isinstance(r, dict) and isinstance(r.get("name"), str)}
+    for i, r in enumerate(blocks.get("recipes", [])):
+        if not isinstance(r, dict):
+            continue
+        steps = r.get("steps")
+        for j, step in enumerate(steps if isinstance(steps, list) else []):
+            fails += [f"recipes[{i}].steps[{j}]: {m}"
+                      for m in step_fails(step, elements, recipes)]
+        uses = r.get("uses")
+        for name in uses if isinstance(uses, list) else []:
+            if name not in recipes:
+                fails.append(f"recipes[{i}].uses: '{shown(name)}' is not a recipe of this page")
+    fails += [f"recipes: '{shown(n)}' reaches itself through recipe steps or uses"
+              for n in recipe_cycles(recipes)]
+    return fails
+
+
+def check_meaning():
+    """Page meaning (sources, concepts, sections, recipes, open_questions) is well-formed
+    and names only elements and recipes the page has."""
+    fails = []
+    for f in files(["sites/*/pages/*.yaml"]):
+        try:
+            page = load(f).get("page")
+        except (yaml.YAMLError, AttributeError):
+            continue  # check_yaml and check_schema report it
+        if isinstance(page, dict):
+            fails += [f"{show(f)}: {msg}" for msg in meaning_fails(page)]
     return fails
 
 
@@ -1257,6 +1415,7 @@ CHECKS = {
     "schema": check_schema,
     "credentials": check_credentials,
     "endpoints": check_endpoints,
+    "meaning": check_meaning,
     "listings": check_listings,
     "companions": check_companions,
     "apps": check_apps,
