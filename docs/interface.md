@@ -59,7 +59,7 @@ Both meet in the **MCP server**, `scripts/mcp_server.py`: LLM hosts consume MCP 
 python scripts/mcp_server.py [--root PATH] [--projects PATH] [--runs PATH] [--run-timeout SECONDS]
 ```
 
-A stdio server (the `mcp` package, 2.x). It reads the tree at start, so a host starts one session per run. Its tools:
+A stdio server (the `mcp` package, 2.x). It reads the tree at start, so a host starts one session per run. Its `serverInfo.version` names the code it runs, as `<short commit> · <branch> · <commit date>` with `· uncommitted changes` when tracked files differ, so a host can show which SiteMapper code a run used. SiteMapper has no release version, so the string is empty when it does not run from a git checkout. Its tools:
 
 | Tool | Does | `readOnlyHint` / `destructiveHint` | `_meta` |
 |---|---|---|---|

@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -93,6 +94,19 @@ class McpServerTest(unittest.IsolatedAsyncioTestCase):
         async with stdio_client(params) as (r, w), ClientSession(r, w) as s:
             await s.initialize()
             return [await call(s) for call in calls]
+
+    async def test_server_info_names_the_checkout_the_server_runs_from(self):
+        params = StdioServerParameters(
+            command=sys.executable,
+            args=[str(SCRIPTS / "mcp_server.py"), "--root", str(self.root),
+                  "--runs", str(self.runs)])
+        async with stdio_client(params) as (r, w), ClientSession(r, w) as s:
+            init = await s.initialize()
+        head = subprocess.run(["git", "-C", str(FRAMEWORK), "log", "-1", "--format=%h %cs"],
+                              capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(init.server_info.name, "sitemapper")
+        self.assertEqual(init.server_info.version.split(" · ")[0], head[0])
+        self.assertIn(head[1], init.server_info.version)
 
     async def call(self, tool: str, **args):
         progress = []
@@ -401,3 +415,11 @@ def alive(pid: int) -> bool:
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipIf(ClientSession is None, "mcp is not installed (pip install mcp)")
+class CodeVersionTest(unittest.TestCase):
+    def test_a_folder_outside_a_git_checkout_reports_no_version(self):
+        import mcp_server
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+            self.assertEqual(mcp_server.code_version(Path(tmp)), "")
