@@ -413,13 +413,13 @@ def alive(pid: int) -> bool:
     return True
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 @unittest.skipIf(ClientSession is None, "mcp is not installed (pip install mcp)")
 class CodeVersionTest(unittest.TestCase):
     def test_a_folder_outside_a_git_checkout_reports_no_version(self):
         import mcp_server
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             self.assertEqual(mcp_server.code_version(Path(tmp)), "")
+
+
+if __name__ == "__main__":
+    unittest.main()
