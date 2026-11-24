@@ -44,6 +44,7 @@ HINTS = {
     "destructive": ToolAnnotations(readOnlyHint=False, destructiveHint=True),
 }
 LOCK_KEY = "teamos/lock"
+GIT_TIMEOUT_S = 5
 
 Consent = Literal["write", "destructive", "auth"]
 Trigger = Literal["ui", "schedule", "manual"]
@@ -266,8 +267,35 @@ def runner_for(tree_: Tree, name: str):
     return run_this
 
 
+def _git(repo: Path, *args: str) -> str | None:
+    try:
+        done = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True,
+                              encoding="utf-8", timeout=GIT_TIMEOUT_S, stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return done.stdout.strip() if done.returncode == 0 else None
+
+
+def code_version(repo: Path = run.FRAMEWORK_ROOT) -> str:
+    """Which SiteMapper code this server runs: `<short commit> · <branch> · <commit date>`,
+    plus `· uncommitted changes` when tracked files differ. Empty when `repo` is not the top
+    of its own git checkout, since SiteMapper has no release version to fall back on."""
+    top = _git(repo, "rev-parse", "--show-toplevel")
+    if top is None or Path(top).resolve() != repo.resolve():
+        return ""
+    log = _git(repo, "log", "-1", "--format=%h %cs")
+    dirty = _git(repo, "status", "--porcelain", "--untracked-files=no")
+    if not log or dirty is None:
+        return ""
+    short, day = log.split()
+    parts = [short, _git(repo, "branch", "--show-current") or "detached", day]
+    if dirty:
+        parts.append("uncommitted changes")
+    return " · ".join(parts)
+
+
 def build(tree_: Tree) -> MCPServer:
-    server = MCPServer("sitemapper")
+    server = MCPServer("sitemapper", version=code_version())
     reading = HINTS["read-only"]
     workflows = [(path, owner, (run.load_yaml(path) or {}).get("workflow") or {})
                  for path, owner in run.iter_workflows(tree_.root, tree_.projects)]
