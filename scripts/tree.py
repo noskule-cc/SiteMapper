@@ -47,7 +47,7 @@ TIER_SYNONYMS = {"production": "prod", "prod": "prod",
 PROJECT_KINDS = ("test", "producer", "tool", "migration", "spike")
 EFFECT_VALUES = ("read-only", "mutating", "destructive")
 ROLLBACK_VALUES = ("snapshot", "none")
-ACTIONS = ("navigate", "click", "input", "read", "assert", "verify", "wait", "key",
+ACTIONS = ("navigate", "click", "input", "read", "assert", "verify", "wait", "key", "hover",
            "download", "script", "human")
 HUMAN_KINDS = ("approve", "login", "physical", "other")
 SHAPE_TYPES = ("string", "number", "bool", "null")

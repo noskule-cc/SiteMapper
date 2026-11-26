@@ -193,7 +193,7 @@ workflow:
     - action: ""
 
   steps:
-    - action: ""              # navigate | click | input | read | assert | verify | wait | key | download | script | human
+    - action: ""              # navigate | click | input | read | assert | verify | wait | key | hover | download | script | human
                               #   human: a step only a person can do (approve a result, log
                               #   in, act on a device). The run stops here with
                               #   result.status = waiting and `waiting_for` = {step, label,
@@ -203,6 +203,8 @@ workflow:
                               #   allowed in teardown (check.py)
                               #   key: press a keyboard key (value = the key, e.g. "Escape",
                               #   "Enter") - e.g. to dismiss a dropdown without changing state
+                              #   hover: move the mouse over the element (page + element), for a
+                              #   menu entry that opens its submenu on hover and closes it on click
                               #   download: click the element (page + element, `value` scopes
                               #   it as in click) and save the file it starts into the run
                               #   folder's downloads/ (a temp dir without --record), under the

@@ -1,4 +1,4 @@
-"""The `download` step against a real browser and a local page that serves a file.
+"""The `download` and `hover` steps against a real browser and a local page that serves a file.
 
 Skipped when Playwright or Chrome is missing, like the runner itself needs them."""
 import functools
@@ -22,6 +22,8 @@ PAYLOAD = b"imsi;bytes\n999000000000001;42\n"
 PAGE = b"""<html><body>
 <a id="report" href="/data/report.csv" download>Report</a>
 <button id="nothing" onclick="1+1">Nothing</button>
+<div id="menu" onmouseenter="document.getElementById('sub').style.display='block'">Menu</div>
+<div id="sub" style="display:none">Submenu</div>
 </body></html>"""
 
 
@@ -118,9 +120,16 @@ class DownloadStep(unittest.TestCase):
             self.assertIn("Timeout", type(caught.exception).__name__)
             self.assertEqual(list(Path(tmp).iterdir()), [])
 
-    def test_the_action_is_known_and_mechanical(self):
-        self.assertIn("download", run.tree.ACTIONS)
-        self.assertIn("download", run.MECHANICAL_ACTIONS)
+    def test_hover_opens_a_menu_that_opens_on_hover(self):
+        runner = self.runner(None)
+        self.assertFalse(runner.pw_page.locator("#sub").is_visible())
+        runner.do_hover({"action": "hover", "page": "p", "element": "menu"})
+        self.assertTrue(runner.pw_page.locator("#sub").is_visible())
+
+    def test_the_actions_are_known_and_mechanical(self):
+        for action in ("download", "hover"):
+            self.assertIn(action, run.tree.ACTIONS)
+            self.assertIn(action, run.MECHANICAL_ACTIONS)
 
 
 if __name__ == "__main__":

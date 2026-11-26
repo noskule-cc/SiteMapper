@@ -1127,6 +1127,12 @@ class Runner:
         if step.get("capture"):
             self.bindings.captures[step["capture"]] = str(saved)
 
+    def do_hover(self, step):
+        """Move the mouse over an element, for a menu that opens on hover and closes
+        again when its entry is clicked."""
+        site = self.site(step)
+        build_locator(self.pw_page, self._element(step, site)).hover()
+
     def do_input(self, step):
         site = self.site(step)
         element = self._element(step, site)
