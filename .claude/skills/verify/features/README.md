@@ -6,14 +6,15 @@ This directory is the maintained source for verifying what a person sees on Site
 
 - A server started by `verify.py up` in this session, and nothing else.
 - `verify.py doctor` prints five `OK` lines.
-- Unless a recipe says otherwise, the copy is of the framework checkout. Its maps are the demo app: the sites `sitemapper-demo` (with the workflows `search-issues` and `smart-issue`) and `sitemapper-demo-dev` (no workflows), the app `sitemapper-demo`, and the project `demo-checks`. That makes 4 cards.
+- Unless a recipe says otherwise, the copy is of the framework checkout. Its maps are the demo app: the sites `sitemapper-demo` (with the workflows `search-issues` and `smart-issue`) and `sitemapper-demo-dev` (no workflows), the app `sitemapper-demo`, and the project `demo-checks` (with the workflow `search-issues-on-tier`). That makes 4 cards and 3 workflows.
 
 ## Driving conventions
 
 - Start every recipe with `goto:/`.
-- Scope with `within:<workflow>` before clicking a row's button. Every row has its own `▶ run` and `copy`.
+- Scope with `within:<workflow>` before clicking a row's button. Every deterministic workflow row has its own `▶ run` and `copy`. An agentic row has only `/run <name>`.
 - The demo maps change when someone edits them. If a count below no longer matches, read the actual one from a `shot` and fix this map in the same PR.
 - Never write a private map repository's site or workflow names into this map.
+- `expect:` matches a substring, so `expect:4 cards` also passes on `1 of 4 cards`. Prove an unfiltered page with `absent:of 4 cards`.
 
 ## Proof and skip reporting
 

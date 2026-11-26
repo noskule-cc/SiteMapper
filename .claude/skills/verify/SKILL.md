@@ -71,7 +71,7 @@ One `drive` call is one fresh browser (en-US, 1280x900). Steps run in order:
 
 Each step prints `PASS` or `FAIL`. A locator that finds nothing prints `FAIL <step>: <reason>` and ends the call. The call exits 1 if any step failed.
 
-Stable handles on the page are the search box (placeholder `Search sites, processes, pages — press /`), the filter buttons `all`, `workflow`, `script`, `agentic` and `deterministic`, the counter `<n> cards` or `<shown> of <n> cards`, the button `deploy (private)` (the copy is always served as a map repository), and per process row the buttons `▶ run` and `copy`. An agentic workflow shows a `/run <name>` button instead. On Windows, type non-ASCII names such as `▶ run` from a UTF-8 shell, or scope with `within:` and match ASCII text instead. Recipes per feature are in [features/README.md](features/README.md).
+Stable handles on the page are the search box (placeholder `Search sites, processes, pages — press /`), the filter buttons `all`, `workflow`, `script`, `agentic` and `deterministic`, the counter `<n> cards` or `<shown> of <n> cards`, the button `deploy (private)` (the copy is always served as a map repository), and per deterministic workflow row the buttons `▶ run` and `copy`. An agentic workflow shows only a `/run <name>` button. On Windows, type non-ASCII names such as `▶ run` from a UTF-8 shell, or scope with `within:` and match ASCII text instead. Recipes per feature are in [features/README.md](features/README.md).
 
 ## Evidence
 
