@@ -296,7 +296,8 @@ class Handler(BaseHTTPRequestHandler):
                 f"for '{cls}'. Run it this once?"})
 
         is_test = any(s.get("action") == "assert" for s in wf.get("steps") or [])
-        cmd = [sys.executable, str(FRAMEWORK / "scripts" / "run.py"), name, "--json"]
+        cmd = [sys.executable, str(FRAMEWORK / "scripts" / "run.py"), name, "--json",
+               "--trigger", "ui"]
         if ROOT != FRAMEWORK:
             cmd += ["--root", str(ROOT)]
         if PROJECTS != Path(tree.projects_root(str(ROOT))):

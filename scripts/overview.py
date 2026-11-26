@@ -1003,7 +1003,7 @@ def render(base=LOCAL, fragment=False):
                            for g in ap_["gaps"])
             scripts = "".join(
                 f'<div class="proc" data-kind="script" data-mode="deterministic" '
-                f'data-search="{e(sc["name"] + " " + ap_["dir"] + " " + sc["desc"])}">'
+                f'data-search="{e(" ".join([sc["name"], ap_["dir"], sc["desc"]]).lower())}">'
                 f'<div class="proc-head"><span class="tag kind-script">script</span>'
                 f'<a class="name" href="{e(href(sc["path"]))}">{e(sc["name"])}</a>'
                 f'<span class="tag">takes a tier</span></div>'
