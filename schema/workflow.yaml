@@ -193,7 +193,7 @@ workflow:
     - action: ""
 
   steps:
-    - action: ""              # navigate | click | input | read | assert | verify | wait | key | script | human
+    - action: ""              # navigate | click | input | read | assert | verify | wait | key | hover | scroll | download | script | human
                               #   human: a step only a person can do (approve a result, log
                               #   in, act on a device). The run stops here with
                               #   result.status = waiting and `waiting_for` = {step, label,
@@ -203,6 +203,19 @@ workflow:
                               #   allowed in teardown (check.py)
                               #   key: press a keyboard key (value = the key, e.g. "Escape",
                               #   "Enter") - e.g. to dismiss a dropdown without changing state
+                              #   hover: move the mouse over the element (page + element), for a
+                              #   menu entry that opens its submenu on hover and closes it on click
+                              #   scroll: scroll the element (a list that draws only the rows in
+                              #   view) until the text in `value` is rendered; fails after 400
+                              #   steps. Then click the row with an element whose locator names it:
+                              #   a "$name" in a locator value resolves like any step value
+                              #   download: click the element (page + element, `value` scopes
+                              #   it as in click) and save the file it starts into the run
+                              #   folder's downloads/ (a temp dir without --record), under the
+                              #   name the site gives it. `capture` stores the saved path, so
+                              #   a later script step can take it as "$name". The step fails
+                              #   when no download starts within 60 s. A path with a space
+                              #   breaks a script's value, which splits on spaces.
                               #   script: run a site script instead of driving the browser
                               #   (see `script` below). Prefer this whenever the data is
                               #   reachable from the site's API - it is faster, headless and

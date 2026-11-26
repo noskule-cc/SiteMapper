@@ -74,7 +74,7 @@ def joined(*parts):
     return " · ".join(p for p in parts if p)
 
 
-ACTING = ("click", "input", "key", "script")
+ACTING = ("click", "input", "key", "download", "script")
 FRAMEWORK_CONFIG = run.FRAMEWORK_ROOT / "config.yaml"
 
 
