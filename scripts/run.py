@@ -1134,7 +1134,7 @@ class Runner:
         if step.get("capture"):
             self.bindings.captures[step["capture"]] = str(saved)
 
-    SCROLL_STEPS = 200
+    SCROLL_STEPS = 400
 
     def do_scroll(self, step):
         """Scroll a virtualized list (the element) until `value` is rendered in the page.
@@ -1147,8 +1147,8 @@ class Runner:
         for _ in range(self.SCROLL_STEPS):
             if self.pw_page.get_by_text(needle).count():
                 return
-            scroller.evaluate("el => { el.scrollTop += Math.max(el.clientHeight * 0.8, 50); }")
-            self.pw_page.wait_for_timeout(300)
+            scroller.evaluate("el => { el.scrollTop += Math.max(el.clientHeight * 0.4, 50); }")
+            self.pw_page.wait_for_timeout(500)  # the grid fetches its rows lazily; a fast scroll skips them
         raise RunError(f"'{needle}' did not appear in {self.SCROLL_STEPS} scroll steps", "drift")
 
     def do_hover(self, step):

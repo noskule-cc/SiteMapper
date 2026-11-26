@@ -206,7 +206,7 @@ workflow:
                               #   hover: move the mouse over the element (page + element), for a
                               #   menu entry that opens its submenu on hover and closes it on click
                               #   scroll: scroll the element (a list that draws only the rows in
-                              #   view) until the text in `value` is rendered; fails after 200
+                              #   view) until the text in `value` is rendered; fails after 400
                               #   steps. Then click the row with an element whose locator names it:
                               #   a "$name" in a locator value resolves like any step value
                               #   download: click the element (page + element, `value` scopes
