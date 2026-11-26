@@ -35,6 +35,8 @@ persona:
                               #   env:VARNAME              - read from the environment
                               #   keyring:<service>/<name> - read from the OS keyring
                               #     (pip install keyring; Credential Manager on Windows).
+                              #     Store both with: python scripts/store_login.py <site> <persona>
+                              #     (asks Username in the clear, Password hidden).
                               # A committed file NEVER contains a secret: check.py fails
                               # a plain value.
     username: ""
