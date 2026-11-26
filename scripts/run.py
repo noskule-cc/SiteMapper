@@ -1075,7 +1075,14 @@ class Runner:
                 "finished_at": again["finished_at"]}
 
     def _element(self, step, site: Site):
-        return site.element(step["page"], step["element"])
+        """The mapped element. A `$name` in its locator value resolves like any step value,
+        so one element can name a row by a date the run computed."""
+        element = site.element(step["page"], step["element"])
+        value = (element.get("locator") or {}).get("value")
+        if isinstance(value, str) and VAR_RE.search(value):
+            element = {**element, "locator": {**element["locator"],
+                                              "value": self.bindings.resolve(value)}}
+        return element
 
     def do_navigate(self, step):
         site = self.site(step)
@@ -1126,6 +1133,23 @@ class Runner:
         download.save_as(saved)
         if step.get("capture"):
             self.bindings.captures[step["capture"]] = str(saved)
+
+    SCROLL_STEPS = 200
+
+    def do_scroll(self, step):
+        """Scroll a virtualized list (the element) until `value` is rendered in the page.
+        A list that draws only the rows in view has no row to click before this."""
+        site = self.site(step)
+        scroller = build_locator(self.pw_page, self._element(step, site))
+        needle = self.bindings.resolve(step.get("value"))
+        if not needle:
+            raise RunError("a scroll step needs `value`, the text to scroll to")
+        for _ in range(self.SCROLL_STEPS):
+            if self.pw_page.get_by_text(needle).count():
+                return
+            scroller.evaluate("el => { el.scrollTop += Math.max(el.clientHeight * 0.8, 50); }")
+            self.pw_page.wait_for_timeout(300)
+        raise RunError(f"'{needle}' did not appear in {self.SCROLL_STEPS} scroll steps", "drift")
 
     def do_hover(self, step):
         """Move the mouse over an element, for a menu that opens on hover and closes

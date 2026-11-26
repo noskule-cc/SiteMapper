@@ -24,6 +24,15 @@ PAGE = b"""<html><body>
 <button id="nothing" onclick="1+1">Nothing</button>
 <div id="menu" onmouseenter="document.getElementById('sub').style.display='block'">Menu</div>
 <div id="sub" style="display:none">Submenu</div>
+<div id="list" style="height:100px;overflow:auto"><div id="inner" style="height:4000px"></div></div>
+<script>
+const list = document.getElementById('list'), inner = document.getElementById('inner');
+function draw() { inner.innerHTML = ''; const first = Math.floor(list.scrollTop / 40);
+  for (let i = first; i < first + 4; i++) { const r = document.createElement('div');
+    r.className = 'row'; r.style = 'position:absolute;top:' + (i * 40) + 'px'; r.textContent = 'row-' + i;
+    r.innerHTML += ' <input type=checkbox id=cb-' + i + '>'; inner.appendChild(r); } }
+inner.style.position = 'relative'; list.onscroll = draw; draw();
+</script>
 </body></html>"""
 
 
@@ -90,7 +99,6 @@ class DownloadStep(unittest.TestCase):
         runner.bindings = FakeBindings()
         runner.downloads = downloads
         runner.site = lambda step: Site()
-        runner._element = lambda step, site: site.element(step["page"], step["element"])
         runner.DOWNLOAD_TIMEOUT_MS = 2000
         self.addCleanup(runner.context.close)
         return runner
@@ -126,8 +134,28 @@ class DownloadStep(unittest.TestCase):
         runner.do_hover({"action": "hover", "page": "p", "element": "menu"})
         self.assertTrue(runner.pw_page.locator("#sub").is_visible())
 
+    def test_scroll_renders_a_row_a_virtualized_list_does_not_draw_yet(self):
+        runner = self.runner(None)
+        self.assertEqual(runner.pw_page.get_by_text("row-60").count(), 0)
+        runner.do_scroll({"action": "scroll", "page": "p", "element": "list", "value": "row-60"})
+        self.assertEqual(runner.pw_page.get_by_text("row-60").count(), 1)
+
+    def test_scroll_fails_when_the_text_never_appears(self):
+        runner = self.runner(None)
+        runner.SCROLL_STEPS = 3
+        with self.assertRaises(run.RunError):
+            runner.do_scroll({"action": "scroll", "page": "p", "element": "list", "value": "row-999"})
+
+    def test_a_variable_in_a_locator_value_picks_the_row(self):
+        runner = self.runner(None)
+        runner.bindings.captures["n"] = "60"
+        runner.bindings.resolve = lambda text: text.replace("$n", runner.bindings.captures["n"])
+        runner.do_scroll({"action": "scroll", "page": "p", "element": "list", "value": "row-60"})
+        runner.do_click({"action": "click", "page": "p", "element": "cb-$n"})
+        self.assertTrue(runner.pw_page.locator("#cb-60").is_checked())
+
     def test_the_actions_are_known_and_mechanical(self):
-        for action in ("download", "hover"):
+        for action in ("download", "hover", "scroll"):
             self.assertIn(action, run.tree.ACTIONS)
             self.assertIn(action, run.MECHANICAL_ACTIONS)
 
