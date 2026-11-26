@@ -38,6 +38,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Literal, NamedTuple
@@ -666,6 +667,7 @@ TABLE_JS = """(el, needle) => {
 
 class Runner:
     DEFAULT_TIMEOUT_MS = 10_000
+    DOWNLOAD_TIMEOUT_MS = 60_000
 
     def __init__(self, root: Path, wf_path: Path, workflow: dict, bindings: Bindings,
                  owner: Owner, headed: bool = False, persona: dict | None = None,
@@ -694,6 +696,7 @@ class Runner:
         self.browser = None
         self.pw_page = None
         self.login_failed = False
+        self.downloads: Path | None = None  # where `download` saves; the run folder's, or a temp dir
 
     # -- sites ------------------------------------------------------------
     def site(self, step: dict) -> Site:
@@ -749,7 +752,7 @@ class Runner:
             )
         self._pw = sync_playwright().start()
         self.browser = self._pw.chromium.launch(channel="chrome", headless=not self.headed)
-        self.context = self.browser.new_context(**context_args)
+        self.context = self.browser.new_context(accept_downloads=True, **context_args)
         self.pw_page = self.context.new_page()
         self.pw_page.set_default_timeout(self.DEFAULT_TIMEOUT_MS)
         if self.persona and "storage_state" not in context_args:
@@ -1105,6 +1108,24 @@ class Runner:
         element = self._element(step, site)
         scope = self.bindings.resolve(step.get("value")) if step.get("value") else None
         build_locator(self.pw_page, element, scope).click()
+
+    def do_download(self, step):
+        """Click an element that starts a download, save the file under its own
+        name into the run folder and capture the saved path for later steps."""
+        site = self.site(step)
+        element = self._element(step, site)
+        scope = self.bindings.resolve(step.get("value")) if step.get("value") else None
+        locator = build_locator(self.pw_page, element, scope)
+        with self.pw_page.expect_download(timeout=self.DOWNLOAD_TIMEOUT_MS) as started:
+            locator.click()
+        download = started.value
+        if self.downloads is None:
+            self.downloads = Path(tempfile.mkdtemp(prefix="sitemapper-downloads-"))
+        self.downloads.mkdir(parents=True, exist_ok=True)
+        saved = self.downloads / Path(download.suggested_filename).name
+        download.save_as(saved)
+        if step.get("capture"):
+            self.bindings.captures[step["capture"]] = str(saved)
 
     def do_input(self, step):
         site = self.site(step)
@@ -1823,6 +1844,7 @@ def run_workflow(root: Path, projects: Path, name: str, cli_params: dict, headed
         execute(runner, workflow, bindings, wf_path, primary, result)
         return result, None
     recorder = RunRecord(runs, owner, trigger, result)
+    runner.downloads = recorder.folder / "downloads"
     recorder.start(result)
     try:
         execute(runner, workflow, bindings, wf_path, primary, result)
@@ -2201,6 +2223,8 @@ class RunRecord:
                 (folder / "evidence").mkdir(exist_ok=True)
                 shutil.copy2(p, folder / "evidence" / p.name)
                 files.append(f"evidence/{p.name}")
+        for p in sorted((folder / "downloads").glob("*")):
+            files.append(f"downloads/{p.name}")
         (folder / "result.json").write_text(
             json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
         summary = summary_of(result.get("captures"))

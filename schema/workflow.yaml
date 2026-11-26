@@ -193,7 +193,7 @@ workflow:
     - action: ""
 
   steps:
-    - action: ""              # navigate | click | input | read | assert | verify | wait | key | script | human
+    - action: ""              # navigate | click | input | read | assert | verify | wait | key | download | script | human
                               #   human: a step only a person can do (approve a result, log
                               #   in, act on a device). The run stops here with
                               #   result.status = waiting and `waiting_for` = {step, label,
@@ -203,6 +203,13 @@ workflow:
                               #   allowed in teardown (check.py)
                               #   key: press a keyboard key (value = the key, e.g. "Escape",
                               #   "Enter") - e.g. to dismiss a dropdown without changing state
+                              #   download: click the element (page + element, `value` scopes
+                              #   it as in click) and save the file it starts into the run
+                              #   folder's downloads/ (a temp dir without --record), under the
+                              #   name the site gives it. `capture` stores the saved path, so
+                              #   a later script step can take it as "$name". The step fails
+                              #   when no download starts within 60 s. A path with a space
+                              #   breaks a script's value, which splits on spaces.
                               #   script: run a site script instead of driving the browser
                               #   (see `script` below). Prefer this whenever the data is
                               #   reachable from the site's API - it is faster, headless and

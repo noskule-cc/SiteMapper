@@ -101,6 +101,9 @@ comments are the reference; this is the orientation:
   browser; prefer it whenever the data is reachable from an API
   (`docs/code-over-llm.md`).
 - **`action: key`** — press a keyboard key (e.g. `Enter` to submit a search).
+- **`action: download`** — click an element that starts a download; the file is
+  saved into the run folder's `downloads/` under the site's own file name, and
+  `capture` stores its path for a later `script` step (`value: "--zip $usage_zip"`).
 
 ### Project Workflows (questions)
 
